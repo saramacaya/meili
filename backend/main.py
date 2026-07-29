@@ -1,8 +1,8 @@
-from typing import Literal
+from typing import Literal, Optional
 import unicodedata
 
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 app = FastAPI(
@@ -24,6 +24,15 @@ class RouteSelectionRequest(BaseModel):
     initial_preference: Literal["fastest", "balanced", "safest"]
     final_choice_type: Literal["fastest", "balanced", "safest"]
     user_type: str
+
+class FeedbackRequest(BaseModel):
+    origin: str
+    destination: str
+    final_choice_type: Literal["fastest", "balanced", "safest"]
+    user_type: str
+    perceived_safety_rating: int = Field(..., ge=1, le=5)
+    would_choose_again: bool
+    comment: Optional[str] = None
 
 def normalise_text(value: str) -> str:
     """
@@ -237,4 +246,42 @@ def select_route(request: RouteSelectionRequest):
         "extra_time_minutes": extra_time_minutes,
         "safety_gain": safety_gain,
         "note": "This selection summary is calculated from mock route data and is not yet saved to Supabase."
+    }
+
+@app.post("/feedback")
+def submit_feedback(request: FeedbackRequest):
+    origin_key = normalise_text(request.origin)
+    destination_key = normalise_text(request.destination)
+
+    journey_key = (origin_key, destination_key)
+
+    if journey_key in MOCK_JOURNEYS:
+        journey = MOCK_JOURNEYS[journey_key]
+        matched_demo_route = True
+    else:
+        journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
+        matched_demo_route = False
+
+    routes = journey["routes"]
+
+    chosen_route = next(
+        route for route in routes
+        if route["route_type"] == request.final_choice_type
+    )
+
+    return {
+        "status": "feedback_received",
+        "requested_origin": request.origin,
+        "requested_destination": request.destination,
+        "matched_origin": journey["display_origin"],
+        "matched_destination": journey["display_destination"],
+        "matched_demo_route": matched_demo_route,
+        "user_type": request.user_type,
+        "final_choice_type": request.final_choice_type,
+        "chosen_route_id": chosen_route["id"],
+        "chosen_route_name": chosen_route["route_name"],
+        "perceived_safety_rating": request.perceived_safety_rating,
+        "would_choose_again": request.would_choose_again,
+        "comment": request.comment,
+        "note": "Feedback is validated by the backend but not yet saved to Supabase."
     }
