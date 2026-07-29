@@ -1,9 +1,21 @@
 from typing import Literal, Optional
+import os
 import unicodedata
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+from supabase import create_client
 
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(
     title="Meili Backend",
@@ -33,6 +45,9 @@ class FeedbackRequest(BaseModel):
     perceived_safety_rating: int = Field(..., ge=1, le=5)
     would_choose_again: bool
     comment: Optional[str] = None
+
+class UserCreateRequest(BaseModel):
+    user_type: str
 
 def normalise_text(value: str) -> str:
     """
@@ -285,3 +300,51 @@ def submit_feedback(request: FeedbackRequest):
         "comment": request.comment,
         "note": "Feedback is validated by the backend but not yet saved to Supabase."
     }
+@app.get("/database/health")
+def database_health():
+    if supabase is None:
+        return {
+            "status": "not_configured",
+            "message": "Supabase URL or key is missing from the backend .env file."
+        }
+
+    try:
+        response = supabase.table("users").select("id").limit(1).execute()
+
+        return {
+            "status": "connected",
+            "table_checked": "users",
+            "rows_returned": len(response.data)
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": str(error)
+        }
+
+@app.post("/users/create")
+def create_user(request: UserCreateRequest):
+    if supabase is None:
+        return {
+            "status": "not_configured",
+            "message": "Supabase URL or key is missing from the backend .env file."
+        }
+
+    try:
+        response = supabase.table("users").insert({
+            "user_type": request.user_type
+        }).execute()
+
+        created_user = response.data[0] if response.data else None
+
+        return {
+            "status": "user_created",
+            "user": created_user
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": str(error)
+        }
