@@ -1,5 +1,8 @@
 from typing import Literal, Optional
 import os
+import requests
+
+from fastapi import HTTPException
 import unicodedata
 
 from dotenv import load_dotenv
@@ -11,6 +14,7 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+OPENROUTESERVICE_API_KEY = os.getenv("OPENROUTESERVICE_API_KEY")
 
 supabase = None
 
@@ -27,6 +31,13 @@ app = FastAPI(
 class RouteRequest(BaseModel):
     origin: str
     destination: str
+
+    origin_latitude: float = Field(..., ge=-90, le=90)
+    origin_longitude: float = Field(..., ge=-180, le=180)
+
+    destination_latitude: float = Field(..., ge=-90, le=90)
+    destination_longitude: float = Field(..., ge=-180, le=180)
+
     initial_preference: Literal["fastest", "balanced", "safest"]
     user_type: str
 
@@ -68,6 +79,75 @@ def normalise_text(value: str) -> str:
     value = " ".join(value.split())
     return value
 
+def get_real_walking_route(
+    origin_longitude: float,
+    origin_latitude: float,
+    destination_longitude: float,
+    destination_latitude: float
+):
+    if not OPENROUTESERVICE_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENROUTESERVICE_API_KEY is missing from the .env file."
+        )
+
+    url = (
+        "https://api.heigit.org/openrouteservice/"
+        "v2/directions/foot-walking/geojson"
+    )
+
+    headers = {
+        "Authorization": OPENROUTESERVICE_API_KEY.strip(),
+        "Content-Type": "application/json",
+        "Accept": "application/geo+json"
+    }
+
+    body = {
+        "coordinates": [
+            [origin_longitude, origin_latitude],
+            [destination_longitude, destination_latitude]
+        ]
+    }
+
+    try:
+        response = requests.post(
+            url,
+            json=body,
+            headers=headers,
+            timeout=30
+        )
+
+        response.raise_for_status()
+        route_data = response.json()
+
+    except requests.RequestException as error:
+        error_message = str(error)
+
+        if error.response is not None:
+            error_message = error.response.text
+
+        raise HTTPException(
+            status_code=502,
+            detail=f"Routing service error: {error_message}"
+        )
+
+    features = route_data.get("features", [])
+
+    if not features:
+        raise HTTPException(
+            status_code=404,
+            detail="No walking route was found between these coordinates."
+        )
+
+    feature = features[0]
+    summary = feature["properties"]["summary"]
+
+    return {
+        "route_type": "real_walking_route",
+        "estimated_time_minutes": round(summary["duration"] / 60),
+        "distance_meters": round(summary["distance"]),
+        "geometry": feature["geometry"]["coordinates"]
+    }
 
 MOCK_JOURNEYS = {
     ("ruzafa", "placa de la reina"): {
@@ -189,6 +269,21 @@ def health_check():
         "status": "Meili backend is running"
     }
 
+@app.post("/routes/test-real")
+def test_real_route(request: RouteRequest):
+    route = get_real_walking_route(
+        origin_longitude=request.origin_longitude,
+        origin_latitude=request.origin_latitude,
+        destination_longitude=request.destination_longitude,
+        destination_latitude=request.destination_latitude
+    )
+
+    return {
+        "status": "real_route_generated",
+        "requested_origin": request.origin,
+        "requested_destination": request.destination,
+        "route": route
+    }
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
@@ -204,12 +299,27 @@ def generate_routes(request: RouteRequest):
         journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
         matched_demo_route = False
 
+    requested_coordinates = {
+        "origin": {
+            "latitude": request.origin_latitude,
+            "longitude": request.origin_longitude
+        },
+        "destination": {
+            "latitude": request.destination_latitude,
+            "longitude": request.destination_longitude
+        }
+    }
+
     if supabase is None:
         return {
             "status": "generated_not_saved",
-            "message": "Supabase is not configured, so routes were generated but not saved.",
+            "message": (
+                "Supabase is not configured, so routes were generated "
+                "but not saved."
+            ),
             "requested_origin": request.origin,
             "requested_destination": request.destination,
+            "requested_coordinates": requested_coordinates,
             "matched_origin": journey["display_origin"],
             "matched_destination": journey["display_destination"],
             "matched_demo_route": matched_demo_route,
@@ -217,13 +327,21 @@ def generate_routes(request: RouteRequest):
             "initial_preference": request.initial_preference,
             "recommended_route_type": request.initial_preference,
             "routes": journey["routes"],
-            "note": "Routes are mock data for MVP testing, not live navigation results."
+            "note": (
+                "Coordinates were accepted successfully. Routes are still "
+                "mock MVP data, not live navigation results."
+            )
         }
 
     try:
-        user_response = supabase.table("users").insert({
-            "user_type": request.user_type
-        }).execute()
+        user_response = (
+            supabase
+            .table("users")
+            .insert({
+                "user_type": request.user_type
+            })
+            .execute()
+        )
 
         if not user_response.data:
             return {
@@ -239,8 +357,8 @@ def generate_routes(request: RouteRequest):
         for route in journey["routes"]:
             route_rows.append({
                 "user_id": user_id,
-                "origin_text": journey["display_origin"],
-                "destination_text": journey["display_destination"],
+                "origin_text": request.origin,
+                "destination_text": request.destination,
                 "initial_preference": request.initial_preference,
                 "route_type": route["route_type"],
                 "estimated_time_minutes": route["estimated_time_minutes"],
@@ -260,8 +378,8 @@ def generate_routes(request: RouteRequest):
         saved_routes = routes_response.data or []
 
         database_id_by_route_type = {
-            route["route_type"]: route["id"]
-            for route in saved_routes
+            saved_route["route_type"]: saved_route["id"]
+            for saved_route in saved_routes
         }
 
         routes_with_database_ids = []
@@ -278,6 +396,7 @@ def generate_routes(request: RouteRequest):
             "user_id": user_id,
             "requested_origin": request.origin,
             "requested_destination": request.destination,
+            "requested_coordinates": requested_coordinates,
             "matched_origin": journey["display_origin"],
             "matched_destination": journey["display_destination"],
             "matched_demo_route": matched_demo_route,
@@ -285,7 +404,10 @@ def generate_routes(request: RouteRequest):
             "initial_preference": request.initial_preference,
             "recommended_route_type": request.initial_preference,
             "routes": routes_with_database_ids,
-            "note": "Routes are mock MVP data and have been saved to Supabase."
+            "note": (
+                "Coordinates were accepted successfully. Routes are still "
+                "mock MVP data and have been saved to Supabase."
+            )
         }
 
     except Exception as error:
@@ -473,7 +595,7 @@ def submit_feedback(request: FeedbackRequest):
             "status": "error",
             "message": str(error)
         }
-        
+
 @app.get("/database/health")
 def database_health():
     if supabase is None:
