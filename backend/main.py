@@ -106,7 +106,12 @@ def get_real_walking_route(
         "coordinates": [
             [origin_longitude, origin_latitude],
             [destination_longitude, destination_latitude]
-        ]
+        ],
+        "alternative_routes": {
+            "target_count": 3,
+            "share_factor": 0.6,
+            "weight_factor": 1.4
+        }
     }
 
     try:
@@ -139,14 +144,22 @@ def get_real_walking_route(
             detail="No walking route was found between these coordinates."
         )
 
-    feature = features[0]
-    summary = feature["properties"]["summary"]
+    routes = []
+
+    for index, feature in enumerate(features, start=1):
+        summary = feature["properties"]["summary"]
+
+        routes.append({
+            "route_id": f"alternative_{index}",
+            "estimated_time_minutes": round(summary["duration"] / 60),
+            "distance_meters": round(summary["distance"]),
+            "geometry": feature["geometry"]["coordinates"]
+        })
 
     return {
-        "route_type": "real_walking_route",
-        "estimated_time_minutes": round(summary["duration"] / 60),
-        "distance_meters": round(summary["distance"]),
-        "geometry": feature["geometry"]["coordinates"]
+        "route_type": "real_walking_alternatives",
+        "number_of_routes": len(routes),
+        "routes": routes
     }
 
 MOCK_JOURNEYS = {
@@ -287,17 +300,25 @@ def test_real_route(request: RouteRequest):
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
-    origin_key = normalise_text(request.origin)
-    destination_key = normalise_text(request.destination)
+    if None in (
+        request.origin_latitude,
+        request.origin_longitude,
+        request.destination_latitude,
+        request.destination_longitude
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Origin and destination coordinates are required."
+        )
 
-    journey_key = (origin_key, destination_key)
+    real_route_result = get_real_walking_route(
+        origin_longitude=request.origin_longitude,
+        origin_latitude=request.origin_latitude,
+        destination_longitude=request.destination_longitude,
+        destination_latitude=request.destination_latitude
+    )
 
-    if journey_key in MOCK_JOURNEYS:
-        journey = MOCK_JOURNEYS[journey_key]
-        matched_demo_route = True
-    else:
-        journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
-        matched_demo_route = False
+    real_routes = real_route_result["routes"]
 
     requested_coordinates = {
         "origin": {
@@ -312,24 +333,22 @@ def generate_routes(request: RouteRequest):
 
     if supabase is None:
         return {
-            "status": "generated_not_saved",
+            "status": "real_routes_generated_not_saved",
             "message": (
-                "Supabase is not configured, so routes were generated "
-                "but not saved."
+                "Real walking alternatives were generated, but Supabase "
+                "is not configured, so they were not saved."
             ),
             "requested_origin": request.origin,
             "requested_destination": request.destination,
             "requested_coordinates": requested_coordinates,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
             "user_type": request.user_type,
             "initial_preference": request.initial_preference,
-            "recommended_route_type": request.initial_preference,
-            "routes": journey["routes"],
+            "recommended_route_type": None,
+            "number_of_routes": len(real_routes),
+            "routes": real_routes,
             "note": (
-                "Coordinates were accepted successfully. Routes are still "
-                "mock MVP data, not live navigation results."
+                "These are real walking alternatives. Safety scoring has "
+                "not yet been applied."
             )
         }
 
@@ -354,18 +373,23 @@ def generate_routes(request: RouteRequest):
 
         route_rows = []
 
-        for route in journey["routes"]:
+        for route in real_routes:
             route_rows.append({
                 "user_id": user_id,
                 "origin_text": request.origin,
                 "destination_text": request.destination,
                 "initial_preference": request.initial_preference,
-                "route_type": route["route_type"],
-                "estimated_time_minutes": route["estimated_time_minutes"],
+                "route_type": route["route_id"],
+                "estimated_time_minutes": route[
+                    "estimated_time_minutes"
+                ],
                 "distance_meters": route["distance_meters"],
-                "safety_score": route["safety_score"],
-                "route_geometry_json": None,
-                "explanation": route["explanation"]
+                "safety_score": None,
+                "route_geometry_json": route["geometry"],
+                "explanation": (
+                    "Real walking alternative. Safety scoring has not "
+                    "yet been applied."
+                )
             })
 
         routes_response = (
@@ -384,29 +408,27 @@ def generate_routes(request: RouteRequest):
 
         routes_with_database_ids = []
 
-        for route in journey["routes"]:
+        for route in real_routes:
             route_copy = route.copy()
-            route_copy["database_id"] = database_id_by_route_type.get(
-                route["route_type"]
+            route_copy["database_id"] = (
+                database_id_by_route_type.get(route["route_id"])
             )
             routes_with_database_ids.append(route_copy)
 
         return {
-            "status": "routes_generated_and_saved",
+            "status": "real_routes_generated_and_saved",
             "user_id": user_id,
             "requested_origin": request.origin,
             "requested_destination": request.destination,
             "requested_coordinates": requested_coordinates,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
             "user_type": request.user_type,
             "initial_preference": request.initial_preference,
-            "recommended_route_type": request.initial_preference,
+            "recommended_route_type": None,
+            "number_of_routes": len(routes_with_database_ids),
             "routes": routes_with_database_ids,
             "note": (
-                "Coordinates were accepted successfully. Routes are still "
-                "mock MVP data and have been saved to Supabase."
+                "These are real walking alternatives saved to Supabase. "
+                "Safety scoring has not yet been applied."
             )
         }
 
@@ -415,7 +437,6 @@ def generate_routes(request: RouteRequest):
             "status": "error",
             "message": str(error)
         }
-
 @app.post("/routes/select")
 def select_route(request: RouteSelectionRequest):
     origin_key = normalise_text(request.origin)
