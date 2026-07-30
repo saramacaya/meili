@@ -31,13 +31,19 @@ class RouteRequest(BaseModel):
     user_type: str
 
 class RouteSelectionRequest(BaseModel):
+    user_id: str
     origin: str
     destination: str
     initial_preference: Literal["fastest", "balanced", "safest"]
     final_choice_type: Literal["fastest", "balanced", "safest"]
     user_type: str
+    fastest_route_id: str
+    balanced_route_id: str
+    safest_route_id: str
 
 class FeedbackRequest(BaseModel):
+    user_id: str
+    chosen_route_id: str
     origin: str
     destination: str
     final_choice_type: Literal["fastest", "balanced", "safest"]
@@ -198,18 +204,95 @@ def generate_routes(request: RouteRequest):
         journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
         matched_demo_route = False
 
-    return {
-        "requested_origin": request.origin,
-        "requested_destination": request.destination,
-        "matched_origin": journey["display_origin"],
-        "matched_destination": journey["display_destination"],
-        "matched_demo_route": matched_demo_route,
-        "user_type": request.user_type,
-        "initial_preference": request.initial_preference,
-        "recommended_route_type": request.initial_preference,
-        "routes": journey["routes"],
-        "note": "Routes are mock data for MVP testing, not live navigation results."
-    }
+    if supabase is None:
+        return {
+            "status": "generated_not_saved",
+            "message": "Supabase is not configured, so routes were generated but not saved.",
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_type": request.user_type,
+            "initial_preference": request.initial_preference,
+            "recommended_route_type": request.initial_preference,
+            "routes": journey["routes"],
+            "note": "Routes are mock data for MVP testing, not live navigation results."
+        }
+
+    try:
+        user_response = supabase.table("users").insert({
+            "user_type": request.user_type
+        }).execute()
+
+        if not user_response.data:
+            return {
+                "status": "error",
+                "message": "The user could not be created."
+            }
+
+        created_user = user_response.data[0]
+        user_id = created_user["id"]
+
+        route_rows = []
+
+        for route in journey["routes"]:
+            route_rows.append({
+                "user_id": user_id,
+                "origin_text": journey["display_origin"],
+                "destination_text": journey["display_destination"],
+                "initial_preference": request.initial_preference,
+                "route_type": route["route_type"],
+                "estimated_time_minutes": route["estimated_time_minutes"],
+                "distance_meters": route["distance_meters"],
+                "safety_score": route["safety_score"],
+                "route_geometry_json": None,
+                "explanation": route["explanation"]
+            })
+
+        routes_response = (
+            supabase
+            .table("routes")
+            .insert(route_rows)
+            .execute()
+        )
+
+        saved_routes = routes_response.data or []
+
+        database_id_by_route_type = {
+            route["route_type"]: route["id"]
+            for route in saved_routes
+        }
+
+        routes_with_database_ids = []
+
+        for route in journey["routes"]:
+            route_copy = route.copy()
+            route_copy["database_id"] = database_id_by_route_type.get(
+                route["route_type"]
+            )
+            routes_with_database_ids.append(route_copy)
+
+        return {
+            "status": "routes_generated_and_saved",
+            "user_id": user_id,
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_type": request.user_type,
+            "initial_preference": request.initial_preference,
+            "recommended_route_type": request.initial_preference,
+            "routes": routes_with_database_ids,
+            "note": "Routes are mock MVP data and have been saved to Supabase."
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": str(error)
+        }
 
 @app.post("/routes/select")
 def select_route(request: RouteSelectionRequest):
@@ -245,23 +328,75 @@ def select_route(request: RouteSelectionRequest):
 
     changed_preference = request.initial_preference != request.final_choice_type
 
-    return {
-        "requested_origin": request.origin,
-        "requested_destination": request.destination,
-        "matched_origin": journey["display_origin"],
-        "matched_destination": journey["display_destination"],
-        "matched_demo_route": matched_demo_route,
-        "user_type": request.user_type,
-        "initial_preference": request.initial_preference,
-        "final_choice_type": request.final_choice_type,
-        "changed_preference": changed_preference,
-        "chosen_route": chosen_route,
-        "fastest_route_time_minutes": fastest_route["estimated_time_minutes"],
-        "chosen_route_time_minutes": chosen_route["estimated_time_minutes"],
-        "extra_time_minutes": extra_time_minutes,
-        "safety_gain": safety_gain,
-        "note": "This selection summary is calculated from mock route data and is not yet saved to Supabase."
+    route_id_by_type = {
+        "fastest": request.fastest_route_id,
+        "balanced": request.balanced_route_id,
+        "safest": request.safest_route_id
     }
+
+    chosen_route_id = route_id_by_type[request.final_choice_type]
+
+    if supabase is None:
+        return {
+            "status": "selection_calculated_not_saved",
+            "message": "Supabase is not configured, so the route choice was calculated but not saved.",
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_id": request.user_id,
+            "user_type": request.user_type,
+            "initial_preference": request.initial_preference,
+            "final_choice_type": request.final_choice_type,
+            "changed_preference": changed_preference,
+            "chosen_route": chosen_route,
+            "chosen_route_id": chosen_route_id,
+            "extra_time_minutes": extra_time_minutes,
+            "safety_gain": safety_gain
+        }
+
+    try:
+        choice_response = supabase.table("route_choices").insert({
+            "user_id": request.user_id,
+            "chosen_route_id": chosen_route_id,
+            "fastest_route_id": request.fastest_route_id,
+            "balanced_route_id": request.balanced_route_id,
+            "safest_route_id": request.safest_route_id,
+            "initial_preference": request.initial_preference,
+            "final_choice_type": request.final_choice_type,
+            "extra_time_minutes": extra_time_minutes,
+            "safety_gain": safety_gain,
+            "framing_group": None
+        }).execute()
+
+        saved_choice = choice_response.data[0] if choice_response.data else None
+
+        return {
+            "status": "route_choice_saved",
+            "route_choice": saved_choice,
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_id": request.user_id,
+            "user_type": request.user_type,
+            "initial_preference": request.initial_preference,
+            "final_choice_type": request.final_choice_type,
+            "changed_preference": changed_preference,
+            "chosen_route": chosen_route,
+            "chosen_route_id": chosen_route_id,
+            "extra_time_minutes": extra_time_minutes,
+            "safety_gain": safety_gain,
+            "note": "The route choice has been saved to Supabase."
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": str(error)
+        }
 
 @app.post("/feedback")
 def submit_feedback(request: FeedbackRequest):
@@ -284,22 +419,61 @@ def submit_feedback(request: FeedbackRequest):
         if route["route_type"] == request.final_choice_type
     )
 
-    return {
-        "status": "feedback_received",
-        "requested_origin": request.origin,
-        "requested_destination": request.destination,
-        "matched_origin": journey["display_origin"],
-        "matched_destination": journey["display_destination"],
-        "matched_demo_route": matched_demo_route,
-        "user_type": request.user_type,
-        "final_choice_type": request.final_choice_type,
-        "chosen_route_id": chosen_route["id"],
-        "chosen_route_name": chosen_route["route_name"],
-        "perceived_safety_rating": request.perceived_safety_rating,
-        "would_choose_again": request.would_choose_again,
-        "comment": request.comment,
-        "note": "Feedback is validated by the backend but not yet saved to Supabase."
-    }
+    if supabase is None:
+        return {
+            "status": "feedback_validated_not_saved",
+            "message": "Supabase is not configured, so feedback was validated but not saved.",
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_id": request.user_id,
+            "chosen_route_id": request.chosen_route_id,
+            "user_type": request.user_type,
+            "final_choice_type": request.final_choice_type,
+            "chosen_route_name": chosen_route["route_name"],
+            "perceived_safety_rating": request.perceived_safety_rating,
+            "would_choose_again": request.would_choose_again,
+            "comment": request.comment
+        }
+
+    try:
+        feedback_response = supabase.table("feedback").insert({
+            "user_id": request.user_id,
+            "route_id": request.chosen_route_id,
+            "perceived_safety_rating": request.perceived_safety_rating,
+            "would_choose_again": request.would_choose_again,
+            "comment": request.comment
+        }).execute()
+
+        saved_feedback = feedback_response.data[0] if feedback_response.data else None
+
+        return {
+            "status": "feedback_saved",
+            "feedback": saved_feedback,
+            "requested_origin": request.origin,
+            "requested_destination": request.destination,
+            "matched_origin": journey["display_origin"],
+            "matched_destination": journey["display_destination"],
+            "matched_demo_route": matched_demo_route,
+            "user_id": request.user_id,
+            "chosen_route_id": request.chosen_route_id,
+            "user_type": request.user_type,
+            "final_choice_type": request.final_choice_type,
+            "chosen_route_name": chosen_route["route_name"],
+            "perceived_safety_rating": request.perceived_safety_rating,
+            "would_choose_again": request.would_choose_again,
+            "comment": request.comment,
+            "note": "Feedback has been saved to Supabase."
+        }
+
+    except Exception as error:
+        return {
+            "status": "error",
+            "message": str(error)
+        }
+        
 @app.get("/database/health")
 def database_health():
     if supabase is None:
