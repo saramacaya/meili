@@ -4,7 +4,6 @@ import requests
 import uuid
 import httpx
 
-from fastapi import HTTPException
 import unicodedata
 
 from dotenv import load_dotenv
@@ -18,6 +17,12 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 OPENROUTESERVICE_API_KEY = os.getenv("OPENROUTESERVICE_API_KEY")
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
+GOOGLE_ROUTES_API_KEY = os.getenv("GOOGLE_ROUTES_API_KEY")
+
+GOOGLE_ROUTES_URL = (
+    "https://routes.googleapis.com/"
+    "directions/v2:computeRoutes"
+)
 
 supabase = None
 
@@ -89,6 +94,17 @@ class PlaceAutocompleteRequest(BaseModel):
 class PlaceDetailsRequest(BaseModel):
     place_id: str
     session_token: Optional[str] = None
+
+class RouteCoordinate(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    label: Optional[str] = None
+    place_id: Optional[str] = None
+
+
+class RealRoutePreviewRequest(BaseModel):
+    origin: RouteCoordinate
+    destination: RouteCoordinate
 
 def normalise_text(value: str) -> str:
     """
@@ -299,6 +315,14 @@ MOCK_JOURNEYS = {
     }
 }
 
+def google_duration_to_seconds(duration: str) -> int:
+    if not duration or not duration.endswith("s"):
+        return 0
+
+    try:
+        return int(round(float(duration[:-1])))
+    except ValueError:
+        return 0
 
 @app.get("/health")
 def health_check():
@@ -486,6 +510,127 @@ async def get_place_details(request: PlaceDetailsRequest):
             status_code=502,
             detail=f"Could not retrieve place details: {str(error)}"
         )
+
+@app.post("/routes/preview-real")
+async def preview_real_routes(request: RealRoutePreviewRequest):
+    if not GOOGLE_ROUTES_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Routes API is not configured."
+        )
+
+    payload = {
+        "origin": {
+            "location": {
+                "latLng": {
+                    "latitude": request.origin.latitude,
+                    "longitude": request.origin.longitude
+                }
+            }
+        },
+        "destination": {
+            "location": {
+                "latLng": {
+                    "latitude": request.destination.latitude,
+                    "longitude": request.destination.longitude
+                }
+            }
+        },
+        "travelMode": "WALK",
+        "computeAlternativeRoutes": True,
+        "languageCode": "en",
+        "units": "METRIC"
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_ROUTES_API_KEY,
+        "X-Goog-FieldMask": (
+            "routes.duration,"
+            "routes.distanceMeters,"
+            "routes.routeLabels,"
+            "routes.polyline.encodedPolyline"
+        )
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            google_response = await client.post(
+                GOOGLE_ROUTES_URL,
+                json=payload,
+                headers=headers
+            )
+
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not contact Google Routes: {str(error)}"
+        )
+
+    if google_response.status_code != 200:
+        raise HTTPException(
+            status_code=google_response.status_code,
+            detail=google_response.text
+        )
+
+    google_data = google_response.json()
+    google_routes = google_data.get("routes", [])
+
+    if not google_routes:
+        raise HTTPException(
+            status_code=404,
+            detail="No walking route was found between these locations."
+        )
+
+    candidates = []
+
+    for route in google_routes:
+        duration_seconds = google_duration_to_seconds(
+            route.get("duration", "")
+        )
+
+        distance_meters = route.get("distanceMeters", 0)
+
+        candidates.append({
+            "duration_seconds": duration_seconds,
+            "estimated_time_minutes": max(
+                1,
+                round(duration_seconds / 60)
+            ),
+            "distance_meters": distance_meters,
+            "distance_km": round(distance_meters / 1000, 2),
+            "encoded_polyline": route.get("polyline", {}).get("encodedPolyline"),
+            "provider_labels": route.get("routeLabels", []),
+            "safety_score": None,
+            "safety_status": "not_scored"
+        })
+
+    candidates.sort(key=lambda route: route["duration_seconds"])
+
+    for index, candidate in enumerate(candidates):
+        candidate["candidate_id"] = f"candidate_{index + 1}"
+
+        if index == 0:
+            candidate["candidate_type"] = "fastest"
+            candidate["display_name"] = "Fastest"
+        else:
+            candidate["candidate_type"] = f"alternative_{index}"
+            candidate["display_name"] = f"Alternative {index}"
+
+    return {
+        "status": "real_routes_found",
+        "provider": "google_routes",
+        "travel_mode": "walking",
+        "origin": request.origin.dict(),
+        "destination": request.destination.dict(),
+        "route_count": len(candidates),
+        "routes": candidates,
+        "safety_scoring_applied": False,
+        "note": (
+            "These are genuine walking-route candidates. "
+            "Safety scoring has not yet been applied."
+        )
+    }
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
