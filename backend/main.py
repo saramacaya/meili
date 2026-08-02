@@ -3,6 +3,7 @@ import os
 import requests
 import uuid
 import httpx
+import math
 
 import unicodedata
 
@@ -105,6 +106,197 @@ class RouteCoordinate(BaseModel):
 class RealRoutePreviewRequest(BaseModel):
     origin: RouteCoordinate
     destination: RouteCoordinate
+
+class StreetlightAnalysisRequest(BaseModel):
+    route_geometry: list[RouteCoordinate]
+    coverage_radius_meters: float = Field(default=25, ge=5, le=100)
+
+VALENCIA_STREET_FURNITURE_URL = (
+    "https://geoportal.valencia.es/server/rest/services/OPENDATA/"
+    "UrbanismoEInfraestructuras/MapServer/323/query"
+)
+
+
+def distance_meters(
+    point_a: tuple[float, float],
+    point_b: tuple[float, float]
+) -> float:
+    longitude_a, latitude_a = point_a
+    longitude_b, latitude_b = point_b
+    earth_radius_meters = 6_371_000
+
+    latitude_a_radians = math.radians(latitude_a)
+    latitude_b_radians = math.radians(latitude_b)
+    latitude_delta = math.radians(latitude_b - latitude_a)
+    longitude_delta = math.radians(longitude_b - longitude_a)
+
+    haversine = (
+        math.sin(latitude_delta / 2) ** 2
+        + math.cos(latitude_a_radians)
+        * math.cos(latitude_b_radians)
+        * math.sin(longitude_delta / 2) ** 2
+    )
+
+    return (
+        2
+        * earth_radius_meters
+        * math.asin(math.sqrt(haversine))
+    )
+
+
+def densify_route(
+    coordinates: list[tuple[float, float]],
+    interval_meters: float = 20
+) -> list[tuple[float, float]]:
+    if len(coordinates) < 2:
+        return coordinates
+
+    samples = [coordinates[0]]
+
+    for start, end in zip(coordinates, coordinates[1:]):
+        segment_length = distance_meters(start, end)
+        steps = max(
+            1,
+            math.ceil(segment_length / interval_meters)
+        )
+
+        for step in range(1, steps + 1):
+            fraction = step / steps
+
+            samples.append((
+                start[0] + (end[0] - start[0]) * fraction,
+                start[1] + (end[1] - start[1]) * fraction
+            ))
+
+    return samples
+
+
+def flatten_geojson_coordinates(
+    value
+) -> list[tuple[float, float]]:
+    if (
+        isinstance(value, list)
+        and len(value) >= 2
+        and isinstance(value[0], (int, float))
+        and isinstance(value[1], (int, float))
+    ):
+        return [(float(value[0]), float(value[1]))]
+
+    points = []
+
+    if isinstance(value, list):
+        for child in value:
+            points.extend(
+                flatten_geojson_coordinates(child)
+            )
+
+    return points
+
+
+def feature_representative_point(
+    feature: dict
+) -> Optional[tuple[float, float]]:
+    points = flatten_geojson_coordinates(
+        feature.get("geometry", {}).get(
+            "coordinates",
+            []
+        )
+    )
+
+    if not points:
+        return None
+
+    return (
+        sum(point[0] for point in points) / len(points),
+        sum(point[1] for point in points) / len(points)
+    )
+
+
+def is_streetlight(feature: dict) -> bool:
+    values = {
+        str(value).strip().upper()
+        for value in feature.get(
+            "properties",
+            {}
+        ).values()
+        if value is not None
+    }
+
+    return "FAROLA" in values or "FANAL" in values
+
+
+def fetch_valencia_streetlights(
+    route_coordinates: list[tuple[float, float]]
+) -> list[tuple[float, float]]:
+    longitudes = [
+        coordinate[0]
+        for coordinate in route_coordinates
+    ]
+
+    latitudes = [
+        coordinate[1]
+        for coordinate in route_coordinates
+    ]
+
+    padding_degrees = 0.001
+
+    envelope = ",".join(
+        str(value)
+        for value in (
+            min(longitudes) - padding_degrees,
+            min(latitudes) - padding_degrees,
+            max(longitudes) + padding_degrees,
+            max(latitudes) + padding_degrees
+        )
+    )
+
+    params = {
+        "f": "geojson",
+        "where": "1=1",
+        "outFields": "*",
+        "geometry": envelope,
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "outSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "returnGeometry": "true"
+    }
+
+    try:
+        response = requests.get(
+            VALENCIA_STREET_FURNITURE_URL,
+            params=params,
+            timeout=20
+        )
+
+        response.raise_for_status()
+
+        features = response.json().get(
+            "features",
+            []
+        )
+
+    except (requests.RequestException, ValueError) as error:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Valencia streetlight data could "
+                f"not be retrieved: {error}"
+            )
+        )
+
+    streetlights = []
+
+    for feature in features:
+        if is_streetlight(feature):
+            point = feature_representative_point(
+                feature
+            )
+
+            if point is not None:
+                streetlights.append(point)
+
+    return streetlights
 
 def normalise_text(value: str) -> str:
     """
@@ -328,6 +520,103 @@ def google_duration_to_seconds(duration: str) -> int:
 def health_check():
     return {
         "status": "Meili backend is running"
+    }
+
+@app.post("/safety/streetlights/analyse")
+def analyse_streetlight_coverage(
+    request: StreetlightAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    route_coordinates = [
+        (point.longitude, point.latitude)
+        for point in request.route_geometry
+    ]
+
+    samples = densify_route(route_coordinates)
+
+    streetlights = fetch_valencia_streetlights(
+        route_coordinates
+    )
+
+    nearest_distances = []
+
+    for sample in samples:
+        if streetlights:
+            nearest_distances.append(
+                min(
+                    distance_meters(
+                        sample,
+                        streetlight
+                    )
+                    for streetlight in streetlights
+                )
+            )
+        else:
+            nearest_distances.append(None)
+
+    covered_samples = sum(
+        distance is not None
+        and distance <= request.coverage_radius_meters
+        for distance in nearest_distances
+    )
+
+    coverage_percentage = round(
+        100 * covered_samples / len(samples)
+    )
+
+    known_distances = [
+        distance
+        for distance in nearest_distances
+        if distance is not None
+    ]
+
+    return {
+        "status": "streetlight_coverage_analysed",
+        "source": (
+            "Ajuntament de Valencia - "
+            "Mobiliario urbano"
+        ),
+        "source_license": "CC BY 4.0",
+        "coverage_radius_meters": (
+            request.coverage_radius_meters
+        ),
+        "route_sample_count": len(samples),
+        "streetlights_found_near_route": (
+            len(streetlights)
+        ),
+        "covered_sample_percentage": (
+            coverage_percentage
+        ),
+        "median_distance_to_nearest_streetlight_meters": (
+            round(
+                sorted(known_distances)[
+                    len(known_distances) // 2
+                ],
+                1
+            )
+            if known_distances
+            else None
+        ),
+        "maximum_distance_to_nearest_streetlight_meters": (
+            round(max(known_distances), 1)
+            if known_distances
+            else None
+        ),
+        "data_confidence": "limited",
+        "interpretation": (
+            "This measures mapped streetlight "
+            "structures near the route. It does "
+            "not confirm that a light works, its "
+            "brightness, or visibility at street level."
+        )
     }
 
 @app.post("/routes/test-real")
