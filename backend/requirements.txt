@@ -4,3 +4,4 @@ python-dotenv
 supabase
 pydantic
 requests
+httpx

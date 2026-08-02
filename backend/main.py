@@ -1,12 +1,14 @@
 from typing import Literal, Optional
 import os
 import requests
+import uuid
+import httpx
 
 from fastapi import HTTPException
 import unicodedata
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
 
@@ -15,6 +17,7 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 OPENROUTESERVICE_API_KEY = os.getenv("OPENROUTESERVICE_API_KEY")
+GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
 
 supabase = None
 
@@ -75,6 +78,17 @@ class FeedbackRequest(BaseModel):
 
 class UserCreateRequest(BaseModel):
     user_type: str
+
+class PlaceAutocompleteRequest(BaseModel):
+    input: str
+    session_token: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+class PlaceDetailsRequest(BaseModel):
+    place_id: str
+    session_token: Optional[str] = None
 
 def normalise_text(value: str) -> str:
     """
@@ -307,6 +321,171 @@ def test_real_route(request: RouteRequest):
         "requested_destination": request.destination,
         "route": route
     }
+@app.post("/places/autocomplete")
+async def autocomplete_places(request: PlaceAutocompleteRequest):
+    search_text = request.input.strip()
+
+    if len(search_text) < 2:
+        return {
+            "status": "success",
+            "suggestions": [],
+            "session_token": request.session_token
+        }
+
+    if not GOOGLE_PLACES_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Places API is not configured."
+        )
+
+    session_token = request.session_token or str(uuid.uuid4())
+
+    payload = {
+        "input": search_text,
+        "languageCode": "en",
+        "regionCode": "es",
+        "sessionToken": session_token
+    }
+
+    if request.latitude is not None and request.longitude is not None:
+        payload["locationBias"] = {
+            "circle": {
+                "center": {
+                    "latitude": request.latitude,
+                    "longitude": request.longitude
+                },
+                "radius": 50000.0
+            }
+        }
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": (
+            "suggestions.placePrediction.placeId,"
+            "suggestions.placePrediction.text.text,"
+            "suggestions.placePrediction.structuredFormat.mainText.text,"
+            "suggestions.placePrediction.structuredFormat.secondaryText.text,"
+            "suggestions.placePrediction.types"
+        )
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            google_response = await client.post(
+                "https://places.googleapis.com/v1/places:autocomplete",
+                json=payload,
+                headers=headers
+            )
+
+        if google_response.status_code != 200:
+            raise HTTPException(
+                status_code=google_response.status_code,
+                detail=google_response.text
+            )
+
+        google_data = google_response.json()
+        suggestions = []
+
+        for suggestion in google_data.get("suggestions", []):
+            prediction = suggestion.get("placePrediction")
+
+            if not prediction:
+                continue
+
+            structured = prediction.get("structuredFormat", {})
+            main_text = structured.get("mainText", {}).get("text")
+            secondary_text = structured.get("secondaryText", {}).get("text")
+            full_text = prediction.get("text", {}).get("text")
+
+            suggestions.append({
+                "place_id": prediction.get("placeId"),
+                "name": main_text or full_text,
+                "address": secondary_text,
+                "label": full_text,
+                "types": prediction.get("types", [])
+            })
+
+        return {
+            "status": "success",
+            "suggestions": suggestions[:5],
+            "session_token": session_token
+        }
+
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not contact Google Places: {str(error)}"
+        )
+@app.post("/places/details")
+async def get_place_details(request: PlaceDetailsRequest):
+    if not request.place_id.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="A place_id is required."
+        )
+
+    if not GOOGLE_PLACES_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Places API is not configured."
+        )
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": (
+            "id,"
+            "formattedAddress,"
+            "location,"
+            "types"
+        )
+    }
+
+    params = {
+        "languageCode": "en",
+        "regionCode": "es"
+    }
+
+    if request.session_token:
+        params["sessionToken"] = request.session_token
+
+    place_url = (
+        "https://places.googleapis.com/v1/places/"
+        f"{request.place_id}"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            google_response = await client.get(
+                place_url,
+                headers=headers,
+                params=params
+            )
+
+        if google_response.status_code != 200:
+            raise HTTPException(
+                status_code=google_response.status_code,
+                detail=google_response.text
+            )
+
+        place = google_response.json()
+        location = place.get("location", {})
+
+        return {
+            "status": "success",
+            "place_id": place.get("id"),
+            "formatted_address": place.get("formattedAddress"),
+            "latitude": location.get("latitude"),
+            "longitude": location.get("longitude"),
+            "types": place.get("types", [])
+        }
+
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not retrieve place details: {str(error)}"
+        )
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
