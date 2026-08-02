@@ -592,6 +592,8 @@ def analyse_streetlight_coverage(
         "streetlights_found_near_route": (
             len(streetlights)
         ),
+        "route_coordinates_debug": route_coordinates,
+        "first_5_streetlight_coordinates_debug": streetlights[:5],
         "covered_sample_percentage": (
             coverage_percentage
         ),
