@@ -790,6 +790,187 @@ def determine_place_activity_status(
 
         return "closed_activity"
 
+ACTIVITY_STATUS_WEIGHTS = {
+    "open_activity": 1.00,
+    "closing_activity": 0.60,
+    "opening_activity": 0.40,
+    "estimated_activity": 0.30,
+    "unknown_activity": 0.05,
+    "closed_activity": 0.00
+}
+
+
+ACTIVITY_CATEGORY_WEIGHTS = {
+    "active_place": 1.00,
+    "help_point": 1.20,
+    "nightlife": 0.40
+}
+
+
+SEGMENT_ACTIVITY_TARGET_POINTS = 3.0
+
+
+def calculate_place_activity_contribution(
+    place: dict,
+    search_radius_meters: float
+) -> float:
+    """
+    Calculates how much one place contributes to route activity.
+
+    Contribution depends on:
+    - activity confidence/status
+    - establishment category
+    - distance from the route
+    """
+    if search_radius_meters <= 0:
+        return 0.0
+
+    status_weight = ACTIVITY_STATUS_WEIGHTS.get(
+        place.get("activity_status"),
+        0.0
+    )
+
+    category_weight = ACTIVITY_CATEGORY_WEIGHTS.get(
+        place.get("category"),
+        0.0
+    )
+
+    distance_to_route = float(
+        place.get(
+            "distance_to_route_meters",
+            search_radius_meters
+        )
+    )
+
+    distance_weight = max(
+        0.0,
+        1.0 - (
+            distance_to_route
+            / search_radius_meters
+        )
+    )
+
+    contribution = (
+        status_weight
+        * category_weight
+        * distance_weight
+    )
+
+    return round(contribution, 3)
+
+
+def calculate_route_activity_analysis(
+    places: list[dict],
+    segment_count: int = 10
+) -> dict:
+    """
+    Divides the route into equal-distance segments and
+    calculates an activity score for every segment.
+
+    The final route score is the average segment score.
+    """
+    if segment_count <= 0:
+        segment_count = 10
+
+    segments = [
+        {
+            "segment_number": index + 1,
+            "start_percentage": round(
+                index * 100 / segment_count,
+                1
+            ),
+            "end_percentage": round(
+                (index + 1) * 100 / segment_count,
+                1
+            ),
+            "raw_activity_points": 0.0,
+            "contributing_place_count": 0
+        }
+        for index in range(segment_count)
+    ]
+
+    for place in places:
+        route_progress_percentage = float(
+            place.get(
+                "route_progress_percentage",
+                0.0
+            )
+        )
+
+        route_progress_percentage = max(
+            0.0,
+            min(100.0, route_progress_percentage)
+        )
+
+        segment_index = min(
+            segment_count - 1,
+            int(
+                route_progress_percentage
+                / 100
+                * segment_count
+            )
+        )
+
+        contribution = float(
+            place.get(
+                "activity_contribution",
+                0.0
+            )
+        )
+
+        segments[segment_index][
+            "raw_activity_points"
+        ] += contribution
+
+        if contribution > 0:
+            segments[segment_index][
+                "contributing_place_count"
+            ] += 1
+
+    for segment in segments:
+        raw_points = segment[
+            "raw_activity_points"
+        ]
+
+        segment["raw_activity_points"] = round(
+            raw_points,
+            3
+        )
+
+        segment["activity_score"] = round(
+            100
+            * min(
+                1.0,
+                raw_points
+                / SEGMENT_ACTIVITY_TARGET_POINTS
+            )
+        )
+
+    segment_scores = [
+        segment["activity_score"]
+        for segment in segments
+    ]
+
+    route_activity_score = round(
+        sum(segment_scores)
+        / len(segment_scores)
+    )
+
+    return {
+        "route_activity_score": (
+            route_activity_score
+        ),
+        "minimum_segment_activity_score": min(
+            segment_scores
+        ),
+        "low_activity_segment_count": sum(
+            score < 30
+            for score in segment_scores
+        ),
+        "segment_count": segment_count,
+        "segments": segments
+    }
+
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
@@ -1393,6 +1574,22 @@ def analyse_active_places(
             )
         )
 
+        place["activity_contribution"] = (
+            calculate_place_activity_contribution(
+                place=place,
+                search_radius_meters=(
+                    request.search_radius_meters
+                )
+            )
+        )
+
+    activity_analysis = (
+        calculate_route_activity_analysis(
+            places=places,
+            segment_count=10
+        )
+    )
+
     active_places = [
         place
         for place in places
@@ -1499,6 +1696,24 @@ def analyse_active_places(
         ),
         "search_radius_meters": (
             request.search_radius_meters
+        ),
+        "route_activity_score": (
+            activity_analysis[
+                "route_activity_score"
+            ]
+        ),
+        "minimum_segment_activity_score": (
+            activity_analysis[
+                "minimum_segment_activity_score"
+            ]
+        ),
+        "low_activity_segment_count": (
+            activity_analysis[
+                "low_activity_segment_count"
+            ]
+        ),
+        "activity_segments": (
+            activity_analysis["segments"]
         ),
         "retrieval_debug": retrieval_debug,
         "total_relevant_places": len(places),
