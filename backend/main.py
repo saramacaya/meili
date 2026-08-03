@@ -328,7 +328,7 @@ def fetch_valencia_streetlights(
             )
         )
 
-    streetlights = []
+streetlights = []
 rejected_objects = []
 
 for feature in all_features:
