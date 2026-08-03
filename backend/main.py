@@ -1016,7 +1016,7 @@ def analyse_active_places(
         )
     )
 
-        for place in places:
+    for place in places:
         place["opening_status"] = (
             determine_place_opening_status(
                 opening_hours_value=place["opening_hours"],
