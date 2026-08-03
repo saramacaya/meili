@@ -1016,65 +1016,63 @@ def analyse_active_places(
         )
     )
 
-    for place in places:
+        for place in places:
         place["opening_status"] = (
             determine_place_opening_status(
                 opening_hours_value=place["opening_hours"],
-                evaluation_datetime=(
-                    request.evaluation_datetime
-                ),
+                evaluation_datetime=request.evaluation_datetime,
                 latitude=place["latitude"],
                 longitude=place["longitude"]
             )
         )
 
-        active_places = [
-            place
-            for place in places
-            if place["category"] == "active_place"
-        ]
+    active_places = [
+        place
+        for place in places
+        if place["category"] == "active_place"
+    ]
 
-        help_points = [
-            place
-            for place in places
-            if place["category"] == "help_point"
-        ]
+    help_points = [
+        place
+        for place in places
+        if place["category"] == "help_point"
+    ]
 
-        nightlife_places = [
-            place
-            for place in places
-            if place["category"] == "nightlife"
-        ]
+    nightlife_places = [
+        place
+        for place in places
+        if place["category"] == "nightlife"
+    ]
 
-        places_with_opening_hours = [
-            place
-            for place in places
-            if place["opening_hours"]
-        ]
+    places_with_opening_hours = [
+        place
+        for place in places
+        if place["opening_hours"]
+    ]
 
-        places_with_unknown_hours = [
-            place
-            for place in places
-            if not place["opening_hours"]
-        ]
+    places_with_unknown_hours = [
+        place
+        for place in places
+        if not place["opening_hours"]
+    ]
 
-        confirmed_open_places = [
-            place
-            for place in places
-            if place["opening_status"] == "confirmed_open"
-        ]
+    confirmed_open_places = [
+        place
+        for place in places
+        if place["opening_status"] == "confirmed_open"
+    ]
 
-        confirmed_closed_places = [
-            place
-            for place in places
-            if place["opening_status"] == "confirmed_closed"
-        ]
+    confirmed_closed_places = [
+        place
+        for place in places
+        if place["opening_status"] == "confirmed_closed"
+    ]
 
-        unknown_status_places = [
-            place
-            for place in places
-            if place["opening_status"] == "unknown"
-        ]
+    unknown_status_places = [
+        place
+        for place in places
+        if place["opening_status"] == "unknown"
+    ]
 
     return {
         "status": "active_places_analysed",
