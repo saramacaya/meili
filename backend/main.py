@@ -629,13 +629,14 @@ def determine_place_activity_status(
     opening_status: str,
     opening_hours_value: Optional[str],
     evaluation_datetime: datetime,
-    closing_window_minutes: int = 30
+    transition_window_minutes: int = 30
 ) -> str:
     """
     Converts factual opening status into expected street activity.
 
     Returns:
     - open_activity
+    - opening_activity
     - closing_activity
     - estimated_activity
     - closed_activity
@@ -670,11 +671,11 @@ def determine_place_activity_status(
             timezone=VALENCIA_TIMEZONE
         )
 
-        # Check whether the place was open during the
-        # previous 30 minutes.
+        # Check whether the establishment was open recently.
+        # This captures people leaving, cleaning and closing.
         for minutes_before in range(
             1,
-            closing_window_minutes + 1
+            transition_window_minutes + 1
         ):
             earlier_datetime = (
                 local_datetime
@@ -684,11 +685,25 @@ def determine_place_activity_status(
             if opening_hours.is_open(earlier_datetime):
                 return "closing_activity"
 
+        # Check whether the establishment will open soon.
+        # This captures staff arrival, preparation and deliveries.
+        for minutes_after in range(
+            1,
+            transition_window_minutes + 1
+        ):
+            later_datetime = (
+                local_datetime
+                + timedelta(minutes=minutes_after)
+            )
+
+            if opening_hours.is_open(later_datetime):
+                return "opening_activity"
+
         return "closed_activity"
 
     except Exception as error:
         print(
-            "Closing-activity evaluation failed:",
+            "Transition-activity evaluation failed:",
             repr(opening_hours_value),
             type(error).__name__,
             repr(str(error))
@@ -1254,7 +1269,7 @@ def analyse_active_places(
                 evaluation_datetime=(
                     request.evaluation_datetime
                 ),
-                closing_window_minutes=30
+                transiton_window_minutes=30
         )
     )
 
@@ -1330,6 +1345,12 @@ def analyse_active_places(
         if place["activity_status"] == "closing_activity"
     ]
 
+    opening_activity_places = [
+        place
+        for place in places
+        if place["activity_status"] == "opening_activity"
+    ]
+
     estimated_activity_places = [
         place
         for place in places
@@ -1385,12 +1406,15 @@ def analyse_active_places(
         "unknown_opening_status_count": len(
             unknown_status_places
         ),
-        "closing_activity_window_minutes": 30,
+        "transition_activity_window_minutes": 30,
         "open_activity_count": len(
             open_activity_places
         ),
         "closing_activity_count": len(
             closing_activity_places
+        ),
+        "opening_activity_count": len(
+            opening_activity_places
         ),
         "estimated_activity_count": len(
             estimated_activity_places
