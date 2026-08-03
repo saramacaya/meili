@@ -13,6 +13,9 @@ from pydantic import BaseModel, Field
 from supabase import create_client
 from datetime import datetime
 from opening_hours import OpeningHours
+from zoneinfo import ZoneInfo
+
+VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
 
 load_dotenv()
 
@@ -577,12 +580,14 @@ def determine_place_opening_status(
 ) -> str:
     """
     Returns:
-    - 'confirmed_open'
-    - 'confirmed_closed'
-    - 'estimated_open'
-    - 'estimated_closed'
-    - 'unknown'
+    - confirmed_open
+    - confirmed_closed
+    - estimated_open
+    - estimated_closed
+    - unknown
     """
+
+    # Only estimate when OSM genuinely has no opening-hours data.
     if not opening_hours_value:
         return estimate_opening_status(
             establishment_type=establishment_type,
@@ -590,34 +595,35 @@ def determine_place_opening_status(
         )
 
     try:
-        opening_hours = OpeningHours(
-            opening_hours_value,
-            coords=(latitude, longitude)
+        local_datetime = evaluation_datetime.astimezone(
+            VALENCIA_TIMEZONE
         )
 
-        if opening_hours.is_open(
-            evaluation_datetime
-        ):
+        opening_hours = OpeningHours(
+            opening_hours_value,
+            timezone=VALENCIA_TIMEZONE
+        )
+
+        if opening_hours.is_open(local_datetime):
             return "confirmed_open"
 
-        if opening_hours.is_closed(
-            evaluation_datetime
-        ):
+        if opening_hours.is_closed(local_datetime):
             return "confirmed_closed"
 
         return "unknown"
 
     except Exception as error:
         print(
-            "Opening-hours evaluation failed:",
-            opening_hours_value,
-            str(error)
+            "Opening-hours parser failed:",
+            repr(opening_hours_value),
+            type(error).__name__,
+            repr(str(error))
         )
 
-        return estimate_opening_status(
-            establishment_type=establishment_type,
-            evaluation_datetime=evaluation_datetime
-        )
+        # Do not estimate here.
+        # An existing but unparseable value is different
+        # from having no opening-hours data.
+        return "unknown"
 
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
@@ -1234,6 +1240,7 @@ def analyse_active_places(
 
     return {
         "status": "active_places_analysed",
+        "opening_hours_logic_version": "v3_explicit_timezone",
         "source": "OpenStreetMap contributors",
         "source_license": "ODbL",
         "evaluation_datetime": (
