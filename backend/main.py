@@ -457,7 +457,7 @@ def determine_place_opening_status(
     - 'unknown'
 
     Missing, invalid, or ambiguous opening-hours data
-    always remains unknown.
+    remains unknown.
     """
     if not opening_hours_value:
         return "unknown"
@@ -468,21 +468,22 @@ def determine_place_opening_status(
             coords=(latitude, longitude)
         )
 
-        state = opening_hours.state(
-            evaluation_datetime
-        )
-
-        if state == "open":
+        if opening_hours.is_open(evaluation_datetime):
             return "confirmed_open"
 
-        if state == "closed":
+        if opening_hours.is_closed(evaluation_datetime):
             return "confirmed_closed"
 
         return "unknown"
 
-    except Exception:
+    except Exception as error:
+        print(
+            "Opening-hours evaluation failed:",
+            opening_hours_value,
+            str(error)
+        )
         return "unknown"
-
+        
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
