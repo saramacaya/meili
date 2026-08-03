@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
-from datetime import datetime
+from datetime import datetime, timedelta
 from opening_hours import OpeningHours
 from zoneinfo import ZoneInfo
 
@@ -625,6 +625,77 @@ def determine_place_opening_status(
         # from having no opening-hours data.
         return "unknown"
 
+def determine_place_activity_status(
+    opening_status: str,
+    opening_hours_value: Optional[str],
+    evaluation_datetime: datetime,
+    closing_window_minutes: int = 30
+) -> str:
+    """
+    Converts factual opening status into expected street activity.
+
+    Returns:
+    - open_activity
+    - closing_activity
+    - estimated_activity
+    - closed_activity
+    - unknown_activity
+    """
+
+    if opening_status == "confirmed_open":
+        return "open_activity"
+
+    if opening_status == "estimated_open":
+        return "estimated_activity"
+
+    if opening_status == "estimated_closed":
+        return "closed_activity"
+
+    if opening_status == "unknown":
+        return "unknown_activity"
+
+    if (
+        opening_status != "confirmed_closed"
+        or not opening_hours_value
+    ):
+        return "closed_activity"
+
+    try:
+        local_datetime = evaluation_datetime.astimezone(
+            VALENCIA_TIMEZONE
+        )
+
+        opening_hours = OpeningHours(
+            opening_hours_value,
+            timezone=VALENCIA_TIMEZONE
+        )
+
+        # Check whether the place was open during the
+        # previous 30 minutes.
+        for minutes_before in range(
+            1,
+            closing_window_minutes + 1
+        ):
+            earlier_datetime = (
+                local_datetime
+                - timedelta(minutes=minutes_before)
+            )
+
+            if opening_hours.is_open(earlier_datetime):
+                return "closing_activity"
+
+        return "closed_activity"
+
+    except Exception as error:
+        print(
+            "Closing-activity evaluation failed:",
+            repr(opening_hours_value),
+            type(error).__name__,
+            repr(str(error))
+        )
+
+        return "closed_activity"
+
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
@@ -1175,6 +1246,17 @@ def analyse_active_places(
                 ]
             )
         )
+            
+        place["activity_status"] = (
+            determine_place_activity_status(
+                opening_status=place["opening_status"],
+                opening_hours_value=place["opening_hours"],
+                evaluation_datetime=(
+                    request.evaluation_datetime
+                ),
+                closing_window_minutes=30
+        )
+    )
 
     active_places = [
         place
@@ -1230,12 +1312,40 @@ def analyse_active_places(
         if place["opening_status"] == "estimated_closed"
     ]
 
-
-
     unknown_status_places = [
         place
         for place in places
         if place["opening_status"] == "unknown"
+    ]
+
+    open_activity_places = [
+    place
+    for place in places
+    if place["activity_status"] == "open_activity"
+    ]   
+
+    closing_activity_places = [
+        place
+        for place in places
+        if place["activity_status"] == "closing_activity"
+    ]
+
+    estimated_activity_places = [
+        place
+        for place in places
+        if place["activity_status"] == "estimated_activity"
+    ]
+
+    closed_activity_places = [
+        place
+        for place in places
+        if place["activity_status"] == "closed_activity"
+    ]
+
+    unknown_activity_places = [
+        place
+        for place in places
+        if place["activity_status"] == "unknown_activity"
     ]
 
     return {
@@ -1274,6 +1384,22 @@ def analyse_active_places(
         ),
         "unknown_opening_status_count": len(
             unknown_status_places
+        ),
+        "closing_activity_window_minutes": 30,
+        "open_activity_count": len(
+            open_activity_places
+        ),
+        "closing_activity_count": len(
+            closing_activity_places
+        ),
+        "estimated_activity_count": len(
+            estimated_activity_places
+        ),
+        "closed_activity_count": len(
+            closed_activity_places
+        ),
+        "unknown_activity_count": len(
+            unknown_activity_places
         ),
         "active_places": active_places,
         "help_points": help_points,
