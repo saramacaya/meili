@@ -141,6 +141,22 @@ class OsmLightingAnalysisRequest(BaseModel):
     )
 
 
+class OsmStreetLampAnalysisRequest(BaseModel):
+    route_geometry: list[tuple[float, float]]
+
+    coverage_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+
+    sample_interval_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+
 class ActivePlacesAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
     evaluation_datetime: datetime
@@ -1206,6 +1222,259 @@ def fetch_osm_lit_ways_near_route(
     return nearby_lit_ways, retrieval_debug
 
 
+def fetch_osm_street_lamps_near_route(
+    route_coordinates: list[tuple[float, float]],
+    coverage_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Retrieves individual OSM street-lamp nodes near the route.
+
+    OSM maps these as nodes tagged:
+    highway=street_lamp
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_street_lamps_found": 0,
+            "street_lamps_near_route": 0
+        }
+
+    # Use closely spaced samples so each lamp can be projected
+    # onto an approximate position along the walking route.
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=5
+    )
+
+    cumulative_route_distances = [0.0]
+
+    for previous, current in zip(
+        route_samples,
+        route_samples[1:]
+    ):
+        cumulative_route_distances.append(
+            cumulative_route_distances[-1]
+            + distance_meters(previous, current)
+        )
+
+    total_route_distance = (
+        cumulative_route_distances[-1]
+        if cumulative_route_distances
+        else 0.0
+    )
+
+    longitudes = [
+        coordinate[0]
+        for coordinate in route_coordinates
+    ]
+
+    latitudes = [
+        coordinate[1]
+        for coordinate in route_coordinates
+    ]
+
+    latitude_padding = (
+        coverage_radius_meters / 111_000
+    )
+
+    average_latitude = sum(latitudes) / len(latitudes)
+
+    longitude_padding = (
+        coverage_radius_meters
+        / (
+            111_000
+            * max(
+                math.cos(
+                    math.radians(average_latitude)
+                ),
+                0.01
+            )
+        )
+    )
+
+    south = min(latitudes) - latitude_padding
+    west = min(longitudes) - longitude_padding
+    north = max(latitudes) + latitude_padding
+    east = max(longitudes) + longitude_padding
+
+    bbox = f"{south},{west},{north},{east}"
+
+    query = f"""
+    [out:json][timeout:25];
+    node["highway"="street_lamp"]({bbox});
+    out tags;
+    """
+
+    data = None
+    retrieval_errors = []
+
+    for overpass_url in OVERPASS_API_URLS:
+        try:
+            response = requests.post(
+                overpass_url,
+                data={"data": query},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": (
+                        "Meili safety-routing prototype"
+                    )
+                },
+                timeout=35
+            )
+
+            response.raise_for_status()
+            data = response.json()
+            break
+
+        except (
+            requests.RequestException,
+            ValueError
+        ) as error:
+            retrieval_errors.append(
+                f"{overpass_url}: {error}"
+            )
+
+    if data is None:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "OpenStreetMap street-lamp data could "
+                "not be retrieved from the available "
+                "Overpass servers: "
+                + " | ".join(retrieval_errors)
+            )
+        )
+
+    raw_elements = data.get("elements", [])
+    nearby_street_lamps = []
+
+    for element in raw_elements:
+        latitude = element.get("lat")
+        longitude = element.get("lon")
+
+        if latitude is None or longitude is None:
+            continue
+
+        lamp_coordinate = (
+            float(longitude),
+            float(latitude)
+        )
+
+        nearest_sample_index = min(
+            range(len(route_samples)),
+            key=lambda index: distance_meters(
+                lamp_coordinate,
+                route_samples[index]
+            )
+        )
+
+        distance_to_route = distance_meters(
+            lamp_coordinate,
+            route_samples[nearest_sample_index]
+        )
+
+        if distance_to_route > coverage_radius_meters:
+            continue
+
+        approximate_distance_along_route = (
+            cumulative_route_distances[
+                nearest_sample_index
+            ]
+        )
+
+        route_progress = (
+            approximate_distance_along_route
+            / total_route_distance
+            if total_route_distance > 0
+            else 0.0
+        )
+
+        tags = element.get("tags", {})
+
+        nearby_street_lamps.append({
+            "osm_type": element.get("type"),
+            "osm_id": element.get("id"),
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "distance_to_route_meters": round(
+                distance_to_route,
+                1
+            ),
+            "route_progress_percentage": round(
+                route_progress * 100,
+                1
+            ),
+            "approximate_distance_along_route_meters": round(
+                approximate_distance_along_route,
+                1
+            ),
+            "ref": tags.get("ref"),
+            "operator": tags.get("operator"),
+            "lamp_type": tags.get("lamp_type"),
+            "lamp_mount": tags.get("lamp_mount"),
+            "lamp_model": tags.get("lamp_model"),
+            "light_source": tags.get("light_source"),
+            "height": tags.get("height"),
+            "direction": tags.get("direction")
+        })
+
+    nearby_street_lamps.sort(
+        key=lambda lamp: (
+            lamp[
+                "approximate_distance_along_route_meters"
+            ],
+            lamp["osm_id"] or 0
+        )
+    )
+
+    previous_distance_along_route = None
+
+    for lamp in nearby_street_lamps:
+        current_distance_along_route = lamp[
+            "approximate_distance_along_route_meters"
+        ]
+
+        if previous_distance_along_route is None:
+            lamp[
+                "approximate_spacing_from_previous_lamp_meters"
+            ] = None
+        else:
+            lamp[
+                "approximate_spacing_from_previous_lamp_meters"
+            ] = round(
+                max(
+                    0.0,
+                    current_distance_along_route
+                    - previous_distance_along_route
+                ),
+                1
+            )
+
+        previous_distance_along_route = (
+            current_distance_along_route
+        )
+
+    retrieval_debug = {
+        "raw_street_lamps_found": len(raw_elements),
+        "street_lamps_near_route": len(
+            nearby_street_lamps
+        ),
+        "lamps_with_reference_number": sum(
+            1
+            for lamp in nearby_street_lamps
+            if lamp["ref"]
+        ),
+        "lamps_with_model_or_type_data": sum(
+            1
+            for lamp in nearby_street_lamps
+            if lamp["lamp_model"]
+            or lamp["lamp_type"]
+            or lamp["light_source"]
+        )
+    }
+
+    return nearby_street_lamps, retrieval_debug
+
+
 def fetch_osm_places_near_route(
     route_coordinates: list[tuple[float, float]],
     search_radius_meters: float
@@ -1594,6 +1863,190 @@ def health_check():
     return {
         "status": "Meili backend is running"
     }
+
+@app.post("/safety/osm-street-lamps/analyse")
+def analyse_osm_street_lamps(
+    request: OsmStreetLampAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    route_samples = densify_route(
+        request.route_geometry,
+        interval_meters=(
+            request.sample_interval_meters
+        )
+    )
+
+    street_lamps, retrieval_debug = (
+        fetch_osm_street_lamps_near_route(
+            route_coordinates=(
+                request.route_geometry
+            ),
+            coverage_radius_meters=(
+                request.coverage_radius_meters
+            )
+        )
+    )
+
+    sample_results = []
+    known_distances = []
+
+    for sample in route_samples:
+        if street_lamps:
+            nearest_lamp = min(
+                street_lamps,
+                key=lambda lamp: distance_meters(
+                    sample,
+                    (
+                        lamp["longitude"],
+                        lamp["latitude"]
+                    )
+                )
+            )
+
+            nearest_distance = distance_meters(
+                sample,
+                (
+                    nearest_lamp["longitude"],
+                    nearest_lamp["latitude"]
+                )
+            )
+
+            known_distances.append(nearest_distance)
+
+            sample_results.append({
+                "longitude": sample[0],
+                "latitude": sample[1],
+                "covered_by_mapped_osm_lamp": (
+                    nearest_distance
+                    <= request.coverage_radius_meters
+                ),
+                "nearest_osm_lamp_id": nearest_lamp[
+                    "osm_id"
+                ],
+                "distance_to_nearest_osm_lamp_meters": round(
+                    nearest_distance,
+                    1
+                )
+            })
+        else:
+            sample_results.append({
+                "longitude": sample[0],
+                "latitude": sample[1],
+                "covered_by_mapped_osm_lamp": False,
+                "nearest_osm_lamp_id": None,
+                "distance_to_nearest_osm_lamp_meters": None
+            })
+
+    covered_sample_count = sum(
+        result["covered_by_mapped_osm_lamp"]
+        for result in sample_results
+    )
+
+    sorted_known_distances = sorted(known_distances)
+
+    median_distance = None
+
+    if sorted_known_distances:
+        middle = len(sorted_known_distances) // 2
+
+        if len(sorted_known_distances) % 2 == 1:
+            median_distance = sorted_known_distances[
+                middle
+            ]
+        else:
+            median_distance = (
+                sorted_known_distances[middle - 1]
+                + sorted_known_distances[middle]
+            ) / 2
+
+    spacing_values = [
+        lamp[
+            "approximate_spacing_from_previous_lamp_meters"
+        ]
+        for lamp in street_lamps
+        if lamp[
+            "approximate_spacing_from_previous_lamp_meters"
+        ] is not None
+    ]
+
+    sorted_spacing_values = sorted(spacing_values)
+    median_spacing = None
+
+    if sorted_spacing_values:
+        middle = len(sorted_spacing_values) // 2
+
+        if len(sorted_spacing_values) % 2 == 1:
+            median_spacing = sorted_spacing_values[middle]
+        else:
+            median_spacing = (
+                sorted_spacing_values[middle - 1]
+                + sorted_spacing_values[middle]
+            ) / 2
+
+    total_samples = len(sample_results)
+
+    return {
+        "status": "osm_street_lamps_analysed",
+        "source": "OpenStreetMap contributors",
+        "source_license": "ODbL",
+        "osm_tag_used": "highway=street_lamp",
+        "coverage_radius_meters": (
+            request.coverage_radius_meters
+        ),
+        "sample_interval_meters": (
+            request.sample_interval_meters
+        ),
+        "route_sample_count": total_samples,
+        "osm_street_lamps_found_near_route": len(
+            street_lamps
+        ),
+        "covered_sample_count": covered_sample_count,
+        "covered_sample_percentage": round(
+            100
+            * covered_sample_count
+            / total_samples
+        ),
+        "median_distance_to_nearest_osm_lamp_meters": (
+            round(median_distance, 1)
+            if median_distance is not None
+            else None
+        ),
+        "maximum_distance_to_nearest_osm_lamp_meters": (
+            round(max(known_distances), 1)
+            if known_distances
+            else None
+        ),
+        "approximate_median_spacing_between_mapped_lamps_meters": (
+            round(median_spacing, 1)
+            if median_spacing is not None
+            else None
+        ),
+        "approximate_maximum_spacing_between_mapped_lamps_meters": (
+            round(max(spacing_values), 1)
+            if spacing_values
+            else None
+        ),
+        "street_lamps": street_lamps,
+        "sample_results": sample_results,
+        "retrieval_debug": retrieval_debug,
+        "data_confidence": "supplementary_incomplete",
+        "interpretation": (
+            "These are individual street lamps mapped "
+            "by OpenStreetMap contributors. Missing lamp "
+            "points do not prove that no lamp exists. "
+            "Coverage and spacing are calculated from "
+            "the mapped points near the route."
+        )
+    }
+
 
 @app.post("/safety/osm-lighting/analyse")
 def analyse_osm_lighting(
