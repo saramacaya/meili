@@ -444,23 +444,150 @@ def classify_place(tags: dict) -> Optional[str]:
 
     return None
 
+def get_establishment_type(tags: dict) -> Optional[str]:
+    """
+    Returns the specific OpenStreetMap establishment type.
+
+    Examples:
+    - restaurant
+    - cafe
+    - fast_food
+    - pharmacy
+    - hotel
+    - bar
+    """
+    recognised_types = (
+        ACTIVE_PLACE_TAGS
+        | HELP_POINT_TAGS
+        | NIGHTLIFE_TAGS
+    )
+
+    for key in ("amenity", "shop", "tourism"):
+        value = normalise_text(
+            str(tags.get(key, ""))
+        )
+
+        if value in recognised_types:
+            return value
+
+    return None
+
+def estimate_opening_status(
+    establishment_type: Optional[str],
+    evaluation_datetime: datetime
+) -> str:
+    """
+    Estimates whether a place is likely to be open when
+    OpenStreetMap does not provide opening hours.
+
+    Estimated statuses must not be treated as confirmed.
+    """
+    if not establishment_type:
+        return "unknown"
+
+    hour = evaluation_datetime.hour
+    weekday = evaluation_datetime.weekday()
+    is_weekend = weekday >= 5
+
+    if establishment_type in {
+        "hotel",
+        "hostel",
+        "guest_house",
+        "hospital",
+        "police",
+        "fire_station"
+    }:
+        return "estimated_open"
+
+    if establishment_type == "cafe":
+        if 7 <= hour < 21:
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type == "restaurant":
+        if (
+            12 <= hour < 16
+            or 19 <= hour < 24
+        ):
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type == "fast_food":
+        if hour >= 10 or hour < 1:
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type in {
+        "convenience",
+        "supermarket"
+    }:
+        if 9 <= hour < 22:
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type == "pharmacy":
+        if 9 <= hour < 21:
+            return "estimated_open"
+
+        return "unknown"
+
+    if establishment_type in {
+        "clinic",
+        "doctors"
+    }:
+        if weekday < 5 and 9 <= hour < 20:
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type in {
+        "bar",
+        "pub"
+    }:
+        estimated_closing_hour = (
+            2 if is_weekend else 1
+        )
+
+        if (
+            hour >= 18
+            or hour < estimated_closing_hour
+        ):
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    if establishment_type == "nightclub":
+        if hour >= 23 or hour < 6:
+            return "estimated_open"
+
+        return "estimated_closed"
+
+    return "unknown"
+
 def determine_place_opening_status(
     opening_hours_value: Optional[str],
     evaluation_datetime: datetime,
     latitude: float,
-    longitude: float
+    longitude: float,
+    establishment_type: Optional[str]
 ) -> str:
     """
     Returns:
     - 'confirmed_open'
     - 'confirmed_closed'
+    - 'estimated_open'
+    - 'estimated_closed'
     - 'unknown'
-
-    Missing, invalid, or ambiguous opening-hours data
-    remains unknown.
     """
     if not opening_hours_value:
-        return "unknown"
+        return estimate_opening_status(
+            establishment_type=establishment_type,
+            evaluation_datetime=evaluation_datetime
+        )
 
     try:
         opening_hours = OpeningHours(
@@ -468,10 +595,14 @@ def determine_place_opening_status(
             coords=(latitude, longitude)
         )
 
-        if opening_hours.is_open(evaluation_datetime):
+        if opening_hours.is_open(
+            evaluation_datetime
+        ):
             return "confirmed_open"
 
-        if opening_hours.is_closed(evaluation_datetime):
+        if opening_hours.is_closed(
+            evaluation_datetime
+        ):
             return "confirmed_closed"
 
         return "unknown"
@@ -482,8 +613,12 @@ def determine_place_opening_status(
             opening_hours_value,
             str(error)
         )
-        return "unknown"
-        
+
+        return estimate_opening_status(
+            establishment_type=establishment_type,
+            evaluation_datetime=evaluation_datetime
+        )
+
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
@@ -634,6 +769,9 @@ def fetch_osm_places_near_route(
         relevant_places.append({
             "osm_type": element.get("type"),
             "osm_id": element.get("id"),
+            "establishment_type": (
+                get_establishment_type(tags)
+            ),
             "name": (
                 tags.get("name")
                 or tags.get("brand")
@@ -1021,9 +1159,14 @@ def analyse_active_places(
         place["opening_status"] = (
             determine_place_opening_status(
                 opening_hours_value=place["opening_hours"],
-                evaluation_datetime=request.evaluation_datetime,
+                evaluation_datetime=(
+                    request.evaluation_datetime
+                ),
                 latitude=place["latitude"],
-                longitude=place["longitude"]
+                longitude=place["longitude"],
+                establishment_type=place[
+                    "establishment_type"
+                ]
             )
         )
 
@@ -1069,6 +1212,20 @@ def analyse_active_places(
         if place["opening_status"] == "confirmed_closed"
     ]
 
+        estimated_open_places = [
+        place
+        for place in places
+        if place["opening_status"] == "estimated_open"
+    ]
+
+    estimated_closed_places = [
+        place
+        for place in places
+        if place["opening_status"] == "estimated_closed"
+    ]
+
+
+
     unknown_status_places = [
         place
         for place in places
@@ -1101,6 +1258,12 @@ def analyse_active_places(
         ),
         "confirmed_closed_count": len(
             confirmed_closed_places
+        ),
+        "estimated_open_count": len(
+            estimated_open_places
+        ),
+        "estimated_closed_count": len(
+            estimated_closed_places
         ),
         "unknown_opening_status_count": len(
             unknown_status_places
