@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
+from datetime import datetime
+
 
 load_dotenv()
 
@@ -109,13 +111,25 @@ class RealRoutePreviewRequest(BaseModel):
 
 class StreetlightAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
-    coverage_radius_meters: float = Field(default=25, ge=5, le=100)
-
+    coverage_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+    
 VALENCIA_STREET_FURNITURE_URL = (
     "https://geoportal.valencia.es/server/rest/services/OPENDATA/"
     "UrbanismoEInfraestructuras/MapServer/323/query"
 )
 
+class ActivePlacesAnalysisRequest(BaseModel):
+    route_geometry: list[tuple[float, float]]
+    evaluation_datetime: datetime
+    search_radius_meters: float = Field(
+        default=75,
+        ge=25,
+        le=200
+    )
 
 def distance_meters(
     point_a: tuple[float, float],
@@ -375,6 +389,222 @@ def normalise_text(value: str) -> str:
     value = "".join(char for char in value if not unicodedata.combining(char))
     value = " ".join(value.split())
     return value
+
+ACTIVE_PLACE_TAGS = {
+    "cafe",
+    "restaurant",
+    "fast_food",
+    "convenience",
+    "supermarket",
+    "hotel",
+    "hostel",
+    "guest_house"
+}
+
+HELP_POINT_TAGS = {
+    "pharmacy",
+    "hospital",
+    "clinic",
+    "doctors",
+    "police",
+    "fire_station"
+}
+
+NIGHTLIFE_TAGS = {
+    "bar",
+    "pub",
+    "nightclub"
+}
+
+
+def classify_place(tags: dict) -> Optional[str]:
+    """
+    Classifies an OpenStreetMap place for the safety analysis.
+
+    Returns:
+    - 'active_place'
+    - 'help_point'
+    - 'nightlife'
+    - None when the place is not relevant
+    """
+    possible_values = {
+        normalise_text(str(tags.get("amenity", ""))),
+        normalise_text(str(tags.get("shop", ""))),
+        normalise_text(str(tags.get("tourism", "")))
+    }
+
+    if possible_values & HELP_POINT_TAGS:
+        return "help_point"
+
+    if possible_values & ACTIVE_PLACE_TAGS:
+        return "active_place"
+
+    if possible_values & NIGHTLIFE_TAGS:
+        return "nightlife"
+
+    return None
+
+OVERPASS_API_URL = (
+    "https://overpass-api.de/api/interpreter"
+)
+
+
+def fetch_osm_places_near_route(
+    route_coordinates: list[tuple[float, float]],
+    search_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Retrieves relevant places from OpenStreetMap and keeps
+    only places within the requested distance of the route.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_places_found": 0,
+            "relevant_places_near_route": 0
+        }
+
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=30
+    )
+
+    longitudes = [
+        coordinate[0]
+        for coordinate in route_coordinates
+    ]
+
+    latitudes = [
+        coordinate[1]
+        for coordinate in route_coordinates
+    ]
+
+    latitude_padding = (
+        search_radius_meters / 111_000
+    )
+
+    average_latitude = sum(latitudes) / len(latitudes)
+
+    longitude_padding = (
+        search_radius_meters
+        / (
+            111_000
+            * max(
+                math.cos(
+                    math.radians(average_latitude)
+                ),
+                0.01
+            )
+        )
+    )
+
+    south = min(latitudes) - latitude_padding
+    west = min(longitudes) - longitude_padding
+    north = max(latitudes) + latitude_padding
+    east = max(longitudes) + longitude_padding
+
+    bbox = f"{south},{west},{north},{east}"
+
+    query = f"""
+    [out:json][timeout:25];
+    (
+      nwr["amenity"~"^(cafe|restaurant|fast_food|pharmacy|hospital|clinic|doctors|police|fire_station|bar|pub|nightclub)$"]({bbox});
+      nwr["shop"~"^(convenience|supermarket)$"]({bbox});
+      nwr["tourism"~"^(hotel|hostel|guest_house)$"]({bbox});
+    );
+    out center tags;
+    """
+
+    try:
+        response = requests.post(
+            OVERPASS_API_URL,
+            data={"data": query},
+            timeout=35
+        )
+        response.raise_for_status()
+        data = response.json()
+
+    except (
+        requests.RequestException,
+        ValueError
+    ) as error:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "OpenStreetMap place data could "
+                f"not be retrieved: {error}"
+            )
+        )
+
+    raw_elements = data.get("elements", [])
+    relevant_places = []
+
+    for element in raw_elements:
+        tags = element.get("tags", {})
+        category = classify_place(tags)
+
+        if category is None:
+            continue
+
+        latitude = element.get("lat")
+        longitude = element.get("lon")
+
+        if latitude is None or longitude is None:
+            center = element.get("center", {})
+            latitude = center.get("lat")
+            longitude = center.get("lon")
+
+        if latitude is None or longitude is None:
+            continue
+
+        place_coordinate = (
+            float(longitude),
+            float(latitude)
+        )
+
+        nearest_route_distance = min(
+            distance_meters(
+                place_coordinate,
+                route_sample
+            )
+            for route_sample in route_samples
+        )
+
+        if nearest_route_distance > search_radius_meters:
+            continue
+
+        relevant_places.append({
+            "osm_type": element.get("type"),
+            "osm_id": element.get("id"),
+            "name": (
+                tags.get("name")
+                or tags.get("brand")
+                or "Unnamed place"
+            ),
+            "category": category,
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "distance_to_route_meters": round(
+                nearest_route_distance,
+                1
+            ),
+            "opening_hours": tags.get(
+                "opening_hours"
+            )
+        })
+
+    retrieval_debug = {
+        "raw_places_found": len(raw_elements),
+        "relevant_places_near_route": len(
+            relevant_places
+        ),
+        "places_with_opening_hours": sum(
+            1
+            for place in relevant_places
+            if place["opening_hours"]
+        )
+    }
+
+    return relevant_places, retrieval_debug
 
 def get_real_walking_route(
     origin_longitude: float,
@@ -703,6 +933,91 @@ def analyse_streetlight_coverage(
             "structures near the route. It does "
             "not confirm that a light works, its "
             "brightness, or visibility at street level."
+        )
+    }
+
+@app.post("/safety/active-places/analyse")
+def analyse_active_places(
+    request: ActivePlacesAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    places, retrieval_debug = (
+        fetch_osm_places_near_route(
+            route_coordinates=request.route_geometry,
+            search_radius_meters=(
+                request.search_radius_meters
+            )
+        )
+    )
+
+    active_places = [
+        place
+        for place in places
+        if place["category"] == "active_place"
+    ]
+
+    help_points = [
+        place
+        for place in places
+        if place["category"] == "help_point"
+    ]
+
+    nightlife_places = [
+        place
+        for place in places
+        if place["category"] == "nightlife"
+    ]
+
+    places_with_opening_hours = [
+        place
+        for place in places
+        if place["opening_hours"]
+    ]
+
+    places_with_unknown_hours = [
+        place
+        for place in places
+        if not place["opening_hours"]
+    ]
+
+    return {
+        "status": "active_places_analysed",
+        "source": "OpenStreetMap contributors",
+        "source_license": "ODbL",
+        "evaluation_datetime": (
+            request.evaluation_datetime.isoformat()
+        ),
+        "search_radius_meters": (
+            request.search_radius_meters
+        ),
+        "retrieval_debug": retrieval_debug,
+        "total_relevant_places": len(places),
+        "active_place_count": len(active_places),
+        "help_point_count": len(help_points),
+        "nightlife_count": len(nightlife_places),
+        "places_with_opening_hours_count": len(
+            places_with_opening_hours
+        ),
+        "places_with_unknown_hours_count": len(
+            places_with_unknown_hours
+        ),
+        "active_places": active_places,
+        "help_points": help_points,
+        "nightlife_places": nightlife_places,
+        "data_confidence": "testing",
+        "interpretation": (
+            "This test checks the availability of "
+            "relevant OpenStreetMap places and their "
+            "opening-hours data near the route. Missing "
+            "opening hours mean unknown, not closed."
         )
     }
 
