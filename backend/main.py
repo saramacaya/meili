@@ -227,7 +227,7 @@ def is_streetlight(feature: dict) -> bool:
 
 def fetch_valencia_streetlights(
     route_coordinates: list[tuple[float, float]]
-) -> list[tuple[float, float]]:
+) -> tuple[list[tuple[float, float]], dict]:
     longitudes = [
         coordinate[0]
         for coordinate in route_coordinates
@@ -250,42 +250,74 @@ def fetch_valencia_streetlights(
         )
     )
 
-    page_size = 1000
-    result_offset = 0
-    all_features = []
+    shared_params = {
+        "where": "1=1",
+        "geometry": envelope,
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "outSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects"
+    }
 
     try:
-        while True:
-            params = {
-                "f": "geojson",
-                "where": "1=1",
-                "outFields": "*",
-                "geometry": envelope,
-                "geometryType": "esriGeometryEnvelope",
-                "inSR": "4326",
-                "outSR": "4326",
-                "spatialRel": "esriSpatialRelIntersects",
-                "returnGeometry": "true",
-                "resultOffset": result_offset,
-                "resultRecordCount": page_size
-            }
+        # First, obtain every object ID in the search area.
+        id_response = requests.get(
+            VALENCIA_STREET_FURNITURE_URL,
+            params={
+                **shared_params,
+                "f": "json",
+                "returnIdsOnly": "true",
+                "returnGeometry": "false"
+            },
+            timeout=20
+        )
 
-            response = requests.get(
+        id_response.raise_for_status()
+        id_data = id_response.json()
+
+        if "error" in id_data:
+            raise ValueError(id_data["error"])
+
+        object_ids = id_data.get("objectIds") or []
+        object_ids = sorted(set(object_ids))
+
+        all_features = []
+        batch_size = 200
+
+        # Download the objects in manageable batches.
+        for batch_start in range(
+            0,
+            len(object_ids),
+            batch_size
+        ):
+            object_id_batch = object_ids[
+                batch_start:batch_start + batch_size
+            ]
+
+            feature_response = requests.get(
                 VALENCIA_STREET_FURNITURE_URL,
-                params=params,
+                params={
+                    "f": "geojson",
+                    "objectIds": ",".join(
+                        str(object_id)
+                        for object_id in object_id_batch
+                    ),
+                    "outFields": "*",
+                    "outSR": "4326",
+                    "returnGeometry": "true"
+                },
                 timeout=20
             )
 
-            response.raise_for_status()
-            page_data = response.json()
-            page_features = page_data.get("features", [])
+            feature_response.raise_for_status()
+            feature_data = feature_response.json()
 
-            all_features.extend(page_features)
+            if "error" in feature_data:
+                raise ValueError(feature_data["error"])
 
-            if len(page_features) < page_size:
-                break
-
-            result_offset += page_size
+            all_features.extend(
+                feature_data.get("features", [])
+            )
 
     except (requests.RequestException, ValueError) as error:
         raise HTTPException(
@@ -307,7 +339,17 @@ def fetch_valencia_streetlights(
             if point is not None:
                 streetlights.append(point)
 
-    return streetlights
+    retrieval_debug = {
+        "object_ids_found": len(object_ids),
+        "raw_features_downloaded": len(all_features),
+        "download_batches": (
+            (len(object_ids) + batch_size - 1)
+            // batch_size
+        ),
+        "recognised_streetlights": len(streetlights)
+    }
+
+    return streetlights, retrieval_debug
 
 def normalise_text(value: str) -> str:
     """
@@ -553,9 +595,11 @@ def analyse_streetlight_coverage(
 
     samples = densify_route(route_coordinates)
 
-    streetlights = fetch_valencia_streetlights(
+    streetlights, retrieval_debug = (
+    fetch_valencia_streetlights(
         route_coordinates
     )
+)
 
     nearest_distances = []
 
@@ -626,6 +670,7 @@ def analyse_streetlight_coverage(
         "streetlights_found_near_route": (
             len(streetlights)
         ),
+        "streetlight_retrieval_debug": retrieval_debug,
         "route_coordinates_debug": route_coordinates,
         "first_5_streetlight_coordinates_debug": streetlights[:5],
         "covered_sample_percentage": (
