@@ -125,6 +125,22 @@ VALENCIA_STREET_FURNITURE_URL = (
     "UrbanismoEInfraestructuras/MapServer/323/query"
 )
 
+class OsmLightingAnalysisRequest(BaseModel):
+    route_geometry: list[tuple[float, float]]
+
+    match_radius_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+    sample_interval_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+
 class ActivePlacesAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
     evaluation_datetime: datetime
@@ -977,6 +993,219 @@ OVERPASS_API_URLS = [
 ]
 
 
+OSM_LIT_POSITIVE_VALUES = {
+    "yes",
+    "24/7",
+    "automatic"
+}
+
+OSM_LIT_NEGATIVE_VALUES = {
+    "no",
+    "disused"
+}
+
+
+def classify_osm_lit_value(value: Optional[str]) -> str:
+    """
+    Converts an OSM lit=* value into a simple evidence class.
+
+    Returns:
+    - lit
+    - unlit
+    - conditional_or_other
+    - unknown
+    """
+    if value is None:
+        return "unknown"
+
+    normalised_value = normalise_text(str(value))
+
+    if normalised_value in OSM_LIT_POSITIVE_VALUES:
+        return "lit"
+
+    if normalised_value in OSM_LIT_NEGATIVE_VALUES:
+        return "unlit"
+
+    return "conditional_or_other"
+
+
+def fetch_osm_lit_ways_near_route(
+    route_coordinates: list[tuple[float, float]],
+    match_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Retrieves OSM highway ways carrying lit=* and keeps only
+    those spatially close to the walking route.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_lit_ways_found": 0,
+            "lit_ways_near_route": 0
+        }
+
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=15
+    )
+
+    longitudes = [
+        coordinate[0]
+        for coordinate in route_coordinates
+    ]
+
+    latitudes = [
+        coordinate[1]
+        for coordinate in route_coordinates
+    ]
+
+    latitude_padding = (
+        match_radius_meters / 111_000
+    )
+
+    average_latitude = sum(latitudes) / len(latitudes)
+
+    longitude_padding = (
+        match_radius_meters
+        / (
+            111_000
+            * max(
+                math.cos(
+                    math.radians(average_latitude)
+                ),
+                0.01
+            )
+        )
+    )
+
+    south = min(latitudes) - latitude_padding
+    west = min(longitudes) - longitude_padding
+    north = max(latitudes) + latitude_padding
+    east = max(longitudes) + longitude_padding
+
+    bbox = f"{south},{west},{north},{east}"
+
+    query = f"""
+    [out:json][timeout:25];
+    way["highway"]["lit"]({bbox});
+    out tags geom;
+    """
+
+    data = None
+    retrieval_errors = []
+
+    for overpass_url in OVERPASS_API_URLS:
+        try:
+            response = requests.post(
+                overpass_url,
+                data={"data": query},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": (
+                        "Meili safety-routing prototype"
+                    )
+                },
+                timeout=35
+            )
+
+            response.raise_for_status()
+            data = response.json()
+            break
+
+        except (
+            requests.RequestException,
+            ValueError
+        ) as error:
+            retrieval_errors.append(
+                f"{overpass_url}: {error}"
+            )
+
+    if data is None:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "OpenStreetMap lighting data could not "
+                "be retrieved from the available "
+                "Overpass servers: "
+                + " | ".join(retrieval_errors)
+            )
+        )
+
+    raw_elements = data.get("elements", [])
+    nearby_lit_ways = []
+
+    for element in raw_elements:
+        geometry = element.get("geometry", [])
+
+        way_coordinates = [
+            (
+                float(point["lon"]),
+                float(point["lat"])
+            )
+            for point in geometry
+            if point.get("lon") is not None
+            and point.get("lat") is not None
+        ]
+
+        if len(way_coordinates) < 2:
+            continue
+
+        way_samples = densify_route(
+            way_coordinates,
+            interval_meters=10
+        )
+
+        nearest_route_distance = min(
+            distance_meters(
+                route_sample,
+                way_sample
+            )
+            for route_sample in route_samples
+            for way_sample in way_samples
+        )
+
+        if nearest_route_distance > match_radius_meters:
+            continue
+
+        tags = element.get("tags", {})
+        lit_value = tags.get("lit")
+
+        nearby_lit_ways.append({
+            "osm_type": element.get("type"),
+            "osm_id": element.get("id"),
+            "name": tags.get("name"),
+            "highway": tags.get("highway"),
+            "lit_value": lit_value,
+            "lit_classification": (
+                classify_osm_lit_value(lit_value)
+            ),
+            "distance_to_route_meters": round(
+                nearest_route_distance,
+                1
+            ),
+            "sampled_geometry": way_samples
+        })
+
+    retrieval_debug = {
+        "raw_lit_ways_found": len(raw_elements),
+        "lit_ways_near_route": len(
+            nearby_lit_ways
+        ),
+        "lit_value_counts": {
+            value: sum(
+                1
+                for way in nearby_lit_ways
+                if way["lit_value"] == value
+            )
+            for value in sorted({
+                way["lit_value"]
+                for way in nearby_lit_ways
+            })
+        }
+    }
+
+    return nearby_lit_ways, retrieval_debug
+
+
 def fetch_osm_places_near_route(
     route_coordinates: list[tuple[float, float]],
     search_radius_meters: float
@@ -1365,6 +1594,169 @@ def health_check():
     return {
         "status": "Meili backend is running"
     }
+
+@app.post("/safety/osm-lighting/analyse")
+def analyse_osm_lighting(
+    request: OsmLightingAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    route_samples = densify_route(
+        request.route_geometry,
+        interval_meters=(
+            request.sample_interval_meters
+        )
+    )
+
+    lit_ways, retrieval_debug = (
+        fetch_osm_lit_ways_near_route(
+            route_coordinates=(
+                request.route_geometry
+            ),
+            match_radius_meters=(
+                request.match_radius_meters
+            )
+        )
+    )
+
+    sample_results = []
+
+    for sample in route_samples:
+        nearest_way = None
+        nearest_distance = None
+
+        for way in lit_ways:
+            distance_to_way = min(
+                distance_meters(
+                    sample,
+                    way_sample
+                )
+                for way_sample in way[
+                    "sampled_geometry"
+                ]
+            )
+
+            if (
+                nearest_distance is None
+                or distance_to_way < nearest_distance
+            ):
+                nearest_distance = distance_to_way
+                nearest_way = way
+
+        if (
+            nearest_way is not None
+            and nearest_distance is not None
+            and nearest_distance
+            <= request.match_radius_meters
+        ):
+            sample_results.append({
+                "longitude": sample[0],
+                "latitude": sample[1],
+                "lighting_evidence": nearest_way[
+                    "lit_classification"
+                ],
+                "lit_value": nearest_way[
+                    "lit_value"
+                ],
+                "matched_osm_way_id": nearest_way[
+                    "osm_id"
+                ],
+                "distance_to_matched_way_meters": round(
+                    nearest_distance,
+                    1
+                )
+            })
+        else:
+            sample_results.append({
+                "longitude": sample[0],
+                "latitude": sample[1],
+                "lighting_evidence": "unknown",
+                "lit_value": None,
+                "matched_osm_way_id": None,
+                "distance_to_matched_way_meters": None
+            })
+
+    evidence_counts = {
+        evidence_class: sum(
+            1
+            for result in sample_results
+            if result["lighting_evidence"]
+            == evidence_class
+        )
+        for evidence_class in (
+            "lit",
+            "unlit",
+            "conditional_or_other",
+            "unknown"
+        )
+    }
+
+    total_samples = len(sample_results)
+
+    public_lit_ways = [
+        {
+            key: value
+            for key, value in way.items()
+            if key != "sampled_geometry"
+        }
+        for way in lit_ways
+    ]
+
+    return {
+        "status": "osm_lighting_analysed",
+        "source": "OpenStreetMap contributors",
+        "source_license": "ODbL",
+        "match_radius_meters": (
+            request.match_radius_meters
+        ),
+        "sample_interval_meters": (
+            request.sample_interval_meters
+        ),
+        "route_sample_count": total_samples,
+        "mapped_lighting_sample_count": (
+            total_samples
+            - evidence_counts["unknown"]
+        ),
+        "mapped_lighting_percentage": round(
+            100
+            * (
+                total_samples
+                - evidence_counts["unknown"]
+            )
+            / total_samples
+        ),
+        "lit_sample_count": evidence_counts["lit"],
+        "unlit_sample_count": evidence_counts[
+            "unlit"
+        ],
+        "conditional_or_other_sample_count": (
+            evidence_counts[
+                "conditional_or_other"
+            ]
+        ),
+        "unknown_sample_count": evidence_counts[
+            "unknown"
+        ],
+        "matched_lit_ways": public_lit_ways,
+        "sample_results": sample_results,
+        "retrieval_debug": retrieval_debug,
+        "data_confidence": "supplementary",
+        "interpretation": (
+            "OSM lit tags provide mapped lighting "
+            "evidence near the route. A missing tag "
+            "is treated as unknown, not unlit. The "
+            "tag does not measure brightness or "
+            "whether a lamp currently works."
+        )
+    }
+
 
 @app.post("/safety/streetlights/analyse")
 def analyse_streetlight_coverage(
