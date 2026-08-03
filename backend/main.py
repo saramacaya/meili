@@ -353,7 +353,12 @@ def fetch_valencia_streetlights(
         ),
         "recognised_streetlights": len(streetlights),
         "rejected_objects_count": len(rejected_objects),
-        "first_20_rejected_objects": rejected_objects[:20]
+        "rejected_element_categories": sorted(
+            {
+                str(properties.get("elemento", "")).strip()
+                for properties in rejected_objects
+            }
+    )
     }
 
     return streetlights, retrieval_debug
