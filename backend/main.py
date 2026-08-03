@@ -329,8 +329,6 @@ def fetch_valencia_streetlights(
         )
 
 streetlights = []
-rejected_objects = []
-
 for feature in all_features:
     if is_streetlight(feature):
         point = feature_representative_point(
@@ -339,10 +337,6 @@ for feature in all_features:
 
         if point is not None:
             streetlights.append(point)
-    else:
-        rejected_objects.append(
-            feature.get("properties", {})
-        )
 
 retrieval_debug = {
     "object_ids_found": len(object_ids),
@@ -351,9 +345,7 @@ retrieval_debug = {
         (len(object_ids) + batch_size - 1)
         // batch_size
     ),
-    "recognised_streetlights": len(streetlights),
-    "rejected_objects_count": len(rejected_objects),
-    "first_20_rejected_objects": rejected_objects[:20]
+    "recognised_streetlights": len(streetlights)
 }
 
 def normalise_text(value: str) -> str:
