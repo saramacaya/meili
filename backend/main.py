@@ -1312,7 +1312,7 @@ def fetch_osm_street_lamps_near_route(
     query = f"""
     [out:json][timeout:25];
     node["highway"="street_lamp"]({bbox});
-    out tags;
+    out body;
     """
 
     data = None
