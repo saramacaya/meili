@@ -1269,7 +1269,7 @@ def analyse_active_places(
                 evaluation_datetime=(
                     request.evaluation_datetime
                 ),
-                transiton_window_minutes=30
+                transition_window_minutes=30
         )
     )
 
