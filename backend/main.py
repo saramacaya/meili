@@ -108,7 +108,7 @@ class RealRoutePreviewRequest(BaseModel):
     destination: RouteCoordinate
 
 class StreetlightAnalysisRequest(BaseModel):
-    route_geometry: list[RouteCoordinate]
+    route_geometry: list[tuple[float, float]]
     coverage_radius_meters: float = Field(default=25, ge=5, le=100)
 
 VALENCIA_STREET_FURNITURE_URL = (
@@ -588,10 +588,7 @@ def analyse_streetlight_coverage(
             )
         )
 
-    route_coordinates = [
-        (point.longitude, point.latitude)
-        for point in request.route_geometry
-    ]
+    route_coordinates = request.route_geometry
 
     samples = densify_route(route_coordinates)
 
