@@ -128,6 +128,19 @@ VALENCIA_STREET_FURNITURE_URL = (
 class ActivePlacesAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
     evaluation_datetime: datetime
+
+    route_duration_seconds: int = Field(
+        ...,
+        ge=60,
+        le=21_600
+    )
+
+    arrival_uncertainty_ratio: float = Field(
+        default=0.10,
+        ge=0,
+        le=0.50
+    )
+
     search_radius_meters: float = Field(
         default=75,
         ge=25,
@@ -186,6 +199,72 @@ def densify_route(
             ))
 
     return samples
+
+def calculate_place_route_progress(
+    place_coordinate: tuple[float, float],
+    route_coordinates: list[tuple[float, float]]
+) -> float:
+    """
+    Returns the approximate position of a place along the route.
+
+    Examples:
+    0.0 = route beginning
+    0.5 = halfway
+    1.0 = route end
+    """
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=10
+    )
+
+    if len(route_samples) < 2:
+        return 0.0
+
+    cumulative_distances = [0.0]
+
+    for previous, current in zip(
+        route_samples,
+        route_samples[1:]
+    ):
+        cumulative_distances.append(
+            cumulative_distances[-1]
+            + distance_meters(previous, current)
+        )
+
+    total_distance = cumulative_distances[-1]
+
+    if total_distance <= 0:
+        return 0.0
+
+    nearest_sample_index = min(
+        range(len(route_samples)),
+        key=lambda index: distance_meters(
+            place_coordinate,
+            route_samples[index]
+        )
+    )
+
+    progress = (
+        cumulative_distances[nearest_sample_index]
+        / total_distance
+    )
+
+    return max(0.0, min(1.0, progress))
+
+def calculate_place_arrival_time(
+    route_progress: float,
+    departure_datetime: datetime,
+    route_duration_seconds: int
+) -> datetime:
+    elapsed_seconds = (
+        route_duration_seconds
+        * route_progress
+    )
+
+    return (
+        departure_datetime
+        + timedelta(seconds=elapsed_seconds)
+    )
 
 
 def flatten_geojson_coordinates(
