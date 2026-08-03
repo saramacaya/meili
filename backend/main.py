@@ -156,6 +156,17 @@ class OsmStreetLampAnalysisRequest(BaseModel):
         le=50
     )
 
+class OsmStreetLampAreaScanRequest(BaseModel):
+    south: float = Field(..., ge=-90, le=90)
+    west: float = Field(..., ge=-180, le=180)
+    north: float = Field(..., ge=-90, le=90)
+    east: float = Field(..., ge=-180, le=180)
+
+    sample_limit: int = Field(
+        default=20,
+        ge=0,
+        le=100
+    )
 
 class ActivePlacesAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
@@ -1862,6 +1873,197 @@ def google_duration_to_seconds(duration: str) -> int:
 def health_check():
     return {
         "status": "Meili backend is running"
+    }
+
+@app.post("/safety/osm-street-lamps/area-scan")
+def scan_osm_street_lamps_in_area(
+    request: OsmStreetLampAreaScanRequest
+):
+    if request.south >= request.north:
+        raise HTTPException(
+            status_code=400,
+            detail="south must be lower than north."
+        )
+
+    if request.west >= request.east:
+        raise HTTPException(
+            status_code=400,
+            detail="west must be lower than east."
+        )
+
+    latitude_span = request.north - request.south
+    longitude_span = request.east - request.west
+
+    if latitude_span > 1 or longitude_span > 1:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "The scan area is too large. "
+                "Use a box no larger than one degree."
+            )
+        )
+
+    bbox = (
+        f"{request.south},"
+        f"{request.west},"
+        f"{request.north},"
+        f"{request.east}"
+    )
+
+    count_query = f"""
+    [out:json][timeout:60];
+    node["highway"="street_lamp"]({bbox});
+    out count;
+    """
+
+    count_data = None
+    retrieval_errors = []
+
+    for overpass_url in OVERPASS_API_URLS:
+        try:
+            response = requests.post(
+                overpass_url,
+                data={"data": count_query},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": (
+                        "Meili safety-routing prototype"
+                    )
+                },
+                timeout=75
+            )
+
+            response.raise_for_status()
+            count_data = response.json()
+            break
+
+        except (
+            requests.RequestException,
+            ValueError
+        ) as error:
+            retrieval_errors.append(
+                f"{overpass_url}: {error}"
+            )
+
+    if count_data is None:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "OpenStreetMap street-lamp data "
+                "could not be retrieved: "
+                + " | ".join(retrieval_errors)
+            )
+        )
+
+    total_lamps = 0
+
+    for element in count_data.get("elements", []):
+        if element.get("type") != "count":
+            continue
+
+        tags = element.get("tags", {})
+
+        try:
+            total_lamps = int(
+                tags.get("nodes")
+                or tags.get("total")
+                or 0
+            )
+        except (TypeError, ValueError):
+            total_lamps = 0
+
+    sample_lamps = []
+
+    if total_lamps > 0 and request.sample_limit > 0:
+        sample_query = f"""
+        [out:json][timeout:60];
+        node["highway"="street_lamp"]({bbox});
+        out body {request.sample_limit};
+        """
+
+        sample_data = None
+
+        for overpass_url in OVERPASS_API_URLS:
+            try:
+                response = requests.post(
+                    overpass_url,
+                    data={"data": sample_query},
+                    headers={
+                        "Accept": "application/json",
+                        "User-Agent": (
+                            "Meili safety-routing prototype"
+                        )
+                    },
+                    timeout=75
+                )
+
+                response.raise_for_status()
+                sample_data = response.json()
+                break
+
+            except (
+                requests.RequestException,
+                ValueError
+            ):
+                continue
+
+        if sample_data is not None:
+            for element in sample_data.get(
+                "elements",
+                []
+            ):
+                latitude = element.get("lat")
+                longitude = element.get("lon")
+
+                if (
+                    latitude is None
+                    or longitude is None
+                ):
+                    continue
+
+                tags = element.get("tags", {})
+
+                sample_lamps.append({
+                    "osm_id": element.get("id"),
+                    "latitude": float(latitude),
+                    "longitude": float(longitude),
+                    "ref": tags.get("ref"),
+                    "operator": tags.get("operator"),
+                    "lamp_type": tags.get(
+                        "lamp_type"
+                    ),
+                    "lamp_model": tags.get(
+                        "lamp_model"
+                    ),
+                    "light_source": tags.get(
+                        "light_source"
+                    )
+                })
+
+    return {
+        "status": "osm_street_lamp_area_scanned",
+        "source": "OpenStreetMap contributors",
+        "source_license": "ODbL",
+        "osm_tag_used": "highway=street_lamp",
+        "bounding_box": {
+            "south": request.south,
+            "west": request.west,
+            "north": request.north,
+            "east": request.east
+        },
+        "total_mapped_street_lamps_in_area": (
+            total_lamps
+        ),
+        "has_any_mapped_street_lamps": (
+            total_lamps > 0
+        ),
+        "sample_lamps": sample_lamps,
+        "interpretation": (
+            "This checks the entire bounding box. "
+            "Zero means no individual street-lamp "
+            "points are mapped in OSM inside the box, "
+            "not that no physical lamps exist."
+        )
     }
 
 @app.post("/safety/osm-street-lamps/analyse")
