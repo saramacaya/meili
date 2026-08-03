@@ -578,6 +578,29 @@ def analyse_streetlight_coverage(
         if distance is not None
     ]
 
+    worst_sample = None
+    nearest_streetlight_to_worst_sample = None
+
+    if known_distances:
+        worst_sample_index = max(
+            range(len(nearest_distances)),
+            key=lambda index: (
+                nearest_distances[index]
+                if nearest_distances[index] is not None
+                else -1
+            )
+        )
+
+        worst_sample = samples[worst_sample_index]
+
+        nearest_streetlight_to_worst_sample = min(
+            streetlights,
+            key=lambda streetlight: distance_meters(
+                worst_sample,
+                streetlight
+            )
+        )
+
     return {
         "status": "streetlight_coverage_analysed",
         "source": (
@@ -611,6 +634,10 @@ def analyse_streetlight_coverage(
             round(max(known_distances), 1)
             if known_distances
             else None
+        ),
+        "worst_covered_sample_debug": worst_sample,
+        "nearest_streetlight_to_worst_sample_debug": (
+            nearest_streetlight_to_worst_sample
         ),
         "data_confidence": "limited",
         "interpretation": (
