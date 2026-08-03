@@ -679,9 +679,6 @@ def analyse_streetlight_coverage(
         "streetlights_found_near_route": (
             len(streetlights)
         ),
-        "streetlight_retrieval_debug": retrieval_debug,
-        "route_coordinates_debug": route_coordinates,
-        "first_5_streetlight_coordinates_debug": streetlights[:5],
         "covered_sample_percentage": (
             coverage_percentage
         ),
@@ -699,10 +696,6 @@ def analyse_streetlight_coverage(
             round(max(known_distances), 1)
             if known_distances
             else None
-        ),
-        "worst_covered_sample_debug": worst_sample,
-        "nearest_streetlight_to_worst_sample_debug": (
-            nearest_streetlight_to_worst_sample
         ),
         "data_confidence": "limited",
         "interpretation": (
