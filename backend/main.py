@@ -12,7 +12,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
 from datetime import datetime
-
+from opening_hours import OpeningHours
 
 load_dotenv()
 
@@ -443,6 +443,45 @@ def classify_place(tags: dict) -> Optional[str]:
         return "nightlife"
 
     return None
+
+def determine_place_opening_status(
+    opening_hours_value: Optional[str],
+    evaluation_datetime: datetime,
+    latitude: float,
+    longitude: float
+) -> str:
+    """
+    Returns:
+    - 'confirmed_open'
+    - 'confirmed_closed'
+    - 'unknown'
+
+    Missing, invalid, or ambiguous opening-hours data
+    always remains unknown.
+    """
+    if not opening_hours_value:
+        return "unknown"
+
+    try:
+        opening_hours = OpeningHours(
+            opening_hours_value,
+            coords=(latitude, longitude)
+        )
+
+        state = opening_hours.state(
+            evaluation_datetime
+        )
+
+        if state == "open":
+            return "confirmed_open"
+
+        if state == "closed":
+            return "confirmed_closed"
+
+        return "unknown"
+
+    except Exception:
+        return "unknown"
 
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",

@@ -5,3 +5,4 @@ supabase
 pydantic
 requests
 httpx
+opening-hours-py==2.1.4
