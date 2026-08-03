@@ -1327,11 +1327,48 @@ def analyse_active_places(
     )
 
     for place in places:
+        place_coordinate = (
+            place["longitude"],
+            place["latitude"]
+        )
+
+        route_progress = (
+            calculate_place_route_progress(
+                place_coordinate=place_coordinate,
+                route_coordinates=(
+                    request.route_geometry
+                )
+            )
+        )
+
+        estimated_arrival_datetime = (
+            calculate_place_arrival_time(
+                route_progress=route_progress,
+                departure_datetime=(
+                    request.evaluation_datetime
+                ),
+                route_duration_seconds=(
+                    request.route_duration_seconds
+                )
+            )
+        )
+
+        place["route_progress_percentage"] = round(
+            route_progress * 100,
+            1
+        )
+
+        place["estimated_arrival_datetime"] = (
+            estimated_arrival_datetime.isoformat()
+        )
+
         place["opening_status"] = (
             determine_place_opening_status(
-                opening_hours_value=place["opening_hours"],
+                opening_hours_value=(
+                    place["opening_hours"]
+                ),
                 evaluation_datetime=(
-                    request.evaluation_datetime
+                    estimated_arrival_datetime
                 ),
                 latitude=place["latitude"],
                 longitude=place["longitude"],
@@ -1340,17 +1377,21 @@ def analyse_active_places(
                 ]
             )
         )
-            
+
         place["activity_status"] = (
             determine_place_activity_status(
-                opening_status=place["opening_status"],
-                opening_hours_value=place["opening_hours"],
+                opening_status=(
+                    place["opening_status"]
+                ),
+                opening_hours_value=(
+                    place["opening_hours"]
+                ),
                 evaluation_datetime=(
-                    request.evaluation_datetime
+                    estimated_arrival_datetime
                 ),
                 transition_window_minutes=30
+            )
         )
-    )
 
     active_places = [
         place
