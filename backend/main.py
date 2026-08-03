@@ -250,31 +250,42 @@ def fetch_valencia_streetlights(
         )
     )
 
-    params = {
-        "f": "geojson",
-        "where": "1=1",
-        "outFields": "*",
-        "geometry": envelope,
-        "geometryType": "esriGeometryEnvelope",
-        "inSR": "4326",
-        "outSR": "4326",
-        "spatialRel": "esriSpatialRelIntersects",
-        "returnGeometry": "true"
-    }
+    page_size = 1000
+    result_offset = 0
+    all_features = []
 
     try:
-        response = requests.get(
-            VALENCIA_STREET_FURNITURE_URL,
-            params=params,
-            timeout=20
-        )
+        while True:
+            params = {
+                "f": "geojson",
+                "where": "1=1",
+                "outFields": "*",
+                "geometry": envelope,
+                "geometryType": "esriGeometryEnvelope",
+                "inSR": "4326",
+                "outSR": "4326",
+                "spatialRel": "esriSpatialRelIntersects",
+                "returnGeometry": "true",
+                "resultOffset": result_offset,
+                "resultRecordCount": page_size
+            }
 
-        response.raise_for_status()
+            response = requests.get(
+                VALENCIA_STREET_FURNITURE_URL,
+                params=params,
+                timeout=20
+            )
 
-        features = response.json().get(
-            "features",
-            []
-        )
+            response.raise_for_status()
+            page_data = response.json()
+            page_features = page_data.get("features", [])
+
+            all_features.extend(page_features)
+
+            if len(page_features) < page_size:
+                break
+
+            result_offset += page_size
 
     except (requests.RequestException, ValueError) as error:
         raise HTTPException(
@@ -287,7 +298,7 @@ def fetch_valencia_streetlights(
 
     streetlights = []
 
-    for feature in features:
+    for feature in all_features:
         if is_streetlight(feature):
             point = feature_representative_point(
                 feature
