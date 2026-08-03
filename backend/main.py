@@ -444,9 +444,10 @@ def classify_place(tags: dict) -> Optional[str]:
 
     return None
 
-OVERPASS_API_URL = (
-    "https://overpass-api.de/api/interpreter"
-)
+OVERPASS_API_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter"
+]
 
 
 def fetch_osm_places_near_route(
@@ -511,27 +512,45 @@ def fetch_osm_places_near_route(
       nwr["shop"~"^(convenience|supermarket)$"]({bbox});
       nwr["tourism"~"^(hotel|hostel|guest_house)$"]({bbox});
     );
-    out center tags;
+    out tags center;
     """
 
-    try:
-        response = requests.post(
-            OVERPASS_API_URL,
-            data={"data": query},
-            timeout=35
-        )
-        response.raise_for_status()
-        data = response.json()
+    data = None
+    retrieval_errors = []
 
-    except (
-        requests.RequestException,
-        ValueError
-    ) as error:
+    for overpass_url in OVERPASS_API_URLS:
+        try:
+            response = requests.post(
+                overpass_url,
+                data={"data": query},
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": (
+                        "Meili safety-routing prototype"
+                    )
+                },
+                timeout=35
+            )
+            response.raise_for_status()
+            data = response.json()
+            break
+
+        except (
+            requests.RequestException,
+            ValueError
+        ) as error:
+            retrieval_errors.append(
+                f"{overpass_url}: {error}"
+            )
+
+    if data is None:
         raise HTTPException(
             status_code=502,
             detail=(
-                "OpenStreetMap place data could "
-                f"not be retrieved: {error}"
+                "OpenStreetMap place data could not "
+                "be retrieved from the available "
+                "Overpass servers: "
+                + " | ".join(retrieval_errors)
             )
         )
 
