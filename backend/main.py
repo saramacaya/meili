@@ -1212,7 +1212,7 @@ def analyse_active_places(
         if place["opening_status"] == "confirmed_closed"
     ]
 
-        estimated_open_places = [
+    estimated_open_places = [
         place
         for place in places
         if place["opening_status"] == "estimated_open"
