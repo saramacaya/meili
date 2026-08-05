@@ -16,6 +16,8 @@ from opening_hours import OpeningHours
 from zoneinfo import ZoneInfo
 from nasa_route_analysis import analyse_nasa_route_samples
 
+from combined_lighting_analysis import combine_lighting_sources
+
 VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
 
 load_dotenv()
@@ -180,6 +182,38 @@ class NasaNightLightsAnalysisRequest(BaseModel):
 
     # Leave empty to use the latest month in Supabase.
     # Example historical value: "2026-05".
+    month: Optional[str] = None
+
+class CombinedLightingAnalysisRequest(BaseModel):
+    route_geometry: list[
+        tuple[float, float]
+    ]
+
+    sample_interval_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+    official_lamp_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+
+    osm_lit_match_radius_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+    osm_lamp_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+
+    # Leave empty to use the latest NASA month.
     month: Optional[str] = None
 
 class ActivePlacesAnalysisRequest(BaseModel):
@@ -1914,6 +1948,200 @@ def analyse_nasa_night_lights(
             request.sample_interval_meters
         ),
         **analysis
+    }
+
+@app.post("/safety/lighting/combined")
+def analyse_combined_lighting(
+    request: CombinedLightingAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    route_samples = densify_route(
+        request.route_geometry,
+        interval_meters=(
+            request.sample_interval_meters
+        )
+    )
+
+    # Each source is attempted separately.
+    # One unavailable source should not make the
+    # complete combined endpoint fail.
+    source_errors = {}
+
+    official_streetlights = []
+    official_debug = {}
+
+    try:
+        (
+            official_streetlights,
+            official_debug
+        ) = fetch_valencia_streetlights(
+            request.route_geometry
+        )
+
+    except HTTPException as error:
+        source_errors[
+            "official_valencia_lamps"
+        ] = error.detail
+
+    osm_lit_ways = []
+    osm_lit_debug = {}
+
+    try:
+        (
+            osm_lit_ways,
+            osm_lit_debug
+        ) = fetch_osm_lit_ways_near_route(
+            route_coordinates=(
+                request.route_geometry
+            ),
+            match_radius_meters=(
+                request.osm_lit_match_radius_meters
+            )
+        )
+
+    except HTTPException as error:
+        source_errors[
+            "osm_lit"
+        ] = error.detail
+
+    osm_street_lamps = []
+    osm_lamp_debug = {}
+
+    try:
+        (
+            osm_street_lamps,
+            osm_lamp_debug
+        ) = fetch_osm_street_lamps_near_route(
+            route_coordinates=(
+                request.route_geometry
+            ),
+            coverage_radius_meters=(
+                request.osm_lamp_radius_meters
+            )
+        )
+
+    except HTTPException as error:
+        source_errors[
+            "osm_individual_lamps"
+        ] = error.detail
+
+    nasa_analysis = None
+
+    try:
+        nasa_analysis = (
+            analyse_nasa_route_samples(
+                route_samples=route_samples,
+                requested_month=request.month
+            )
+        )
+
+    except HTTPException as error:
+        source_errors[
+            "nasa_background"
+        ] = error.detail
+
+    combined_analysis = (
+        combine_lighting_sources(
+            route_samples=route_samples,
+            official_streetlights=(
+                official_streetlights
+            ),
+            osm_lit_ways=osm_lit_ways,
+            osm_street_lamps=(
+                osm_street_lamps
+            ),
+            nasa_analysis=nasa_analysis,
+            official_coverage_radius_meters=(
+                request.official_lamp_radius_meters
+            ),
+            osm_lit_match_radius_meters=(
+                request.osm_lit_match_radius_meters
+            ),
+            osm_lamp_coverage_radius_meters=(
+                request.osm_lamp_radius_meters
+            )
+        )
+    )
+
+    return {
+        "status": (
+            "combined_lighting_analysed"
+        ),
+        "sample_interval_meters": (
+            request.sample_interval_meters
+        ),
+        "month_requested": request.month,
+        "month_used": (
+            nasa_analysis.get("month")
+            if nasa_analysis
+            else None
+        ),
+        "source_availability": {
+            "official_valencia_lamps": (
+                "available"
+                if official_streetlights
+                else "missing_or_unavailable"
+            ),
+            "osm_lit": (
+                "available"
+                if osm_lit_ways
+                else "missing_or_unavailable"
+            ),
+            "osm_individual_lamps": (
+                "available"
+                if osm_street_lamps
+                else "missing_or_unavailable"
+            ),
+            "nasa_background": (
+                "available"
+                if nasa_analysis
+                else "unavailable"
+            )
+        },
+        "source_counts": {
+            "official_streetlights_near_route": (
+                len(official_streetlights)
+            ),
+            "osm_lit_ways_near_route": len(
+                osm_lit_ways
+            ),
+            "osm_individual_lamps_near_route": (
+                len(osm_street_lamps)
+            ),
+            "nasa_unique_cells": (
+                nasa_analysis.get(
+                    "unique_nasa_cell_count"
+                )
+                if nasa_analysis
+                else 0
+            )
+        },
+        "source_debug": {
+            "official_valencia_lamps": (
+                official_debug
+            ),
+            "osm_lit": osm_lit_debug,
+            "osm_individual_lamps": (
+                osm_lamp_debug
+            ),
+            "nasa_memory_cache_hit": (
+                nasa_analysis.get(
+                    "memory_cache_hit"
+                )
+                if nasa_analysis
+                else None
+            )
+        },
+        "source_errors": source_errors,
+        **combined_analysis
     }
 
 @app.get("/health")
