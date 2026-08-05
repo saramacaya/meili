@@ -500,7 +500,7 @@ def main():
         len(routes)
     )
 
-     comparison_payload = {
+    comparison_payload = {
         "routes": [
             {
                 "route_id": route["route_id"],
