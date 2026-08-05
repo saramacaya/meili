@@ -587,6 +587,10 @@ def combine_lighting_sources(
         else:
             combined_score = None
 
+        classification = classify_combined_score(
+            combined_score
+        )
+
         confidence = calculate_confidence(
             official_available=(
                 official_score is not None
