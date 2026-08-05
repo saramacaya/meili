@@ -30,11 +30,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Russafa",
       "Russafa (Ruzafa)",
@@ -46,7 +46,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4628,
+        "longitude": -0.3757,
+        "radius_meters": 500,
+        "label": "Russafa dining and bar area",
+        "precision": "neighbourhood_section",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Russafa",
@@ -82,7 +98,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Russafa",
       "Russafa (Ruzafa)",
@@ -94,7 +110,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4623,
+        "longitude": -0.3748,
+        "radius_meters": 650,
+        "label": "Russafa",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Russafa",
@@ -126,11 +158,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Russafa",
       "Russafa (Ruzafa)",
@@ -142,7 +174,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4628,
+        "longitude": -0.3757,
+        "radius_meters": 500,
+        "label": "Russafa bars and terraces",
+        "precision": "neighbourhood_section",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -175,11 +223,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Carme / Ciutat Vella",
       "El Carme",
@@ -191,7 +239,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4778,
+        "longitude": -0.3801,
+        "radius_meters": 650,
+        "label": "El Carme historic alleys",
+        "precision": "neighbourhood_section",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -223,11 +287,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Carme / Ciutat Vella",
       "Ciutat Vella",
@@ -239,7 +303,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4744,
+        "longitude": -0.3768,
+        "radius_meters": 1050,
+        "label": "Ciutat Vella",
+        "precision": "district",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -271,11 +351,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Carme / Ciutat Vella",
       "El Carme",
@@ -287,7 +367,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4778,
+        "longitude": -0.3801,
+        "radius_meters": 650,
+        "label": "El Carme nightlife plazas",
+        "precision": "neighbourhood_section",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Cabanyal",
@@ -323,7 +419,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Cabanyal",
       "Streets around Cabanyal (unspecified)"
@@ -334,7 +430,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4691,
+        "longitude": -0.3318,
+        "radius_meters": 1050,
+        "label": "El Cabanyal",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Cabanyal",
@@ -370,7 +482,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Cabanyal",
       "General barrio"
@@ -381,7 +493,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4691,
+        "longitude": -0.3318,
+        "radius_meters": 1050,
+        "label": "El Cabanyal",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Cabanyal",
@@ -419,7 +547,7 @@
     "source_class": "political_claim",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Cabanyal",
       "General barrio"
@@ -430,7 +558,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4691,
+        "longitude": -0.3318,
+        "radius_meters": 1050,
+        "label": "El Cabanyal",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Cabanyal",
@@ -462,11 +606,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "city_sector",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Cabanyal",
       "Streets with high concentration of tourist rentals; port dock area"
@@ -477,7 +621,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4627,
+        "longitude": -0.331,
+        "radius_meters": 1250,
+        "label": "Cabanyal tourist-rental and port sector",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Malvarrosa / Beachfront",
@@ -512,7 +672,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Malvarrosa / Beachfront",
       "La Malva-rosa",
@@ -524,7 +684,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4838,
+        "longitude": -0.3241,
+        "radius_meters": 500,
+        "label": "Casitas Rosas area",
+        "precision": "named_area",
+        "verification_method": "approximate_named_area"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Malvarrosa / Beachfront",
@@ -556,11 +732,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "multiple_named_places",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Malvarrosa / Beachfront",
       "La Malva-rosa",
@@ -572,7 +748,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4785,
+        "longitude": -0.3243,
+        "radius_meters": 950,
+        "label": "Malva-rosa promenade",
+        "precision": "linear_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Benimaclet",
@@ -608,7 +800,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Benimaclet",
       "Plaza de Benimaclet / main streets"
@@ -619,7 +811,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4855,
+        "longitude": -0.362,
+        "radius_meters": 550,
+        "label": "Plaça de Benimaclet and main streets",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Benimaclet",
@@ -655,7 +863,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Benimaclet",
       "General barrio"
@@ -666,7 +874,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4851,
+        "longitude": -0.3627,
+        "radius_meters": 850,
+        "label": "Benimaclet",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Benimaclet",
@@ -702,7 +926,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Benimaclet",
       "General barrio"
@@ -713,7 +937,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4851,
+        "longitude": -0.3627,
+        "radius_meters": 850,
+        "label": "Benimaclet",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Extramurs",
@@ -750,7 +990,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Extramurs",
       "Extramurs (El Botànic)",
@@ -762,7 +1002,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4766,
+        "longitude": -0.3892,
+        "radius_meters": 700,
+        "label": "El Botànic",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Patraix",
@@ -799,7 +1055,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Patraix",
       "General barrio"
@@ -810,7 +1066,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4591,
+        "longitude": -0.3905,
+        "radius_meters": 900,
+        "label": "Patraix",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Orriols",
@@ -847,7 +1119,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Orriols",
       "General barrio"
@@ -858,7 +1130,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4937,
+        "longitude": -0.3659,
+        "radius_meters": 950,
+        "label": "Orriols",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Orriols",
@@ -891,11 +1179,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "multiple_named_places",
+    "geographic_precision": "neighbourhood",
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Orriols",
       "Barrio-wide, multiple named streets in coverage"
@@ -906,7 +1194,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4937,
+        "longitude": -0.3659,
+        "radius_meters": 950,
+        "label": "Orriols named streets, not individually encoded",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Orriols",
@@ -937,11 +1241,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Orriols",
       "Barrio-wide"
@@ -952,7 +1256,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4937,
+        "longitude": -0.3659,
+        "radius_meters": 950,
+        "label": "Orriols barrio-wide",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Estació del Nord / Bus Station",
@@ -988,7 +1308,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Estació del Nord / Bus Station",
       "Ciutat Vella edge",
@@ -1000,7 +1320,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4668,
+        "longitude": -0.3774,
+        "radius_meters": 320,
+        "label": "Estació del Nord surroundings",
+        "precision": "exact_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Estació del Nord / Bus Station",
@@ -1035,7 +1371,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Estació del Nord / Bus Station",
       "Ciutat Vella edge",
@@ -1047,7 +1383,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4806,
+        "longitude": -0.389,
+        "radius_meters": 350,
+        "label": "València bus station surroundings",
+        "precision": "exact_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Jardí del Túria",
@@ -1079,11 +1431,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "multiple_named_places",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Jardí del Túria",
       "citywide corridor",
@@ -1095,7 +1447,59 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4792,
+        "longitude": -0.401,
+        "radius_meters": 420,
+        "label": "Turia west",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.479,
+        "longitude": -0.389,
+        "radius_meters": 420,
+        "label": "Turia west-centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.4765,
+        "longitude": -0.378,
+        "radius_meters": 420,
+        "label": "Turia centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.474,
+        "longitude": -0.365,
+        "radius_meters": 420,
+        "label": "Turia east-centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.4684,
+        "longitude": -0.3505,
+        "radius_meters": 420,
+        "label": "Turia east",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Jardí del Túria",
@@ -1126,11 +1530,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "multiple_named_places",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Jardí del Túria",
       "citywide corridor",
@@ -1142,7 +1546,59 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4792,
+        "longitude": -0.401,
+        "radius_meters": 420,
+        "label": "Turia west",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.479,
+        "longitude": -0.389,
+        "radius_meters": 420,
+        "label": "Turia west-centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.4765,
+        "longitude": -0.378,
+        "radius_meters": 420,
+        "label": "Turia centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.474,
+        "longitude": -0.365,
+        "radius_meters": 420,
+        "label": "Turia east-centre",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      },
+      {
+        "type": "circle",
+        "latitude": 39.4684,
+        "longitude": -0.3505,
+        "radius_meters": 420,
+        "label": "Turia east",
+        "precision": "linear_feature_anchor",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "La Saïdia",
@@ -1179,7 +1635,7 @@
     "source_class": "real_estate",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "La Saïdia",
       "La Saïdia (district)",
@@ -1191,7 +1647,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4888,
+        "longitude": -0.3738,
+        "radius_meters": 1450,
+        "label": "La Saïdia",
+        "precision": "district",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "La Saïdia",
@@ -1225,11 +1697,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "La Saïdia",
       "Morvedre",
@@ -1241,7 +1713,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.488,
+        "longitude": -0.371,
+        "radius_meters": 650,
+        "label": "Morvedre streets",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Algirós",
@@ -1277,7 +1765,7 @@
     "source_class": "real_estate",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Algirós",
       "General district"
@@ -1288,7 +1776,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4762,
+        "longitude": -0.3519,
+        "radius_meters": 1300,
+        "label": "Algirós",
+        "precision": "district",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Torrefiel",
@@ -1325,7 +1829,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Torrefiel",
       "General barrio"
@@ -1336,7 +1840,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.501,
+        "longitude": -0.3704,
+        "radius_meters": 900,
+        "label": "Torrefiel",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Torrefiel",
@@ -1371,7 +1891,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Torrefiel",
       "General barrio"
@@ -1382,7 +1902,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.501,
+        "longitude": -0.3704,
+        "radius_meters": 900,
+        "label": "Torrefiel",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Quatre Carreres",
@@ -1418,7 +1954,7 @@
     "source_class": "real_estate",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Quatre Carreres",
       "Quatre Carreres (district)",
@@ -1430,7 +1966,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4538,
+        "longitude": -0.3593,
+        "radius_meters": 1800,
+        "label": "Quatre Carreres",
+        "precision": "district",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Nazaret",
@@ -1466,7 +2018,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Nazaret",
       "General barrio"
@@ -1477,7 +2029,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4425,
+        "longitude": -0.3337,
+        "radius_meters": 900,
+        "label": "Natzaret",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Nazaret",
@@ -1514,7 +2082,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Nazaret",
       "General barrio"
@@ -1525,7 +2093,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4425,
+        "longitude": -0.3337,
+        "radius_meters": 900,
+        "label": "Natzaret",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Nazaret",
@@ -1556,11 +2140,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Nazaret",
       "Specific dismantled dealing points (unnamed streets)"
@@ -1571,7 +2155,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4425,
+        "longitude": -0.3337,
+        "radius_meters": 900,
+        "label": "Natzaret; dealing points unnamed",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Nazaret",
@@ -1602,11 +2202,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Nazaret",
       "Specific dismantled dealing point (unnamed street)"
@@ -1617,7 +2217,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4425,
+        "longitude": -0.3337,
+        "radius_meters": 900,
+        "label": "Natzaret; dealing point unnamed",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Grau",
@@ -1653,7 +2269,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Grau",
       "Dàrsena Vella / port area"
@@ -1664,7 +2280,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4592,
+        "longitude": -0.327,
+        "radius_meters": 700,
+        "label": "Dàrsena Vella and port",
+        "precision": "named_area",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Grau",
@@ -1695,11 +2327,11 @@
     "city": "València",
     "province": "València",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "city_sector",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Grau",
       "South of Avenida del Puerto (near Nazaret)"
@@ -1710,7 +2342,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4508,
+        "longitude": -0.337,
+        "radius_meters": 900,
+        "label": "South of Avinguda del Port",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Mestalla",
@@ -1747,7 +2395,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Mestalla",
       "General barrio"
@@ -1758,7 +2406,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4736,
+        "longitude": -0.3581,
+        "radius_meters": 850,
+        "label": "Mestalla",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Marina / Port (America's Cup)",
@@ -1793,7 +2457,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Marina / Port (America's Cup)",
       "Marina Real Juan Carlos I",
@@ -1805,7 +2469,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4616,
+        "longitude": -0.3233,
+        "radius_meters": 850,
+        "label": "Marina docks",
+        "precision": "named_area",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Ayora",
@@ -1845,7 +2525,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Ayora",
       "Aiora (Ayora)",
@@ -1857,7 +2537,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4667,
+        "longitude": -0.349,
+        "radius_meters": 850,
+        "label": "Aiora",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "La Saïdia",
@@ -1895,7 +2591,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "La Saïdia",
       "La Saïdia (district; precise streets not identified)",
@@ -1907,7 +2603,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4888,
+        "longitude": -0.3738,
+        "radius_meters": 1450,
+        "label": "La Saïdia",
+        "precision": "district",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Cabanyal",
@@ -1946,7 +2658,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Cabanyal",
       "El Cabanyal-Canyamelar",
@@ -1958,6 +2670,22 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.4598,
+        "longitude": -0.3373,
+        "radius_meters": 450,
+        "label": "Carrer de l’Arquitecte Alfaro",
+        "precision": "street_section",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   }
 ]

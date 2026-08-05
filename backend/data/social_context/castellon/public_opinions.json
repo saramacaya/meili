@@ -34,7 +34,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Casco Histórico",
       "Plaza Mayor / Casco Antiguo",
@@ -46,7 +46,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9861,
+        "longitude": -0.0365,
+        "radius_meters": 550,
+        "label": "Plaza Mayor, Santa Clara and tascas",
+        "precision": "multiple_named_places",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Casco Histórico",
@@ -81,7 +97,7 @@
     "source_class": "review_platform",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Casco Histórico",
       "Plaza Mayor / Casco Antiguo",
@@ -93,7 +109,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9861,
+        "longitude": -0.0365,
+        "radius_meters": 250,
+        "label": "Plaza Mayor",
+        "precision": "exact_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Parque Ribalta - Plaza de Toros",
@@ -125,11 +157,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "multiple_named_places",
+    "geographic_precision": "exact_place",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Parque Ribalta - Plaza de Toros",
       "Parque Ribalta",
@@ -141,7 +173,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9864,
+        "longitude": -0.0439,
+        "radius_meters": 430,
+        "label": "Parque Ribalta paths",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Parque Ribalta - Plaza de Toros",
@@ -176,7 +224,7 @@
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Parque Ribalta - Plaza de Toros",
       "Parque Ribalta",
@@ -188,7 +236,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9864,
+        "longitude": -0.0439,
+        "radius_meters": 430,
+        "label": "Parque Ribalta",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Zona Hospital - Plaza del Real",
@@ -219,11 +283,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "neighbourhood",
+    "geographic_precision": "city_sector",
     "source_class": "real_estate",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Zona Hospital - Plaza del Real",
       "General zone"
@@ -234,7 +298,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.992,
+        "longitude": -0.039,
+        "radius_meters": 900,
+        "label": "Hospital–Plaza del Real zone",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Grapa",
@@ -269,7 +349,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Grapa",
       "Grapa - Gambau",
@@ -281,7 +361,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9915,
+        "longitude": -0.0255,
+        "radius_meters": 350,
+        "label": "Skatepark de Grapa",
+        "precision": "exact_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Grapa",
@@ -316,7 +412,7 @@
     "source_class": "political_claim",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Grapa",
       "General barrio"
@@ -327,7 +423,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.992,
+        "longitude": -0.0265,
+        "radius_meters": 750,
+        "label": "Grapa",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Grapa",
@@ -361,7 +473,7 @@
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Grapa",
       "General barrio housing stock"
@@ -372,7 +484,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.992,
+        "longitude": -0.0265,
+        "radius_meters": 750,
+        "label": "Grapa",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Raval Universitari",
@@ -405,11 +533,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Raval Universitari",
       "Social housing block affected by squatting"
@@ -420,7 +548,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9946,
+        "longitude": -0.066,
+        "radius_meters": 950,
+        "label": "Raval Universitari; block unspecified",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Raval Universitari",
@@ -455,7 +599,7 @@
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Raval Universitari",
       "General zone"
@@ -466,7 +610,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9946,
+        "longitude": -0.066,
+        "radius_meters": 950,
+        "label": "Raval Universitari",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Rafalafena",
@@ -501,7 +661,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Rafalafena",
       "Parque Rafalafena ('parque verde')"
@@ -512,7 +672,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9981,
+        "longitude": -0.0317,
+        "radius_meters": 450,
+        "label": "Parque Rafalafena",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Rafalafena",
@@ -546,7 +722,7 @@
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Rafalafena",
       "Parroquia Santo Tomás de Villanueva"
@@ -557,7 +733,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9975,
+        "longitude": -0.034,
+        "radius_meters": 250,
+        "label": "Santo Tomás de Villanueva parish",
+        "precision": "exact_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "La Guinea",
@@ -587,11 +779,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "neighbourhood",
     "source_class": "political_claim",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "La Guinea",
       "Resident association venue"
@@ -602,7 +794,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.0037,
+        "longitude": -0.0258,
+        "radius_meters": 750,
+        "label": "La Guinea; venue not verified",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Grau",
@@ -637,7 +845,7 @@
     "source_class": "local_news",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Grau",
       "El Grau / El Grao",
@@ -649,7 +857,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9738,
+        "longitude": 0.0132,
+        "radius_meters": 1300,
+        "label": "El Grau; properties unspecified",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "El Grau",
@@ -683,7 +907,7 @@
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Grau",
       "General barrio housing stock"
@@ -694,7 +918,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9738,
+        "longitude": 0.0132,
+        "radius_meters": 1300,
+        "label": "El Grau",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Marjalería",
@@ -725,11 +965,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "exact_place",
+    "geographic_precision": "city_sector",
     "source_class": "travel_or_seo",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Marjalería",
       "Rural paths near the coast"
@@ -740,7 +980,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.0135,
+        "longitude": 0.014,
+        "radius_meters": 3000,
+        "label": "Marjaleria coastal paths",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Marjalería",
@@ -771,11 +1027,11 @@
     "city": "Castelló de la Plana",
     "province": "Castelló",
     "country_code": "ES",
-    "geographic_precision": "neighbourhood",
+    "geographic_precision": "city_sector",
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Marjalería",
       "General zone"
@@ -786,7 +1042,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.0135,
+        "longitude": 0.014,
+        "radius_meters": 3000,
+        "label": "Marjaleria",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "area": "Sequiol",
@@ -820,7 +1092,7 @@
     "source_class": "local_news",
     "rating_eligible": false,
     "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Sequiol",
       "General barrio housing stock"
@@ -831,7 +1103,23 @@
       "time_match",
       "recency_decay",
       "duplicate_group_cap"
-    ]
+    ],
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.978,
+        "longitude": -0.0415,
+        "radius_meters": 750,
+        "label": "Sequiol",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-001",
@@ -870,7 +1158,7 @@
     "geographic_precision": "exact_place",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Parque Ribalta",
       "Parque Ribalta"
@@ -881,7 +1169,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-most-insecure-places"
+    "duplicate_group": "uji-2023-most-insecure-places",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9864,
+        "longitude": -0.0439,
+        "radius_meters": 430,
+        "label": "Parque Ribalta",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-002",
@@ -920,7 +1224,7 @@
     "geographic_precision": "neighbourhood",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "San Lorenzo",
       "Barrio de San Lorenzo"
@@ -931,7 +1235,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-most-insecure-places"
+    "duplicate_group": "uji-2023-most-insecure-places",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.01,
+        "longitude": -0.0465,
+        "radius_meters": 900,
+        "label": "San Lorenzo",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-003",
@@ -970,7 +1290,7 @@
     "geographic_precision": "neighbourhood",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "La Guinea",
       "Barrio de La Guinea"
@@ -981,7 +1301,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-most-insecure-places"
+    "duplicate_group": "uji-2023-most-insecure-places",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.0037,
+        "longitude": -0.0258,
+        "radius_meters": 750,
+        "label": "La Guinea",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-004",
@@ -1020,7 +1356,7 @@
     "geographic_precision": "exact_place",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Parque del Oeste",
       "Parque del Oeste"
@@ -1031,7 +1367,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-most-insecure-places"
+    "duplicate_group": "uji-2023-most-insecure-places",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9861,
+        "longitude": -0.0582,
+        "radius_meters": 450,
+        "label": "Parque del Oeste",
+        "precision": "named_place",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-005",
@@ -1070,7 +1422,7 @@
     "geographic_precision": "neighbourhood",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Grupo San Agustín",
       "Grupo San Agustín"
@@ -1081,7 +1433,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-most-insecure-places"
+    "duplicate_group": "uji-2023-most-insecure-places",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.003,
+        "longitude": -0.045,
+        "radius_meters": 850,
+        "label": "Grupo San Agustín",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-uji-006",
@@ -1120,7 +1488,7 @@
     "geographic_precision": "citywide",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Castelló de la Plana",
       "Citywide"
@@ -1131,7 +1499,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "duplicate_group": "uji-2023-citywide-safety"
+    "duplicate_group": "uji-2023-citywide-safety",
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9864,
+        "longitude": -0.0513,
+        "radius_meters": 6500,
+        "label": "Castelló de la Plana",
+        "precision": "citywide",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-local-001",
@@ -1168,7 +1552,7 @@
     "geographic_precision": "neighbourhood",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "El Grau",
       "El Grau commercial and residential area"
@@ -1179,7 +1563,23 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "maximum_exact_time_effect_points": -0.684
+    "maximum_exact_time_effect_points": -0.684,
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 39.9738,
+        "longitude": 0.0132,
+        "radius_meters": 1300,
+        "label": "El Grau",
+        "precision": "neighbourhood",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   },
   {
     "record_id": "castellon-local-002",
@@ -1211,10 +1611,10 @@
     "limitations": [
       "Area-level reporting; no complete list of affected street segments."
     ],
-    "geographic_precision": "neighbourhood",
+    "geographic_precision": "city_sector",
     "rating_eligible": true,
     "exclusion_reason": null,
-    "geocoding_status": "pending",
+    "geocoding_status": "located_review_required",
     "match_aliases": [
       "Marjaleria",
       "Marjaleria homes and access roads"
@@ -1225,6 +1625,22 @@
       "recency_decay",
       "duplicate_group_cap"
     ],
-    "maximum_exact_time_effect_points": -0.684
+    "maximum_exact_time_effect_points": -0.684,
+    "locations": [
+      {
+        "type": "circle",
+        "latitude": 40.0135,
+        "longitude": 0.014,
+        "radius_meters": 3000,
+        "label": "Marjaleria",
+        "precision": "city_sector",
+        "verification_method": "reviewed_map_centroid"
+      }
+    ],
+    "location_matching": {
+      "method": "any_circle_contains_route_point",
+      "distance_fade": "linear_to_zero_at_radius",
+      "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
+    }
   }
 ]
