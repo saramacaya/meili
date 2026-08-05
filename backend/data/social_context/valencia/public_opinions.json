@@ -1,0 +1,1963 @@
+[
+  {
+    "area": "Russafa",
+    "neighbourhood": "Russafa (Ruzafa)",
+    "street_or_place": "Ruzafa dining/bar strip",
+    "source_platform": "travel safety blog",
+    "source_url": "https://safetyverdict.com/spain/valencia/is-valencia-safe-at-night",
+    "post_date": "2026-01-15",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "nightlife",
+      "busy",
+      "comfortable_for_walking",
+      "locals_recommend"
+    ],
+    "opinion_summary": "The Ruzafa dining and bar strip is described as staying lit, walkable and socially active well into the night; risk is framed as petty theft rather than confrontation.",
+    "short_supporting_excerpt": "stays lit, walkable, and socially active",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "SEO travel guide, not first-person social post"
+    ],
+    "record_id": "valencia-op-001",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Russafa",
+      "Russafa (Ruzafa)",
+      "Ruzafa dining/bar strip"
+    ],
+    "maximum_exact_time_effect_points": 0.213,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Russafa",
+    "neighbourhood": "Russafa (Ruzafa)",
+    "street_or_place": "General barrio",
+    "source_platform": "nightlife guide blog",
+    "source_url": "https://partiesnearme.net/blog/ruzafa-bars-valencia",
+    "post_date": "2026-04-28",
+    "language": "English",
+    "person_context": "visitor",
+    "time_context": "late_night",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "nightlife",
+      "comfortable_for_walking",
+      "tourists_recommend"
+    ],
+    "opinion_summary": "Described as one of the safest and most pleasant Spanish neighbourhoods to be out in at night; standard pickpocket precautions advised.",
+    "short_supporting_excerpt": "one of the safest and most pleasant neighbourhoods",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Marketing-adjacent nightlife guide"
+    ],
+    "record_id": "valencia-op-002",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Russafa",
+      "Russafa (Ruzafa)",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Russafa",
+    "neighbourhood": "Russafa (Ruzafa)",
+    "street_or_place": "Bars/terraces on weekends",
+    "source_platform": "travel guide blog",
+    "source_url": "https://irishtraveladdict.com/ruzafa-valencia-guide/",
+    "post_date": "2025-08-20",
+    "language": "English",
+    "person_context": "visitor",
+    "time_context": "weekend",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "nightlife",
+      "pickpocketing",
+      "comfortable_for_walking"
+    ],
+    "opinion_summary": "Generally safe and welcoming for solo travellers, but weekend crowding at bars/terraces raises pickpocket risk.",
+    "short_supporting_excerpt": "keep a close eye on your pockets and bags",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Travel blog, not organic social post"
+    ],
+    "record_id": "valencia-op-003",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Russafa",
+      "Russafa (Ruzafa)",
+      "Bars/terraces on weekends"
+    ],
+    "maximum_exact_time_effect_points": -0.047,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Carme / Ciutat Vella",
+    "neighbourhood": "El Carme",
+    "street_or_place": "Narrow historic alleys",
+    "source_platform": "long-term expat travel blog",
+    "source_url": "https://valencia.for91days.com/a-walk-through-el-carmen/",
+    "post_date": "2025-04-05",
+    "language": "English",
+    "person_context": "visitor",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "nightlife",
+      "touristy",
+      "mixed_reputation",
+      "perception_improving"
+    ],
+    "opinion_summary": "El Carmen is described as beautiful, strange and 'occasionally sketchy' but has largely shaken off its seedy historical reputation.",
+    "short_supporting_excerpt": "occasionally sketchy, but it's never boring",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Single blogger's impression, long-form travel blog not social post"
+    ],
+    "record_id": "valencia-op-004",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Carme / Ciutat Vella",
+      "El Carme",
+      "Narrow historic alleys"
+    ],
+    "maximum_exact_time_effect_points": -0.047,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Carme / Ciutat Vella",
+    "neighbourhood": "Ciutat Vella",
+    "street_or_place": "General old town",
+    "source_platform": "neighbourhood guide",
+    "source_url": "https://www.cityspotters.com/en/spain/valencia/sights/barrio-del-carmen",
+    "post_date": null,
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "evening",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "nightlife",
+      "lively",
+      "touristy"
+    ],
+    "opinion_summary": "Quiet, narrow-laned area by day; transforms into the city's most popular nightlife area by evening.",
+    "short_supporting_excerpt": "the most popular nightlife area in the city",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Generic tourism site content"
+    ],
+    "record_id": "valencia-op-005",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Carme / Ciutat Vella",
+      "Ciutat Vella",
+      "General old town"
+    ],
+    "maximum_exact_time_effect_points": 0.142,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Carme / Ciutat Vella",
+    "neighbourhood": "El Carme",
+    "street_or_place": "Leisure zones/plazas at night",
+    "source_platform": "SEO 'dangerous neighbourhoods' aggregator",
+    "source_url": "https://barriospeligrosos.com/espana/valencia/",
+    "post_date": "2026-01-31",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "unverified",
+    "themes": [
+      "pickpocketing",
+      "perception_outdated",
+      "mixed_reputation"
+    ],
+    "opinion_summary": "Claims daytime is calm/safe but night brings more pickpocketing in leisure zones and plazas, especially weekends and events; serious crime described as infrequent.",
+    "short_supporting_excerpt": "la sensación de seguridad puede cambiar",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Commercial/SEO 'dangerous neighbourhoods' listicle site; not independently corroborated"
+    ],
+    "record_id": "valencia-op-006",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Carme / Ciutat Vella",
+      "El Carme",
+      "Leisure zones/plazas at night"
+    ],
+    "maximum_exact_time_effect_points": -0.007,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "neighbourhood": "El Cabanyal",
+    "street_or_place": "Streets around Cabanyal (unspecified)",
+    "source_platform": "expat lifestyle blog",
+    "source_url": "https://www.spendlifetraveling.com/where-to-live-in-valencia-spain/",
+    "post_date": "2026-04-22",
+    "language": "English",
+    "person_context": "resident",
+    "time_context": "late_night",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "solo_woman_concern",
+      "uncomfortable_for_walking",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A resident writer says some areas around Cabanyal 'aren't the safest,' making her feel less comfortable walking or cycling alone at night there, especially in winter when it's quieter.",
+    "short_supporting_excerpt": "aren't the safest ... walking or cycling there alone at night",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Single first-person account, area not pinpointed to exact streets"
+    ],
+    "record_id": "valencia-op-007",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Cabanyal",
+      "Streets around Cabanyal (unspecified)"
+    ],
+    "maximum_exact_time_effect_points": -0.12,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "neighbourhood": "El Cabanyal",
+    "street_or_place": "General barrio",
+    "source_platform": "relocation guide",
+    "source_url": "https://housinganywhere.com/Valencia--Spain/valencia-neighbourhood-guide",
+    "post_date": "2026-05-22",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "mixed_reputation",
+      "perception_improving",
+      "solo_woman_concern"
+    ],
+    "opinion_summary": "Described as an up-and-coming digital-nomad hotspot and 'safe overall' but 'more prone to crime' than other central barrios, with advice to be alert at night.",
+    "short_supporting_excerpt": "safe neighbourhood overall but it's more prone to crime",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Relocation-guide framing, not resident testimony"
+    ],
+    "record_id": "valencia-op-008",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Cabanyal",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.02,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "neighbourhood": "El Cabanyal",
+    "street_or_place": "General barrio",
+    "source_platform": "local news (political press item citing resident platform)",
+    "source_url": "https://valencianews.es/valencia/paula-llobet-estan-expulsando-a-los-vecinos-viven-con-miedo-por-las-peleas-venta-y-consumo-de-droga-en-la-calle-amenazas-y-okupaciones-de-viviendas/",
+    "post_date": "2021-08-19",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "theft",
+      "aggressive_behaviour",
+      "drug_activity",
+      "homelessness_mentions",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "The named resident platform 'Cabanyal Zero Incívics' formally reported to city councillors that residents experience robberies, assaults, street-level drug dealing/consumption, threats and coercion, and illegal squatting; some residents reportedly won't speak publicly out of fear. Note: this was relayed via an opposition party's press statement, so the political framing should be read with some caution even though the underlying resident-group complaint is real.",
+    "short_supporting_excerpt": "viven con miedo por las peleas, venta y consumo de droga",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Relayed through an opposition political party's press statement; underlying resident association is real but statement is not neutral"
+    ],
+    "record_id": "valencia-op-009",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "political_claim",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Cabanyal",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.428,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "neighbourhood": "El Cabanyal",
+    "street_or_place": "Streets with high concentration of tourist rentals; port dock area",
+    "source_platform": "independent journalism blog",
+    "source_url": "https://pedromartinperiodismo.wordpress.com/2026/07/26/turismo-incivico-drogas-prostitucion-y-robos-el-menu-diario-de-dos-barrios-valencianos/",
+    "post_date": "2026-07-26",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "intoxicated_crowds",
+      "uncomfortable_for_walking",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "Residents describe daily uncivil tourist behaviour (public drunkenness, vomiting, near-nudity) linked to the growth of short-term tourist rentals; separately, prostitution is mentioned near the port dock area.",
+    "short_supporting_excerpt": "borracheras, vómitos y gente semidesnuda por sus calles",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Single independent blog; not a large news outlet, though it cites specific resident complaints"
+    ],
+    "record_id": "valencia-op-010",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Cabanyal",
+      "Streets with high concentration of tourist rentals; port dock area"
+    ],
+    "maximum_exact_time_effect_points": -0.405,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Malvarrosa / Beachfront",
+    "neighbourhood": "La Malva-rosa",
+    "street_or_place": "\"Casitas Rosas\" (unconfirmed exact location)",
+    "source_platform": "SEO 'dangerous neighbourhoods' aggregator",
+    "source_url": "https://barriospeligrosos.com/espana/valencia/",
+    "post_date": "2026-01-31",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "unverified",
+    "themes": [
+      "drug_activity",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "Claims a specific spot known as 'Casitas Rosas' is a notorious drug-dealing hotspot near the beach, with public drug use nearby. Could not be independently corroborated by any news outlet in this research -- appears only in commercial/SEO 'dangerous neighbourhoods' aggregator content.",
+    "short_supporting_excerpt": "una de las zonas más notorias por la venta de droga",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Uncorroborated by any news source found; appears in commercial SEO content designed to rank for 'dangerous neighbourhoods' searches"
+    ],
+    "record_id": "valencia-op-011",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Malvarrosa / Beachfront",
+      "La Malva-rosa",
+      "\"Casitas Rosas\" (unconfirmed exact location)"
+    ],
+    "maximum_exact_time_effect_points": -0.027,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Malvarrosa / Beachfront",
+    "neighbourhood": "La Malva-rosa",
+    "street_or_place": "Promenade/terraces",
+    "source_platform": "travel safety blog",
+    "source_url": "https://safetyverdict.com/spain/valencia/is-valencia-safe-at-night",
+    "post_date": "2026-01-15",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "lively",
+      "tourists_recommend"
+    ],
+    "opinion_summary": "Grouped with central districts as staying lively and populated after dark.",
+    "short_supporting_excerpt": "stays lit, walkable, and socially active",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Generic citywide framing, not Malvarrosa-specific detail"
+    ],
+    "record_id": "valencia-op-012",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Malvarrosa / Beachfront",
+      "La Malva-rosa",
+      "Promenade/terraces"
+    ],
+    "maximum_exact_time_effect_points": 0.071,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Benimaclet",
+    "neighbourhood": "Benimaclet",
+    "street_or_place": "Plaza de Benimaclet / main streets",
+    "source_platform": "student housing guide",
+    "source_url": "https://uniscopio.com/en/student-accommodation/student-accommodation-valencia/benimaclet/",
+    "post_date": "2026-03-16",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "evening",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "student_area",
+      "good_transport"
+    ],
+    "opinion_summary": "Considered safe and popular with students; described as well-lit with constant foot traffic creating a good sense of security.",
+    "short_supporting_excerpt": "well-lit and there's a constant flow of residents",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Student-housing marketing content"
+    ],
+    "record_id": "valencia-op-013",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Benimaclet",
+      "Plaza de Benimaclet / main streets"
+    ],
+    "maximum_exact_time_effect_points": 0.213,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Benimaclet",
+    "neighbourhood": "Benimaclet",
+    "street_or_place": "General barrio",
+    "source_platform": "relocation blog",
+    "source_url": "https://valenciamove.com/best-neighborhoods-valencia/benimaclet/",
+    "post_date": "2026-05-16",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "student_area",
+      "mixed_reputation",
+      "locals_recommend"
+    ],
+    "opinion_summary": "Described as Valencia's most alternative neighbourhood with a village feel; also noted that the student/alternative vibe can feel 'noisy and a bit rough at the edges.'",
+    "short_supporting_excerpt": "can feel noisy and a bit rough at the edges",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Relocation-agency blog"
+    ],
+    "record_id": "valencia-op-014",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Benimaclet",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.02,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Benimaclet",
+    "neighbourhood": "Benimaclet",
+    "street_or_place": "General barrio",
+    "source_platform": "neighbourhood guide (long-form)",
+    "source_url": "https://www.valencia-trip.com/guides/benimaclet-guide/",
+    "post_date": "2026-06-07",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "perception_outdated",
+      "clean"
+    ],
+    "opinion_summary": "Framed as safe for tourists, with petty-crime density lower than El Carmen's nightlife zones; notes a long-standing North African immigrant community shaping street culture, without linking this to safety.",
+    "short_supporting_excerpt": "no particular safety concerns beyond standard urban precautions",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Independent guide site, methodology unclear"
+    ],
+    "record_id": "valencia-op-015",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Benimaclet",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Extramurs",
+    "neighbourhood": "Extramurs (El Botànic)",
+    "street_or_place": "General barrio",
+    "source_platform": "personal expat blog",
+    "source_url": "https://abroadinvalencia.com/valencia-neighborhood-guide/",
+    "post_date": "2024-04-12",
+    "language": "English",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "locals_recommend",
+      "good_transport"
+    ],
+    "opinion_summary": "A long-term resident calls Extramurs (specifically El Botànic) their favorite and 'the best place to live in Valencia,' citing centrality and calm.",
+    "short_supporting_excerpt": "the best place to live in Valencia",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Single blogger, self-acknowledged bias toward own neighbourhood"
+    ],
+    "record_id": "valencia-op-016",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Extramurs",
+      "Extramurs (El Botànic)",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.09,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Patraix",
+    "neighbourhood": "Patraix",
+    "street_or_place": "General barrio",
+    "source_platform": "relocation guide",
+    "source_url": "https://valenciamove.com/neighborhoods-valencia/patraix/",
+    "post_date": "2026-05-16",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "family_area",
+      "good_transport"
+    ],
+    "opinion_summary": "Described as quiet, safe, flat and family-friendly with excellent schools, but almost no nightlife -- some expats may feel isolated.",
+    "short_supporting_excerpt": "quiet, safe streets with parks and playgrounds",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Relocation-agency content"
+    ],
+    "record_id": "valencia-op-017",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Patraix",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Orriols",
+    "neighbourhood": "Orriols",
+    "street_or_place": "General barrio",
+    "source_platform": "relocation consultant blog",
+    "source_url": "https://www.lavidalencia.com/blog/neighborhood-spotlight-orriols",
+    "post_date": "2025-09-21",
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "evening",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "perception_improving",
+      "mixed_reputation"
+    ],
+    "opinion_summary": "Described as diverse, energetic and 'steadily improving,' with limited local nightlife -- residents go to the centre or university areas for bigger nights out.",
+    "short_supporting_excerpt": "diverse, energetic, and steadily improving",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Single relocation-blog source, contradicted by later incident evidence found in the same research"
+    ],
+    "record_id": "valencia-op-018",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Orriols",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.02,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Orriols",
+    "neighbourhood": "Orriols",
+    "street_or_place": "Barrio-wide, multiple named streets in coverage",
+    "source_platform": "local news (regional outlet)",
+    "source_url": "https://www.eldebate.com/espana/comunidad-valenciana/valencia/20231206/macrorredada-valencia-150-agentes-toman-peligroso-barrio-orriols_158689.html",
+    "post_date": "2023-12-06",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "confirmed_incident",
+    "themes": [
+      "drug_activity",
+      "aggressive_behaviour",
+      "homelessness_mentions",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A large-scale police operation (150 agents, 238 people identified) was deployed in Orriols, the second such macro-raid within a month, following three stabbings (Oct-Nov 2023) tied to disputes among small-scale drug dealers. A named resident association ('Orriols en Lucha') has repeatedly protested the drug dealing and squatting, demanding a safer neighbourhood. Note: this outlet's own framing includes editorial commentary about immigration and 'multiculturalism' that goes beyond the reported facts -- that framing is NOT adopted here; only the corroborated factual claims (raids, stabbings, resident association activity) are retained.",
+    "short_supporting_excerpt": "tres apuñalamientos ... dos grandes operaciones policiales",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 4,
+    "limitations": [
+      "Source has an editorially charged framing around immigration; factual claims about raids/stabbings are independently corroborated by a second, more neutral outlet (see next record)"
+    ],
+    "record_id": "valencia-op-019",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "multiple_named_places",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Orriols",
+      "Barrio-wide, multiple named streets in coverage"
+    ],
+    "maximum_exact_time_effect_points": -1.47,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Orriols",
+    "neighbourhood": "Orriols",
+    "street_or_place": "Barrio-wide",
+    "source_platform": "local news (regional outlet)",
+    "source_url": "https://www.hortanoticias.com/una-nueva-redada-policial-en-orriols-se-salda-con-222-identificados-21-denuncias-y-7-detenidos/",
+    "post_date": "2024-05-29",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "evening",
+    "overall_sentiment": "negative",
+    "evidence_tier": "confirmed_incident",
+    "themes": [
+      "drug_activity",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A follow-up large-scale police operation in Orriols (multiple national police units including canine and immigration/border units) resulted in 222 people identified, 21 citations, and 7 arrests; explicitly framed by the city as part of an ongoing 'pacification of coexistence' strategy promised to neighbourhood associations by the mayor.",
+    "short_supporting_excerpt": "222 personas identificadas ... 7 detenidos",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 4,
+    "limitations": [
+      "News report of an official operation; neutral factual tone, corroborates the prior record independently"
+    ],
+    "record_id": "valencia-op-020",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Orriols",
+      "Barrio-wide"
+    ],
+    "maximum_exact_time_effect_points": -1.89,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Estació del Nord / Bus Station",
+    "neighbourhood": "Ciutat Vella edge",
+    "street_or_place": "Estación del Norte",
+    "source_platform": "neighbourhood guide",
+    "source_url": "https://en.northleg.com/valencia/attractions/estacion-norte/",
+    "post_date": null,
+    "language": "English",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "isolated",
+      "poorly_maintained",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "The train station is not considered dangerous, but becomes quiet and empty late at night, which can make visitors feel uneasy; recommendation to visit between 7am-10pm.",
+    "short_supporting_excerpt": "could also mean that you might feel unsafe to go at night",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Guide site, not a personal account"
+    ],
+    "record_id": "valencia-op-021",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Estació del Nord / Bus Station",
+      "Ciutat Vella edge",
+      "Estación del Norte"
+    ],
+    "maximum_exact_time_effect_points": -0.047,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Estació del Nord / Bus Station",
+    "neighbourhood": "Ciutat Vella edge",
+    "street_or_place": "Estacion de Autobuses (bus station)",
+    "source_platform": "TripAdvisor reviews",
+    "source_url": "https://www.tripadvisor.com/Attraction_Review-g187529-d14891881-Reviews-Estacion_de_Autobuses_de_Valencia-Valencia_Province_of_Valencia_Valencian_Commun.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "visitor",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "poorly_maintained",
+      "dirty"
+    ],
+    "opinion_summary": "Multiple visitor reviews describe the bus station (distinct from the train station) as dirty, poorly maintained and lacking basic amenities -- a comfort/maintenance concern rather than a safety one.",
+    "short_supporting_excerpt": "small, shabby, dirty, smelly waiting room",
+    "number_of_people_expressing_similar_view": 4,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Reviews about facility quality, not personal safety"
+    ],
+    "record_id": "valencia-op-022",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Estació del Nord / Bus Station",
+      "Ciutat Vella edge",
+      "Estacion de Autobuses (bus station)"
+    ],
+    "maximum_exact_time_effect_points": -0.425,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Jardí del Túria",
+    "neighbourhood": "citywide corridor",
+    "street_or_place": "Turia riverbed park",
+    "source_platform": "city guide",
+    "source_url": "https://www.valencia-cityguide.com/es/atracciones-turisticas/jardines/jardines-del-turia.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "clean",
+      "locals_recommend"
+    ],
+    "opinion_summary": "Widely described as completely safe even at night, popular for running, cycling and family use, buffered from street noise by being below street level.",
+    "short_supporting_excerpt": "completamente seguros incluso de noche",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Tourism-site framing"
+    ],
+    "record_id": "valencia-op-023",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Jardí del Túria",
+      "citywide corridor",
+      "Turia riverbed park"
+    ],
+    "maximum_exact_time_effect_points": 0.142,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Jardí del Túria",
+    "neighbourhood": "citywide corridor",
+    "street_or_place": "Turia riverbed park",
+    "source_platform": "personal Valencia blog",
+    "source_url": "https://www.valencianot.com/parques-y-jardines-de-valencia/jardin-del-turia/",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "local",
+    "time_context": "daytime",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "dirty",
+      "poorly_maintained"
+    ],
+    "opinion_summary": "A local blogger complains about littering and lack of civic care ('incivismo') in parts of the park, and recommends visiting early to avoid crowds -- a maintenance/atmosphere complaint rather than a safety one.",
+    "short_supporting_excerpt": "el incivismo se ve por todos los lados",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Single blogger, older/undated content"
+    ],
+    "record_id": "valencia-op-024",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Jardí del Túria",
+      "citywide corridor",
+      "Turia riverbed park"
+    ],
+    "maximum_exact_time_effect_points": -0.047,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "La Saïdia",
+    "neighbourhood": "La Saïdia (district)",
+    "street_or_place": "General district",
+    "source_platform": "real estate opinion aggregator",
+    "source_url": "https://www.fotocasa.es/es/vivir-en-valencia-capital/la-saidia",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "good_transport",
+      "clean"
+    ],
+    "opinion_summary": "User ratings (n=14) score the district highly on safety (4.65/5), street lighting, and tranquility -- among the more positively rated districts in the dataset.",
+    "short_supporting_excerpt": "4,65 ... Seguridad del distrito",
+    "number_of_people_expressing_similar_view": 14,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Small sample size (n=14) on a real-estate ratings platform"
+    ],
+    "record_id": "valencia-op-025",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "real_estate",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "La Saïdia",
+      "La Saïdia (district)",
+      "General district"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "La Saïdia",
+    "neighbourhood": "Morvedre",
+    "street_or_place": "General Morvedre streets",
+    "source_platform": "resident review site",
+    "source_url": "https://www.enalquiler.com/barrios/valencia/morvedre_242.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "late_night",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "dirty",
+      "poorly_maintained",
+      "intoxicated_crowds",
+      "late_night_activity",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A resident review of the Morvedre sub-neighbourhood (within La Saïdia district) describes it as dirty, affected by squatted buildings, and disrupted by weekend nighttime noise from street-drinking (botellones) and bars -- 'a very abandoned neighbourhood.' This contrasts with the district's generally positive aggregate ratings, illustrating a street/sub-area-specific concern.",
+    "short_supporting_excerpt": "un barrio muy abandonado",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Single resident comment; may not represent broader Morvedre opinion"
+    ],
+    "record_id": "valencia-op-026",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "La Saïdia",
+      "Morvedre",
+      "General Morvedre streets"
+    ],
+    "maximum_exact_time_effect_points": -0.608,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Algirós",
+    "neighbourhood": "Algirós",
+    "street_or_place": "General district",
+    "source_platform": "real estate opinion aggregator",
+    "source_url": "https://www.fotocasa.es/es/vivir-en-valencia-capital/algiros",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "student_area",
+      "good_transport"
+    ],
+    "opinion_summary": "User ratings (n=12) score safety at 4.40/5 and street lighting at 4.10/5; also known as a student area near the universities.",
+    "short_supporting_excerpt": "4,40 ... Seguridad del distrito",
+    "number_of_people_expressing_similar_view": 12,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Small sample size (n=12)"
+    ],
+    "record_id": "valencia-op-027",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "real_estate",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Algirós",
+      "General district"
+    ],
+    "maximum_exact_time_effect_points": 0.04,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Torrefiel",
+    "neighbourhood": "Torrefiel",
+    "street_or_place": "General barrio",
+    "source_platform": "resident opinion blog",
+    "source_url": "https://dondevives.com.es/barrio-torrefiel-valencia-opiniones/",
+    "post_date": "2023-11-18",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "mixed_reputation",
+      "perception_outdated",
+      "locals_recommend",
+      "poorly_maintained"
+    ],
+    "opinion_summary": "Residents describe the barrio as quiet, safe and welcoming despite some outsiders considering it a 'zona conflictiva' (troubled area); complaints focus on lack of green space and parking rather than safety.",
+    "short_supporting_excerpt": "algunos pueden considerarlo una zona conflictiva",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Aggregator blog summarizing unspecified resident survey"
+    ],
+    "record_id": "valencia-op-028",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Torrefiel",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.02,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Torrefiel",
+    "neighbourhood": "Torrefiel",
+    "street_or_place": "General barrio",
+    "source_platform": "resident review site",
+    "source_url": "https://www.enalquiler.com/barrios/valencia/torrefiel_290.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "dirty",
+      "poorly_maintained"
+    ],
+    "opinion_summary": "A resident comment cites persistent litter/dirtiness and low neighbour engagement with cleanliness, though also praises the density of small local shops.",
+    "short_supporting_excerpt": "la suciedad que impera",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Single comment"
+    ],
+    "record_id": "valencia-op-029",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Torrefiel",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.257,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Quatre Carreres",
+    "neighbourhood": "Quatre Carreres (district)",
+    "street_or_place": "General district",
+    "source_platform": "real estate opinion aggregator",
+    "source_url": "https://www.fotocasa.es/es/vivir-en-valencia-capital/quatre-carreres",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "family_area",
+      "good_transport"
+    ],
+    "opinion_summary": "User ratings (n=27) score district safety at 3.65/5 -- solid but middling compared to other residential districts; also positively rated for street lighting and dog-walking.",
+    "short_supporting_excerpt": "3,65 ... Seguridad del distrito",
+    "number_of_people_expressing_similar_view": 27,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Aggregated district rating, not neighbourhood-specific"
+    ],
+    "record_id": "valencia-op-030",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "real_estate",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Quatre Carreres",
+      "Quatre Carreres (district)",
+      "General district"
+    ],
+    "maximum_exact_time_effect_points": 0.04,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Nazaret",
+    "neighbourhood": "Nazaret",
+    "street_or_place": "General barrio",
+    "source_platform": "local news article",
+    "source_url": "https://www.valenciaextra.com/es/sociedad/nazaret-barrio-vive-margen-desarrollo-valencia-esto-reclaman-sus-vecinos_575404_102.html",
+    "post_date": "2025-07-25",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "isolated",
+      "poorly_maintained",
+      "poor_transport"
+    ],
+    "opinion_summary": "Resident association describes ongoing urban isolation, deficient public services, illegal tourist housing growth, and flood vulnerability (post-DANA) as key grievances -- concerns are infrastructural rather than crime-related.",
+    "short_supporting_excerpt": "un evidente aislamiento urbano",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "News article citing neighbourhood association, not raw social comments"
+    ],
+    "record_id": "valencia-op-031",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Nazaret",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.598,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Nazaret",
+    "neighbourhood": "Nazaret",
+    "street_or_place": "General barrio",
+    "source_platform": "resident opinion blog",
+    "source_url": "https://dondevives.com.es/barrio-nazaret-valencia-opiniones/",
+    "post_date": "2024-02-26",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "locals_recommend",
+      "perception_improving",
+      "poor_transport",
+      "mixed_reputation"
+    ],
+    "opinion_summary": "Some residents note recent safety improvements and green-space renovation; others cite lack of parking and limited shops/services. Visitors mention airport noise.",
+    "short_supporting_excerpt": "la mejora en la seguridad del barrio",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Aggregator blog, unclear methodology"
+    ],
+    "record_id": "valencia-op-032",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Nazaret",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.02,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Nazaret",
+    "neighbourhood": "Nazaret",
+    "street_or_place": "Specific dismantled dealing points (unnamed streets)",
+    "source_platform": "local news (police operation report)",
+    "source_url": "https://www.elperiodic.com/valencia/policia-nacional-desmantela-tres-puntos-negros-venta-cocaina-menudeo-barrio-nazaret_287188",
+    "post_date": "2014-02-20",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "confirmed_incident",
+    "themes": [
+      "drug_activity",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "National Police dismantled three street-level cocaine retail dealing points in Nazaret, arresting seven people. A dated but concrete, police-confirmed incident.",
+    "short_supporting_excerpt": "desmantelado tres puntos negros de venta de cocaína",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Incident is from 2014 -- more than a decade old; no evidence found of similar recent operations"
+    ],
+    "record_id": "valencia-op-033",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Nazaret",
+      "Specific dismantled dealing points (unnamed streets)"
+    ],
+    "maximum_exact_time_effect_points": -1.89,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Nazaret",
+    "neighbourhood": "Nazaret",
+    "street_or_place": "Specific dismantled dealing point (unnamed street)",
+    "source_platform": "local news (police operation report)",
+    "source_url": "https://www.elperiodic.com/valencia/desmantelado-punto-venta-droga-barrio-nazaret_116472",
+    "post_date": "2011-04-13",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "confirmed_incident",
+    "themes": [
+      "drug_activity",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "National Police dismantled a drug-selling point in Nazaret, arresting four people for drug trafficking. Another dated but concrete, police-confirmed incident.",
+    "short_supporting_excerpt": "desmantelado un punto de venta de droga",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Incident is from 2011 -- more than a decade old"
+    ],
+    "record_id": "valencia-op-034",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Nazaret",
+      "Specific dismantled dealing point (unnamed street)"
+    ],
+    "maximum_exact_time_effect_points": -1.89,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "neighbourhood": "El Grau",
+    "street_or_place": "Dàrsena Vella / port area",
+    "source_platform": "TripAdvisor review",
+    "source_url": "https://www.tripadvisor.es/ShowUserReviews-g187529-d2089580-r443355272-El_Grau-Valencia_Province_of_Valencia_Valencian_Community.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "visitor",
+    "time_context": "daytime",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "lively",
+      "locals_recommend",
+      "good_transport"
+    ],
+    "opinion_summary": "A visitor describes the old fishing-port barrio positively, citing good atmosphere and worthwhile walks near the port and City of Arts and Sciences.",
+    "short_supporting_excerpt": "tiene muy buen ambiente",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Single TripAdvisor comment"
+    ],
+    "record_id": "valencia-op-035",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Grau",
+      "Dàrsena Vella / port area"
+    ],
+    "maximum_exact_time_effect_points": 0.213,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "neighbourhood": "El Grau",
+    "street_or_place": "South of Avenida del Puerto (near Nazaret)",
+    "source_platform": "municipal planning study",
+    "source_url": "https://www.valencia.es/documents/20142/618951/20200923+Estudio+barrio+de+El+Grau+FINALIZADO.pdf/",
+    "post_date": "2020-09-23",
+    "language": "Spanish",
+    "person_context": "local",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "municipal_data",
+    "themes": [
+      "mixed_reputation",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "Municipal social-services study notes El Grau is split by Avenida del Puerto into a better-resourced northern half (toward Malvarrosa) and a more precarious southern half near Nazaret with more vulnerable housing conditions.",
+    "short_supporting_excerpt": "dos zonas claramente diferenciadas",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Formal municipal report, not organic opinion, but confirms street-specific split found elsewhere"
+    ],
+    "record_id": "valencia-op-036",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Grau",
+      "South of Avenida del Puerto (near Nazaret)"
+    ],
+    "maximum_exact_time_effect_points": -0.182,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Mestalla",
+    "neighbourhood": "Mestalla",
+    "street_or_place": "General barrio",
+    "source_platform": "bank/city guide blog",
+    "source_url": "https://www.bancsabadell.com/bsnacional/ca/blog/els-millors-barris-de-valencia-per-viure-hi/",
+    "post_date": "2026-03-03",
+    "language": "Catalan",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "family_area",
+      "good_transport"
+    ],
+    "opinion_summary": "Despite being busy on match days near the stadium, most residential streets are described as low-rise and calm ('poca bullícia'); considered one of the better-regarded central-adjacent barrios.",
+    "short_supporting_excerpt": "molts dels seus carrers tenen habitatges baixos i poca bullícia",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Bank-sponsored city guide, generic framing"
+    ],
+    "record_id": "valencia-op-037",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Mestalla",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Marina / Port (America's Cup)",
+    "neighbourhood": "Marina Real Juan Carlos I",
+    "street_or_place": "Marina docks",
+    "source_platform": "TripAdvisor review",
+    "source_url": "https://www.tripadvisor.com/Attraction_Review-g187529-d15154796-Reviews-La_Marina_de_Valencia-Valencia_Province_of_Valencia_Valencian_Community.html",
+    "post_date": null,
+    "language": "English",
+    "person_context": "visitor",
+    "time_context": "daytime",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "isolated",
+      "poorly_maintained"
+    ],
+    "opinion_summary": "A visitor was disappointed to find the marina 'basically empty, with no boats, few people around,' contrasting the touristic image of the America's Cup legacy site.",
+    "short_supporting_excerpt": "basically empty, with no boats, few people around",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Single review, daytime observation only, not framed as a safety concern"
+    ],
+    "record_id": "valencia-op-038",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Marina / Port (America's Cup)",
+      "Marina Real Juan Carlos I",
+      "Marina docks"
+    ],
+    "maximum_exact_time_effect_points": -0.283,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Ayora",
+    "neighbourhood": "Aiora (Ayora)",
+    "street_or_place": "General barrio",
+    "source_platform": "resident review site",
+    "source_url": "https://www.enalquiler.com/barrios/valencia/aiora_213.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "resident/former resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "quiet",
+      "comfortable_for_walking",
+      "good_transport",
+      "local_services"
+    ],
+    "opinion_summary": "Several first-person reviews describe Aiora as a convenient, mixed residential barrio with local shops, two metro stops and the beach within walking distance; one former resident explicitly describes it as very safe.",
+    "short_supporting_excerpt": "excelente barrio para vivir y muy seguro",
+    "number_of_people_expressing_similar_view": 2,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Small, self-selected review sample",
+      "No nighttime-specific detail",
+      "One unrelated discriminatory review on the page was excluded entirely"
+    ],
+    "record_id": "valencia-op-039",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Ayora",
+      "Aiora (Ayora)",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": 0.09,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "La Saïdia",
+    "neighbourhood": "La Saïdia (district; precise streets not identified)",
+    "street_or_place": "Unspecified streets and residential buildings",
+    "source_platform": "local news citing neighbourhood association",
+    "source_url": "https://cadenaser.com/comunitat-valenciana/2025/06/16/vecinos-de-la-saidia-denuncian-robos-y-inseguridad-queremos-volver-a-la-normalidad-radio-valencia/",
+    "post_date": "2025-06-16",
+    "language": "Spanish",
+    "person_context": "resident association",
+    "time_context": "daytime_and_unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "theft",
+      "aggressive_behaviour",
+      "resident_concern"
+    ],
+    "opinion_summary": "The neighbourhood association reported a perceived rise in street and home thefts since October 2024. A daytime fight that damaged parked cars prompted calls for a fixed police presence.",
+    "short_supporting_excerpt": "queremos volver a la normalidad",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Association complaint, not neighbourhood crime statistics",
+      "The report does not identify the affected streets",
+      "Should not be applied uniformly to every route point in La Saïdia"
+    ],
+    "record_id": "valencia-op-040",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "La Saïdia",
+      "La Saïdia (district; precise streets not identified)",
+      "Unspecified streets and residential buildings"
+    ],
+    "maximum_exact_time_effect_points": -0.598,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "neighbourhood": "El Cabanyal-Canyamelar",
+    "street_or_place": "Carrer de l’Arquitecte Alfaro near the large tourist-apartment building",
+    "source_platform": "local news citing neighbourhood association",
+    "source_url": "https://cadenaser.com/comunitat-valenciana/2026/08/02/la-asociacion-vecinal-del-cabanyal-alerta-sobre-el-incremento-de-conflictos-entre-turistas-y-vecinos-y-reclama-soluciones-urgentes-radio-valencia/",
+    "post_date": "2026-08-02",
+    "language": "Spanish",
+    "person_context": "resident association",
+    "time_context": "late_night",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "intoxicated_crowds",
+      "noise",
+      "incivility",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "The Cabanyal neighbourhood association identifies Carrer de l’Arquitecte Alfaro as the main current hotspot for tourism-related noise, public urination and resident-tourist conflict around a very large tourist-apartment building.",
+    "short_supporting_excerpt": "han perdido la paz",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 4,
+    "limitations": [
+      "This is a convivencia and late-night crowd issue, not evidence of violent-crime prevalence",
+      "Use only near the named street and relevant hours",
+      "Association testimony relayed by local news"
+    ],
+    "record_id": "valencia-op-041",
+    "city_id": "valencia",
+    "city": "València",
+    "province": "València",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Cabanyal",
+      "El Cabanyal-Canyamelar",
+      "Carrer de l’Arquitecte Alfaro near the large tourist-apartment building"
+    ],
+    "maximum_exact_time_effect_points": -1.417,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  }
+]

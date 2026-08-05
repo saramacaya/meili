@@ -1,0 +1,629 @@
+[
+  {
+    "area": "Russafa",
+    "general_vibe": "Trendy dining/nightlife district, dense foot traffic, considered one of the most comfortable areas to walk at night in the city.",
+    "daytime_vibe": "Calm, café/market culture (Mercat de Russafa).",
+    "nighttime_vibe": "Busy and well-lit on main strips; considered safe by most sources due to constant activity.",
+    "most_common_positive_themes": [
+      "nightlife",
+      "comfortable_for_walking",
+      "locals_recommend",
+      "good_transport"
+    ],
+    "most_common_concerns": [
+      "pickpocketing",
+      "intoxicated_crowds (weekend bars)"
+    ],
+    "solo_walking_mentions": [
+      "Described as one of the safest/most pleasant areas in Spain to be out at night."
+    ],
+    "street_specific_observations": [
+      "Weekend terrace/bar crowding increases pickpocket risk specifically."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 3,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://safetyverdict.com/spain/valencia/is-valencia-safe-at-night",
+      "https://partiesnearme.net/blog/ruzafa-bars-valencia",
+      "https://irishtraveladdict.com/ruzafa-valencia-guide/"
+    ]
+  },
+  {
+    "area": "El Carme / Ciutat Vella",
+    "general_vibe": "Historic old town; bohemian, artsy, touristy, with a reputation that has softened over time.",
+    "daytime_vibe": "Quiet, narrow medieval streets, museums and cafes.",
+    "nighttime_vibe": "Transforms into the city's most popular nightlife zone; one blogger calls it 'occasionally sketchy' despite shedding its past reputation. An unverified aggregator source claims pickpocketing rises at night in leisure zones.",
+    "most_common_positive_themes": [
+      "lively",
+      "touristy",
+      "locals_recommend"
+    ],
+    "most_common_concerns": [
+      "mixed_reputation",
+      "perception_outdated (some 'seedy past' framing persists)",
+      "pickpocketing (unverified)"
+    ],
+    "solo_walking_mentions": [
+      "No explicit solo-female commentary found for El Carme specifically; general Valencia solo-travel sources are positive citywide."
+    ],
+    "street_specific_observations": [
+      "Narrow, maze-like streets are frequently mentioned as easy to get lost in, which affects orientation more than safety."
+    ],
+    "conflicting_opinions": [
+      "One blogger frames the area as 'occasionally sketchy' while multiple tourism sites describe it as simply lively/vibrant with no safety caveat."
+    ],
+    "source_count": 3,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "unverified",
+    "confidence": "low",
+    "sources": [
+      "https://valencia.for91days.com/a-walk-through-el-carmen/",
+      "https://www.cityspotters.com/en/spain/valencia/sights/barrio-del-carmen",
+      "https://barriospeligrosos.com/espana/valencia/"
+    ]
+  },
+  {
+    "area": "El Cabanyal",
+    "general_vibe": "Beachfront-adjacent, historic fishermen's quarter, gentrifying and trendy -- but also the site of a formally documented resident-association safety complaint.",
+    "daytime_vibe": "Colorful, touristy, growing digital-nomad presence.",
+    "nighttime_vibe": "Mixed and now better-evidenced than a generic stereotype: general guides call it safe overall; a resident account describes discomfort walking/cycling alone at night in some areas; and a named resident platform ('Cabanyal Zero Incívics') formally reported robberies, assaults, street drug dealing, threats and squatting to city councillors in 2021.",
+    "most_common_positive_themes": [
+      "perception_improving",
+      "touristy",
+      "clean (renovated areas)"
+    ],
+    "most_common_concerns": [
+      "solo_woman_concern",
+      "street_specific_concern",
+      "theft",
+      "drug_activity",
+      "aggressive_behaviour",
+      "homelessness_mentions",
+      "intoxicated_crowds",
+      "noise",
+      "incivility"
+    ],
+    "solo_walking_mentions": [
+      "A resident writer feels less comfortable walking/cycling alone at night in some parts of Cabanyal, particularly in the quieter winter season."
+    ],
+    "street_specific_observations": [
+      "Concern is not neighbourhood-wide; framed as 'some areas around Cabanyal' rather than the whole barrio. Separately, prostitution is specifically located near the port dock area, and uncivil tourist behaviour is tied to streets with high concentrations of short-term rentals.",
+      "Carrer de l’Arquitecte Alfaro: in August 2026 the neighbourhood association identified the area around a large tourist-apartment building as a current late-night noise, public-urination and resident-tourist conflict hotspot."
+    ],
+    "conflicting_opinions": [
+      "Tourism/relocation guides emphasize safety and desirability; a resident account and a formal resident-association complaint both flag real, named safety concerns -- this is the strongest documented concern pattern in this research outside of Orriols and Nazaret."
+    ],
+    "source_count": 5,
+    "reddit_source_count": 0,
+    "local_perspective_count": 3,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium-high",
+    "sources": [
+      "https://www.spendlifetraveling.com/where-to-live-in-valencia-spain/",
+      "https://housinganywhere.com/Valencia--Spain/valencia-neighbourhood-guide",
+      "https://valencianews.es/valencia/paula-llobet-estan-expulsando-a-los-vecinos-viven-con-miedo-por-las-peleas-venta-y-consumo-de-droga-en-la-calle-amenazas-y-okupaciones-de-viviendas/",
+      "https://pedromartinperiodismo.wordpress.com/2026/07/26/turismo-incivico-drogas-prostitucion-y-robos-el-menu-diario-de-dos-barrios-valencianos/",
+      "https://cadenaser.com/comunitat-valenciana/2026/08/02/la-asociacion-vecinal-del-cabanyal-alerta-sobre-el-incremento-de-conflictos-entre-turistas-y-vecinos-y-reclama-soluciones-urgentes-radio-valencia/"
+    ]
+  },
+  {
+    "area": "Malvarrosa / Beachfront",
+    "general_vibe": "Main beach and promenade; lively in summer, comfortable due to activity levels. One unverified claim of a specific drug-dealing hotspot could not be corroborated.",
+    "daytime_vibe": "Family beach use, restaurants along the promenade.",
+    "nighttime_vibe": "Considered comfortable due to it staying populated; treated as part of the broader 'central and beachfront districts stay lively' pattern.",
+    "most_common_positive_themes": [
+      "comfortable_for_walking",
+      "lively",
+      "tourists_recommend"
+    ],
+    "most_common_concerns": [
+      "Winter off-season quietness noted for the adjacent Cabanyal area, which may extend to the beach promenade.",
+      "Unverified claim of a 'Casitas Rosas' drug-dealing hotspot -- found only in commercial SEO content, not corroborated by any news source."
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "unverified",
+    "confidence": "low",
+    "sources": [
+      "https://safetyverdict.com/spain/valencia/is-valencia-safe-at-night",
+      "https://barriospeligrosos.com/espana/valencia/"
+    ]
+  },
+  {
+    "area": "Benimaclet",
+    "general_vibe": "Village-like former independent town, now Valencia's most 'alternative'/progressive and student-heavy neighbourhood.",
+    "daytime_vibe": "Quiet, community-oriented, market culture.",
+    "nighttime_vibe": "Well-lit with steady foot traffic; safe per multiple sources, though noisier around student bars on weekends during term time; quiets sharply in summer.",
+    "most_common_positive_themes": [
+      "comfortable_for_walking",
+      "locals_recommend",
+      "student_area",
+      "clean"
+    ],
+    "most_common_concerns": [
+      "Some describe it as feeling 'noisy and a bit rough at the edges' due to the alternative/student vibe."
+    ],
+    "solo_walking_mentions": [
+      "Considered safe for tourists and solo visitors; petty-crime density described as lower than El Carmen's nightlife zones."
+    ],
+    "street_specific_observations": [
+      "Quieter, calmer feel one block off the main plaza is explicitly recommended by relocation guides for those wanting less noise."
+    ],
+    "conflicting_opinions": [
+      "Predominantly positive/safe consensus, with an occasional 'rough at the edges' caveat from one source."
+    ],
+    "source_count": 4,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://uniscopio.com/en/student-accommodation/student-accommodation-valencia/benimaclet/",
+      "https://valenciamove.com/best-neighborhoods-valencia/benimaclet/",
+      "https://www.valencia-trip.com/guides/benimaclet-guide/",
+      "https://hersafevoyage.com/destinations/spain/valencia/benimaclet"
+    ]
+  },
+  {
+    "area": "Extramurs",
+    "general_vibe": "Mostly residential, quiet but close to the centre; includes El Botànic, La Petxina, La Roqueta, Arrancapins sub-areas.",
+    "daytime_vibe": "Quiet, family-friendly, with bars/restaurants/terraces.",
+    "nighttime_vibe": "No explicit nighttime safety commentary found; general residential-quiet framing implies low late-night activity.",
+    "most_common_positive_themes": [
+      "residential",
+      "quiet",
+      "locals_recommend",
+      "good_transport"
+    ],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "A long-term resident singles out El Botànic sub-area specifically as their favourite; other Extramurs sub-areas (La Roqueta) received less commentary -- a research gap."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 1,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.globexs.com/global-mobility/neighbourhoods-in-valencia-patraix-and-extramurs/",
+      "https://abroadinvalencia.com/valencia-neighborhood-guide/"
+    ]
+  },
+  {
+    "area": "Patraix",
+    "general_vibe": "Authentic, residential, family-oriented, low on international/nightlife appeal.",
+    "daytime_vibe": "Quiet, local shops and markets, schools and playgrounds.",
+    "nighttime_vibe": "Almost no nightlife; framed as quiet and safe by every source found -- no dissenting opinions located.",
+    "most_common_positive_themes": [
+      "residential",
+      "quiet",
+      "family_area",
+      "clean",
+      "affordable"
+    ],
+    "most_common_concerns": [
+      "Very limited nightlife/social scene -- may feel isolating for expats wanting more activity, not a safety concern."
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 4,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://valenciamove.com/neighborhoods-valencia/patraix/",
+      "https://beroomie.app/neighborhoods/valencia/patraix",
+      "https://www.lavidalencia.com/blog/neighborhood-spotlight-patraix",
+      "https://www.valenciarealestateconsultinggroup.com/valenciarealestatepost/valencia-neighborhood-spotlight-patraix"
+    ]
+  },
+  {
+    "area": "Orriols",
+    "general_vibe": "Diverse, working-class, family-sized housing at below-central prices, described by relocation blogs as 'steadily improving' -- but this is directly contradicted by strong, independently corroborated police/news evidence of ongoing serious problems.",
+    "daytime_vibe": "Plazas, schools, daily errands within a short walk.",
+    "nighttime_vibe": "No tourism-blog commentary on nighttime specifically, but concrete evidence indicates real safety concerns: three stabbings tied to drug-dealer disputes (Oct-Nov 2023), followed by repeated large-scale police operations (150+ officers; 222-238 people identified per raid; multiple arrests for weapons and drugs) continuing into at least May 2024.",
+    "most_common_positive_themes": [
+      "residential",
+      "affordable",
+      "perception_improving (per relocation blogs only -- not corroborated by news evidence)"
+    ],
+    "most_common_concerns": [
+      "drug_activity",
+      "aggressive_behaviour (stabbings)",
+      "street_specific_concern",
+      "homelessness_mentions (squatting)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "A named resident association ('Orriols en Lucha') has repeatedly and publicly protested drug dealing and squatting, demanding a 'safe, diverse and dignified' neighbourhood. The city government has run a public, ongoing 'pacification of coexistence' strategy for the neighbourhood since at least late 2023."
+    ],
+    "conflicting_opinions": [
+      "Relocation-blog framing ('steadily improving') is sharply at odds with two independent news outlets' reporting of stabbings and repeated large police operations. This is the clearest case in the whole dataset of casual perception content understating a real, documented problem."
+    ],
+    "source_count": 3,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 2,
+    "highest_evidence_tier": "confirmed_incident",
+    "confidence": "medium-high",
+    "sources": [
+      "https://www.lavidalencia.com/blog/neighborhood-spotlight-orriols",
+      "https://www.eldebate.com/espana/comunidad-valenciana/valencia/20231206/macrorredada-valencia-150-agentes-toman-peligroso-barrio-orriols_158689.html",
+      "https://www.hortanoticias.com/una-nueva-redada-policial-en-orriols-se-salda-con-222-identificados-21-denuncias-y-7-detenidos/"
+    ]
+  },
+  {
+    "area": "Estació del Nord / Bus Station",
+    "general_vibe": "Central transit hub at the edge of Ciutat Vella; historic architecture, heavily used by day.",
+    "daytime_vibe": "Busy, functional, tourist-relevant (architecture).",
+    "nighttime_vibe": "Quiet and empty late at night; guides note this can feel unsettling even though the station itself isn't considered dangerous.",
+    "most_common_positive_themes": [
+      "good_transport",
+      "historic architecture"
+    ],
+    "most_common_concerns": [
+      "isolated (late night)",
+      "poorly_maintained (separate bus station facility, per TripAdvisor reviews)"
+    ],
+    "solo_walking_mentions": [
+      "Guides recommend visiting/transiting between 7am-10pm for the most comfortable experience."
+    ],
+    "street_specific_observations": [
+      "Distinction between the ornate train station (Estació del Nord) and the separate, poorly-reviewed bus station facility nearby."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 4,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://en.northleg.com/valencia/attractions/estacion-norte/",
+      "https://www.tripadvisor.com/Attraction_Review-g187529-d14891881-Reviews-Estacion_de_Autobuses_de_Valencia-Valencia_Province_of_Valencia_Valencian_Commun.html"
+    ]
+  },
+  {
+    "area": "Jardí del Túria",
+    "general_vibe": "Linear park along the old riverbed, ~9km, considered the city's green 'lung' and a major everyday-use corridor.",
+    "daytime_vibe": "Very popular for walking, running, cycling, picnics.",
+    "nighttime_vibe": "Widely described as safe even at night; sunken level buffers it from street noise.",
+    "most_common_positive_themes": [
+      "comfortable_for_walking",
+      "locals_recommend",
+      "clean (mostly)"
+    ],
+    "most_common_concerns": [
+      "One local blogger notes littering/incivility in parts of the park and recommends early-morning visits for tranquility."
+    ],
+    "solo_walking_mentions": [
+      "No explicit solo-female commentary found specific to the park; general 'safe at night' framing is citywide/park-wide."
+    ],
+    "street_specific_observations": [
+      "No specific unsafe stretches identified in available sources; complaints are about maintenance/cleanliness, not personal safety."
+    ],
+    "conflicting_opinions": [
+      "Most sources call it universally safe; one blogger's littering complaint is the only dissenting note found."
+    ],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 1,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://www.valencia-cityguide.com/es/atracciones-turisticas/jardines/jardines-del-turia.html",
+      "https://www.valencianot.com/parques-y-jardines-de-valencia/jardin-del-turia/"
+    ]
+  },
+  {
+    "area": "La Saïdia",
+    "general_vibe": "Working-class heritage district just north of the Turia, increasingly popular with budget-conscious expats seeking proximity to the centre without Ruzafa-level prices.",
+    "daytime_vibe": "Calm, anchored by the Mercado de Sagunto; good transit access.",
+    "nighttime_vibe": "Mixed. District-wide ratings are strongly positive, but Morvedre has a negative resident account and the neighbourhood association reported a perceived rise in street and home thefts from October 2024. The affected streets were not identified.",
+    "most_common_positive_themes": [
+      "residential",
+      "quiet",
+      "good_transport",
+      "affordable"
+    ],
+    "most_common_concerns": [
+      "theft reports",
+      "localized disorder",
+      "weekend street drinking",
+      "cleanliness in Morvedre"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Morvedre sub-neighbourhood: one resident describes it as dirty, affected by squatting, and disrupted by weekend street-drinking noise -- sharply at odds with the district's otherwise strong ratings."
+    ],
+    "conflicting_opinions": [
+      "District aggregate ratings (strongly positive) vs. one specific negative account of the Morvedre sub-area.",
+      "Strong district-wide ratings conflict with a 2025 association complaint about a recent rise in thefts; this may reflect a localized or time-limited change rather than the whole district."
+    ],
+    "source_count": 4,
+    "reddit_source_count": 0,
+    "local_perspective_count": 2,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium",
+    "sources": [
+      "https://www.fotocasa.es/es/vivir-en-valencia-capital/la-saidia",
+      "https://www.enalquiler.com/barrios/valencia/morvedre_242.html",
+      "https://valenciamove.com/es/barrios-valencia/la-saidia/",
+      "https://cadenaser.com/comunitat-valenciana/2025/06/16/vecinos-de-la-saidia-denuncian-robos-y-inseguridad-queremos-volver-a-la-normalidad-radio-valencia/"
+    ]
+  },
+  {
+    "area": "Algirós",
+    "general_vibe": "Student-friendly district near the universities, with village-like residential pockets.",
+    "daytime_vibe": "Residential, close to Turia Garden and campuses.",
+    "nighttime_vibe": "No explicit nighttime commentary found; user safety ratings are high (4.40/5).",
+    "most_common_positive_themes": [
+      "residential",
+      "student_area",
+      "good_transport"
+    ],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.fotocasa.es/es/vivir-en-valencia-capital/algiros"
+    ]
+  },
+  {
+    "area": "Ayora",
+    "general_vibe": "A mixed residential barrio with neighbourhood shops, useful metro/bus connections and access toward the beach. The available first-person sample is small but broadly positive.",
+    "daytime_vibe": "Residential and convenient, with local commerce and mixed age groups.",
+    "nighttime_vibe": "No reliable nighttime-specific evidence; one former resident describes the barrio as very safe, but this is only a small perception sample.",
+    "most_common_positive_themes": [
+      "residential",
+      "quiet",
+      "good_transport",
+      "local_services"
+    ],
+    "most_common_concerns": [
+      "parking"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "One discriminatory review was excluded and must not be treated as safety evidence."
+    ],
+    "source_count": 1,
+    "reddit_source_count": 0,
+    "local_perspective_count": 2,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.enalquiler.com/barrios/valencia/aiora_213.html"
+    ]
+  },
+  {
+    "area": "Torrefiel",
+    "general_vibe": "Historic working-class barrio in Rascanya district, formed partly to house residents displaced by the 1957 flood.",
+    "daytime_vibe": "Compact, small-shop-dense, limited green space.",
+    "nighttime_vibe": "No explicit late-night commentary found; residents describe the area as generally tranquil and safe day-to-day.",
+    "most_common_positive_themes": [
+      "locals_recommend",
+      "perception_outdated",
+      "residential"
+    ],
+    "most_common_concerns": [
+      "dirty",
+      "poorly_maintained",
+      "limited green space",
+      "parking shortage"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "Residents call it welcoming and safe; some outsiders label it a 'zona conflictiva' -- residents explicitly push back on this framing."
+    ],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 2,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium",
+    "sources": [
+      "https://dondevives.com.es/barrio-torrefiel-valencia-opiniones/",
+      "https://www.enalquiler.com/barrios/valencia/torrefiel_290.html"
+    ]
+  },
+  {
+    "area": "Quatre Carreres",
+    "general_vibe": "Large southern/eastern district including Monteolivete and the City of Arts and Sciences; modern architecture mixed with quiet residential pockets.",
+    "daytime_vibe": "Family-friendly, good schools, quiet in residential sub-areas.",
+    "nighttime_vibe": "No explicit commentary found; district safety rating is solid but middling (3.65/5) relative to some other residential districts.",
+    "most_common_positive_themes": [
+      "family_area",
+      "residential",
+      "good_transport"
+    ],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "District is large and includes very different sub-areas (Monteolivete vs. La Punta vs. Malilla) -- data doesn't distinguish between them, a research gap."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.fotocasa.es/es/vivir-en-valencia-capital/quatre-carreres"
+    ]
+  },
+  {
+    "area": "Nazaret",
+    "general_vibe": "Historic fishing village absorbed by port expansion; among the more economically disadvantaged and isolated barrios in Valencia, with concrete (if dated) evidence of street-level drug dealing.",
+    "daytime_vibe": "Quiet, near the port/beach but physically isolated by infrastructure (Formula 1 circuit remnants, empty lots).",
+    "nighttime_vibe": "No explicit nighttime social commentary found; concerns raised are structural (isolation, flooding, services) plus two dated, police-confirmed drug-dealing-point dismantlings (2011, 2014).",
+    "most_common_positive_themes": [
+      "locals_recommend (community warmth)",
+      "perception_improving (some safety gains noted)"
+    ],
+    "most_common_concerns": [
+      "isolated",
+      "poorly_maintained",
+      "poor_transport",
+      "flooding risk",
+      "illegal tourist housing",
+      "drug_activity (historical)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "Some residents note recent safety/greenspace improvements; others emphasize ongoing neglect and isolation. Two confirmed drug-point dismantlings exist in the record, but both are more than a decade old -- no recent (last 3 years) confirmed incidents found for Nazaret specifically, unlike Orriols."
+    ],
+    "source_count": 4,
+    "reddit_source_count": 0,
+    "local_perspective_count": 2,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 2,
+    "highest_evidence_tier": "confirmed_incident",
+    "confidence": "medium",
+    "sources": [
+      "https://www.valenciaextra.com/es/sociedad/nazaret-barrio-vive-margen-desarrollo-valencia-esto-reclaman-sus-vecinos_575404_102.html",
+      "https://dondevives.com.es/barrio-nazaret-valencia-opiniones/",
+      "https://www.elperiodic.com/valencia/policia-nacional-desmantela-tres-puntos-negros-venta-cocaina-menudeo-barrio-nazaret_287188",
+      "https://www.elperiodic.com/valencia/desmantelado-punto-venta-droga-barrio-nazaret_116472"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "general_vibe": "Historic port/fishing barrio, generally well-regarded by visitors, but internally split according to a formal municipal study.",
+    "daytime_vibe": "Positively described port-village atmosphere near the Dàrsena Vella and marina leisure zones.",
+    "nighttime_vibe": "No explicit night-specific commentary found.",
+    "most_common_positive_themes": [
+      "locals_recommend",
+      "lively",
+      "good_transport"
+    ],
+    "most_common_concerns": [
+      "street_specific_concern (southern half near Nazaret more precarious per municipal study)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Municipal planning study explicitly divides the barrio at Avenida del Puerto: north (toward Malvarrosa) better-resourced, south (toward Nazaret) more vulnerable -- directly matches the kind of within-neighbourhood split this research was designed to find."
+    ],
+    "conflicting_opinions": [
+      "Visitor comment is uniformly positive; the municipal study reveals an internal socioeconomic divide invisible to casual visitors."
+    ],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 1,
+    "visitor_perspective_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "municipal_data",
+    "confidence": "medium",
+    "sources": [
+      "https://www.tripadvisor.es/ShowUserReviews-g187529-d2089580-r443355272-El_Grau-Valencia_Province_of_Valencia_Valencian_Community.html",
+      "https://www.valencia.es/documents/20142/618951/20200923+Estudio+barrio+de+El+Grau+FINALIZADO.pdf/"
+    ]
+  },
+  {
+    "area": "Mestalla",
+    "general_vibe": "Central, quiet, residential district built around the Valencia CF stadium and near the Turia Gardens.",
+    "daytime_vibe": "Calm, low-rise streets, greenery, considered one of the more desirable central-adjacent barrios.",
+    "nighttime_vibe": "No explicit nighttime safety commentary found; general framing is calm and residential.",
+    "most_common_positive_themes": [
+      "residential",
+      "quiet",
+      "family_area",
+      "good_transport"
+    ],
+    "most_common_concerns": [
+      "Busy/crowded specifically on match days near the stadium -- not framed as unsafe, just congested."
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.bancsabadell.com/bsnacional/ca/blog/els-millors-barris-de-valencia-per-viure-hi/"
+    ]
+  },
+  {
+    "area": "Marina / Port (America's Cup)",
+    "general_vibe": "Scenic promenade and former America's Cup marina; touristic imagery of vibrancy contrasts with at least one report of daytime emptiness.",
+    "daytime_vibe": "Mixed: promotional sources describe a lively, restaurant-lined promenade; one visitor found it 'basically empty' with few people and no boats.",
+    "nighttime_vibe": "No explicit nighttime safety commentary found for the marina itself (distinct from the adjacent Malvarrosa beach nightlife strip).",
+    "most_common_positive_themes": [
+      "lively (per promotional sources)",
+      "good_transport"
+    ],
+    "most_common_concerns": [
+      "isolated (per one visitor account)",
+      "poorly_maintained (per same account)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "Tourism marketing describes constant vibrancy; independent visitor review describes emptiness and lack of activity -- likely reflects seasonal/time-of-day variation not captured in available sources."
+    ],
+    "source_count": 2,
+    "reddit_source_count": 0,
+    "local_perspective_count": 0,
+    "visitor_perspective_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://veryvalencia.com/things-to-do/attractions/juan-carlos-i-royal-marina",
+      "https://www.tripadvisor.com/Attraction_Review-g187529-d15154796-Reviews-La_Marina_de_Valencia-Valencia_Province_of_Valencia_Valencian_Community.html"
+    ]
+  }
+]

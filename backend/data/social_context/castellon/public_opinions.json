@@ -1,0 +1,1230 @@
+[
+  {
+    "area": "Casco Histórico",
+    "neighbourhood": "Plaza Mayor / Casco Antiguo",
+    "street_or_place": "Plaza Mayor, Plaza Santa Clara, tascas alleys",
+    "source_platform": "TripAdvisor reviews",
+    "source_url": "https://www.tripadvisor.es/ShowUserReviews-g187522-d4783789-r354819615-Placa_Major-Castellon_de_la_Plana_Province_of_Castellon_Valencian_Community.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "visitor",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "lively",
+      "touristy",
+      "clean",
+      "locals_recommend"
+    ],
+    "opinion_summary": "Consistently described as the clean, charming heart of the city; Plaza Santa Clara and the adjoining alleys ('tascas') are recommended for evening drinks with a good atmosphere.",
+    "short_supporting_excerpt": "la ciudad, limpia, coqueta y sumamente agradable",
+    "number_of_people_expressing_similar_view": 4,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Tourist-review platform, not resident testimony"
+    ],
+    "record_id": "castellon-op-001",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "multiple_named_places",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Casco Histórico",
+      "Plaza Mayor / Casco Antiguo",
+      "Plaza Mayor, Plaza Santa Clara, tascas alleys"
+    ],
+    "maximum_exact_time_effect_points": 0.248,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Casco Histórico",
+    "neighbourhood": "Plaza Mayor / Casco Antiguo",
+    "street_or_place": "Plaza Mayor at night",
+    "source_platform": "TripAdvisor reviews",
+    "source_url": "https://www.tripadvisor.es/ShowUserReviews-g187522-d4783789-r329875419-Placa_Major-Castellon_de_la_Plana_Province_of_Castellon_Valencian_Community.html",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "visitor",
+    "time_context": "evening",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "lively"
+    ],
+    "opinion_summary": "Visitors note the square's character changes noticeably between day and night but recommend visiting both, with no safety caveat mentioned.",
+    "short_supporting_excerpt": "el aspecto cambia bastante",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Single review"
+    ],
+    "record_id": "castellon-op-002",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "review_platform",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Casco Histórico",
+      "Plaza Mayor / Casco Antiguo",
+      "Plaza Mayor at night"
+    ],
+    "maximum_exact_time_effect_points": 0.213,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Parque Ribalta - Plaza de Toros",
+    "neighbourhood": "Parque Ribalta",
+    "street_or_place": "Paseo Ribalta, main paths",
+    "source_platform": "travel opinion site",
+    "source_url": "https://www.minube.com/rincon/paseo-ribalta-a498251",
+    "post_date": "2026-04-24",
+    "language": "Spanish",
+    "person_context": "local",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "comfortable_for_walking",
+      "clean",
+      "locals_recommend"
+    ],
+    "opinion_summary": "Multiple travelers describe it as ideal for walking or running, calm and historic, a 'green lung' in the city centre used by both residents and visitors.",
+    "short_supporting_excerpt": "ideal para pasear",
+    "number_of_people_expressing_similar_view": 3,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Travel-opinion aggregator, not specifically night-focused"
+    ],
+    "record_id": "castellon-op-003",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "multiple_named_places",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Parque Ribalta - Plaza de Toros",
+      "Parque Ribalta",
+      "Paseo Ribalta, main paths"
+    ],
+    "maximum_exact_time_effect_points": 0.165,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Parque Ribalta - Plaza de Toros",
+    "neighbourhood": "Parque Ribalta",
+    "street_or_place": "Perimeter fencing dispute",
+    "source_platform": "local news",
+    "source_url": "https://www.elperiodic.com/castellon/castello-tiene-nueva-ubicacion-para-vallado-retirado-parque-rafalafena_869238",
+    "post_date": "2022-12-10",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "evening",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "solo_woman_concern",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A group of residents opposed removing fencing/gates from a park area (related project also affecting Rafalafena park), specifically citing fears that unrestricted nighttime access would increase insecurity and enable street-drinking gatherings (botellones). This reflects genuine, if disputed, resident concern about night access rather than a confirmed incident.",
+    "short_supporting_excerpt": "aumentaría la inseguridad al permitir el acceso nocturno",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Reflects one faction's opinion in a local planning dispute, not a citywide consensus"
+    ],
+    "record_id": "castellon-op-004",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Parque Ribalta - Plaza de Toros",
+      "Parque Ribalta",
+      "Perimeter fencing dispute"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Zona Hospital - Plaza del Real",
+    "neighbourhood": "Zona Hospital - Plaza del Real",
+    "street_or_place": "General zone",
+    "source_platform": "real estate platform",
+    "source_url": "https://www.fotocasa.es/es/vivir-en-castellon-de-la-plana-castello-de-la-plana/hospital-plaza-del-real",
+    "post_date": null,
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "neutral",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "good_transport"
+    ],
+    "opinion_summary": "Described only in real-estate/administrative terms (proximity to Provincial Hospital, central market, price data); no organic social commentary about safety or atmosphere was found.",
+    "short_supporting_excerpt": "descubre nuestra guía de dónde comer",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Real-estate platform content only; essentially a data gap for perception purposes"
+    ],
+    "record_id": "castellon-op-005",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "real_estate",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Zona Hospital - Plaza del Real",
+      "General zone"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Grapa",
+    "neighbourhood": "Grapa - Gambau",
+    "street_or_place": "Skatepark de Grapa",
+    "source_platform": "local news / municipal record",
+    "source_url": "https://xarxajove.info/es/mapa-de-recursos/espacios/skatepark-grapa-castello/",
+    "post_date": "2019-01-03",
+    "language": "Spanish",
+    "person_context": "local (youth club)",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "poorly_maintained",
+      "perception_improving"
+    ],
+    "opinion_summary": "The neighbourhood's skatepark was described by a local skate club representative as 'very deteriorated' before a 2019 refurbishment; other family-oriented review sites separately describe it as poorly equipped and in questionable condition even after improvements.",
+    "short_supporting_excerpt": "era necesaria una reestructuración... estaba muy deteriorado",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Facility-condition complaint, not a personal-safety concern"
+    ],
+    "record_id": "castellon-op-006",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Grapa",
+      "Grapa - Gambau",
+      "Skatepark de Grapa"
+    ],
+    "maximum_exact_time_effect_points": -0.165,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Grapa",
+    "neighbourhood": "Grapa",
+    "street_or_place": "General barrio",
+    "source_platform": "local news (political party press item)",
+    "source_url": "https://castellon.elperiodicodeaqui.com/epda-noticias/som-castello-exige-soluciones-urgentes-ante-a-oleada-de-robos-que-sufre-el-barrio-de-grapa/357347",
+    "post_date": "2025-01-07",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "theft",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "A municipalist political party (Som Castelló) reported that multiple residents called them directly to report a 'wave of robberies' in Grapa, describing residents as feeling extremely insecure and defenseless, and criticizing insufficient Policía Local staffing/presence in the neighbourhood.",
+    "short_supporting_excerpt": "la sensación de inseguridad es altísima y se sienten indefensos",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Relayed via a political party's press statement (potential political motivation), though it cites direct resident calls; no independent police/news corroboration of arrest or crime-rate data was found"
+    ],
+    "record_id": "castellon-op-007",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "political_claim",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Grapa",
+      "General barrio"
+    ],
+    "maximum_exact_time_effect_points": -0.428,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Grapa",
+    "neighbourhood": "Grapa",
+    "street_or_place": "General barrio housing stock",
+    "source_platform": "local news",
+    "source_url": "https://castellonplaza.com/castellonplaza/castello-contacta-con-viviendas-de-rafalafena-grau-grapa-y-guinea-por-las-ayudas-a-la-rehabilitacion",
+    "post_date": "2022-04-07",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "neutral",
+    "evidence_tier": "municipal_data",
+    "themes": [
+      "poorly_maintained"
+    ],
+    "opinion_summary": "Grapa is named alongside Rafalafena, El Grau, and La Guinea as one of the city's older, more vulnerable housing areas targeted by an EU-funded building rehabilitation program (accessibility, energy efficiency, conservation) -- confirming a genuine cluster of older, lower-investment neighbourhoods, though this is about building conditions, not crime.",
+    "short_supporting_excerpt": "las viviendas más vulnerables",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Municipal housing program document; corroborates a vulnerability cluster but is not itself safety-specific"
+    ],
+    "record_id": "castellon-op-008",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Grapa",
+      "General barrio housing stock"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Raval Universitari",
+    "neighbourhood": "Raval Universitari",
+    "street_or_place": "Social housing block affected by squatting",
+    "source_platform": "local news (regional outlet)",
+    "source_url": "https://www.eldebate.com/espana/comunidad-valenciana/20240907/vecinos-castellon-atemorizados-okupas-venta-drogas-agresiones-carreras-ilegales_225421.html",
+    "post_date": "2024-09-07",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "drug_activity",
+      "aggressive_behaviour",
+      "poorly_maintained",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "Named residents (via a second local outlet, El Mundo Castellón) report drug dealing, illegal street racing, assaults, poor cleanliness, and ongoing squatting in a specific social-housing block, with 9 occupied flats remaining despite recent evictions; residents explicitly call for a second security guard, especially on weekends when re-occupation attempts intensify.",
+    "short_supporting_excerpt": "los okupas que fueron desalojados recientemente no han abandonado el bloque",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Concentrated on one specific housing block rather than the whole Raval Universitari area; may not generalize to the entire student neighbourhood"
+    ],
+    "record_id": "castellon-op-009",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Raval Universitari",
+      "Social housing block affected by squatting"
+    ],
+    "maximum_exact_time_effect_points": -1.417,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Raval Universitari",
+    "neighbourhood": "Raval Universitari",
+    "street_or_place": "General zone",
+    "source_platform": "SEO 'dangerous neighbourhoods' aggregator",
+    "source_url": "https://www.elviajerofisgon.com/experiencias/los-barrios-mas-peligrosos-de-castellon/",
+    "post_date": "2026-05-27",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "late_night",
+    "overall_sentiment": "negative",
+    "evidence_tier": "unverified",
+    "themes": [
+      "mixed_reputation",
+      "student_area"
+    ],
+    "opinion_summary": "A commercial 'dangerous neighbourhoods' listicle names Raval Universitari as an area warranting extra caution at night, citing its mix of students, long-term residents and new arrivals. On its own this would be low-confidence SEO content, but it is directionally consistent with the independently corroborated El Debate/El Mundo Castellón reporting above.",
+    "short_supporting_excerpt": "zonas donde conviene extremar la precaución",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Commercial SEO listicle; treated as weak corroboration only because independent stronger evidence already exists for this area"
+    ],
+    "record_id": "castellon-op-010",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Raval Universitari",
+      "General zone"
+    ],
+    "maximum_exact_time_effect_points": -0.011,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Rafalafena",
+    "neighbourhood": "Rafalafena",
+    "street_or_place": "Parque Rafalafena ('parque verde')",
+    "source_platform": "local news",
+    "source_url": "https://www.elperiodic.com/castellon/castello-tiene-nueva-ubicacion-para-vallado-retirado-parque-rafalafena_869238",
+    "post_date": "2022-12-10",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "evening",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "solo_woman_concern",
+      "intoxicated_crowds"
+    ],
+    "opinion_summary": "Some residents opposed removing perimeter fencing from the neighbourhood park, fearing increased insecurity from unrestricted night access and street-drinking (botellona) gatherings; this is a planning dispute, not a confirmed crime pattern.",
+    "short_supporting_excerpt": "actividades ilícitas como los botellones",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Represents one side of a local planning disagreement"
+    ],
+    "record_id": "castellon-op-011",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Rafalafena",
+      "Parque Rafalafena ('parque verde')"
+    ],
+    "maximum_exact_time_effect_points": -0.236,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Rafalafena",
+    "neighbourhood": "Rafalafena",
+    "street_or_place": "Parroquia Santo Tomás de Villanueva",
+    "source_platform": "local news",
+    "source_url": "https://castellonplaza.com/la-cruz-no-deja-indiferente-a-nadie-los-vecinos-delbarrio-rafalafena-se-muestran-divididos",
+    "post_date": "2023-01-06",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "mixed",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "mixed_reputation"
+    ],
+    "opinion_summary": "Residents were divided over the relocation of a large historic cross (removed from Parque Ribalta under the Ley de Memoria Democrática) to the neighbourhood parish -- a cultural/political controversy with no safety dimension.",
+    "short_supporting_excerpt": "la cruz no deja indiferente a nadie",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": true,
+    "confidence": 2,
+    "limitations": [
+      "Purely cultural/political dispute, included only to show the kind of civic commentary available for this area"
+    ],
+    "record_id": "castellon-op-012",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Rafalafena",
+      "Parroquia Santo Tomás de Villanueva"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "La Guinea",
+    "neighbourhood": "La Guinea",
+    "street_or_place": "Resident association venue",
+    "source_platform": "local news (political item)",
+    "source_url": "https://www.castelloninformacion.com/pp-asociacion-la-guinea-sede-actividades/",
+    "post_date": "2022-03-27",
+    "language": "Spanish",
+    "person_context": "resident",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "locals_recommend"
+    ],
+    "opinion_summary": "The barrio's resident association (50+ members) was left without a meeting venue after the city terminated its rental agreement; a councillor relayed the association's complaint. This is a civic/administrative grievance, not a safety concern.",
+    "short_supporting_excerpt": "siguen sin un local donde realizar sus actividades",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Relayed via an opposition councillor's press statement; no safety-relevant content found for La Guinea specifically"
+    ],
+    "record_id": "castellon-op-013",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "political_claim",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "La Guinea",
+      "Resident association venue"
+    ],
+    "maximum_exact_time_effect_points": -0.675,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "neighbourhood": "El Grau / El Grao",
+    "street_or_place": "Two residential properties, unspecified streets",
+    "source_platform": "local news (regional radio outlet)",
+    "source_url": "https://www.cope.es/emisoras/comunidad-valenciana/castellon-provincia/castellon/noticias/policia-local-castellon-frena-tres-okupaciones-ilegales-tres-dias-gracias-colaboracion-vecinal-20260722_3408926.html",
+    "post_date": "2026-07-22",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "daytime",
+    "overall_sentiment": "negative",
+    "evidence_tier": "confirmed_incident",
+    "themes": [
+      "homelessness_mentions",
+      "street_specific_concern"
+    ],
+    "opinion_summary": "Local Police confirmed stopping two simultaneous illegal squatting attempts in El Grau (and a third elsewhere in the city) within a single week, thanks to resident tip-offs; the city councillor for security publicly committed to continuing to combat illegal squatting citywide.",
+    "short_supporting_excerpt": "los agentes se desplazaron de inmediato al lugar",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Recent and specific, but a single week's snapshot rather than a sustained pattern; exact streets not named in the source"
+    ],
+    "record_id": "castellon-op-014",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Grau",
+      "El Grau / El Grao",
+      "Two residential properties, unspecified streets"
+    ],
+    "maximum_exact_time_effect_points": -0.798,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "neighbourhood": "El Grau",
+    "street_or_place": "General barrio housing stock",
+    "source_platform": "local news",
+    "source_url": "https://castellonplaza.com/castellonplaza/castello-contacta-con-viviendas-de-rafalafena-grau-grapa-y-guinea-por-las-ayudas-a-la-rehabilitacion",
+    "post_date": "2022-04-07",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "neutral",
+    "evidence_tier": "municipal_data",
+    "themes": [
+      "poorly_maintained"
+    ],
+    "opinion_summary": "El Grau is named alongside Grapa, Rafalafena, and La Guinea as part of the same EU-funded vulnerable-housing rehabilitation program, confirming it as one of the city's structurally older, lower-investment neighbourhood clusters.",
+    "short_supporting_excerpt": "las viviendas más vulnerables",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Building-condition program, not crime data"
+    ],
+    "record_id": "castellon-op-015",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Grau",
+      "General barrio housing stock"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Marjalería",
+    "neighbourhood": "Marjalería",
+    "street_or_place": "Rural paths near the coast",
+    "source_platform": "travel opinion site",
+    "source_url": "https://www.minube.com/rincon/marjaleria-a97695",
+    "post_date": "2026-04-22",
+    "language": "Spanish",
+    "person_context": "visitor",
+    "time_context": "daytime",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "quiet",
+      "isolated"
+    ],
+    "opinion_summary": "Described as a tranquil, semi-rural network of coastal paths, historically rice-growing land; visitors note it is easy to get disoriented in the maze-like path network without a GPS, but this is a navigation issue, not a safety concern.",
+    "short_supporting_excerpt": "vas a necesitar un GPS y de los buenos",
+    "number_of_people_expressing_similar_view": 1,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Daytime tourism content only"
+    ],
+    "record_id": "castellon-op-016",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "exact_place",
+    "source_class": "travel_or_seo",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Marjalería",
+      "Rural paths near the coast"
+    ],
+    "maximum_exact_time_effect_points": 0.142,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Marjalería",
+    "neighbourhood": "Marjalería",
+    "street_or_place": "General zone",
+    "source_platform": "local news",
+    "source_url": "https://www.castelloninformacion.com/de-tu-a-tu-en-la-marjaleria-la-oficina-de-proximidad-que-atiende-a-los-vecinos/",
+    "post_date": "2024-06-26",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "residential",
+      "good_transport"
+    ],
+    "opinion_summary": "One of the largest zones in the municipality (4,000+ homes, up to 16,000 people in summer); city government highlights a dedicated 'proximity office' for resident engagement -- generic civic-outreach coverage, no safety content.",
+    "short_supporting_excerpt": "una de las zonas más grandes del término de Castellón",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 1,
+    "limitations": [
+      "Municipal PR content"
+    ],
+    "record_id": "castellon-op-017",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Marjalería",
+      "General zone"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "area": "Sequiol",
+    "neighbourhood": "Sequiol",
+    "street_or_place": "General barrio housing stock",
+    "source_platform": "local news",
+    "source_url": "https://castellondiario.com/oficinas-para-informar-sobre-la-rehabilitacion-de-barrios-en-castellon/",
+    "post_date": "2024-06-18",
+    "language": "Spanish",
+    "person_context": "unknown",
+    "time_context": "unspecified",
+    "overall_sentiment": "neutral",
+    "evidence_tier": "municipal_data",
+    "themes": [
+      "poorly_maintained"
+    ],
+    "opinion_summary": "Sequiol is named among five housing groups (with Mar Mediterráneo, José Antonio, Ramiro Ledesma, 25 de Noviembre) receiving a EUR 17M EU-funded building rehabilitation program -- confirms older housing stock but no organic safety commentary was found for this barrio.",
+    "short_supporting_excerpt": "cinco grupos de viviendas en Castellón",
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 2,
+    "limitations": [
+      "Building-program document only; essentially a data gap for perception purposes"
+    ],
+    "record_id": "castellon-op-018",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "geographic_precision": "neighbourhood",
+    "source_class": "local_news",
+    "rating_eligible": false,
+    "exclusion_reason": "No personal-safety perception or incident is contained in this record.",
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Sequiol",
+      "General barrio housing stock"
+    ],
+    "maximum_exact_time_effect_points": 0.0,
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ]
+  },
+  {
+    "record_id": "castellon-uji-001",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "Parque Ribalta",
+    "neighbourhood": "Parque Ribalta",
+    "street_or_place": "Parque Ribalta",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_insecurity",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 36.9% of responses naming an unsafe place identified Parque Ribalta.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 36.9,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "exact_place",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Parque Ribalta",
+      "Parque Ribalta"
+    ],
+    "maximum_exact_time_effect_points": -0.898,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-most-insecure-places"
+  },
+  {
+    "record_id": "castellon-uji-002",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "San Lorenzo",
+    "neighbourhood": "San Lorenzo",
+    "street_or_place": "Barrio de San Lorenzo",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_insecurity",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 27.2% of responses naming an unsafe place identified Barrio de San Lorenzo.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 27.2,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "neighbourhood",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "San Lorenzo",
+      "Barrio de San Lorenzo"
+    ],
+    "maximum_exact_time_effect_points": -0.279,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-most-insecure-places"
+  },
+  {
+    "record_id": "castellon-uji-003",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "La Guinea",
+    "neighbourhood": "La Guinea",
+    "street_or_place": "Barrio de La Guinea",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_insecurity",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 20.4% of responses naming an unsafe place identified Barrio de La Guinea.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 20.4,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "neighbourhood",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "La Guinea",
+      "Barrio de La Guinea"
+    ],
+    "maximum_exact_time_effect_points": -0.21,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-most-insecure-places"
+  },
+  {
+    "record_id": "castellon-uji-004",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "Parque del Oeste",
+    "neighbourhood": "Parque del Oeste",
+    "street_or_place": "Parque del Oeste",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_insecurity",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 5.8% of responses naming an unsafe place identified Parque del Oeste.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 5.8,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "exact_place",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Parque del Oeste",
+      "Parque del Oeste"
+    ],
+    "maximum_exact_time_effect_points": -0.141,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-most-insecure-places"
+  },
+  {
+    "record_id": "castellon-uji-005",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "Grupo San Agustín",
+    "neighbourhood": "Grupo San Agustín",
+    "street_or_place": "Grupo San Agustín",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_insecurity",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 3.9% of responses naming an unsafe place identified Grupo San Agustín.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 3.9,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "neighbourhood",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Grupo San Agustín",
+      "Grupo San Agustín"
+    ],
+    "maximum_exact_time_effect_points": -0.04,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-most-insecure-places"
+  },
+  {
+    "record_id": "castellon-uji-006",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "Castelló de la Plana",
+    "neighbourhood": "Castelló de la Plana",
+    "street_or_place": "Citywide",
+    "source_platform": "Universitat Jaume I resident safety survey",
+    "source_class": "academic_survey",
+    "source_url": "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content",
+    "post_date": "2025-01-27",
+    "study_year": 2023,
+    "language": "Spanish",
+    "person_context": "400 residents; stratified by gender, age and residential area",
+    "time_context": "unspecified",
+    "overall_sentiment": "positive",
+    "evidence_tier": "perception_only",
+    "themes": [
+      "perceived_safety",
+      "resident_survey"
+    ],
+    "opinion_summary": "In the UJI resident survey, 57.5% rated Castelló de la Plana as safe or completely safe, while 10.3% rated it unsafe.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "reported_percentage": 57.5,
+    "contradictory_opinions_found": true,
+    "confidence": 3,
+    "limitations": [
+      "Perception is not the same as incident prevalence.",
+      "Survey fieldwork was conducted in 2023.",
+      "No time-of-day breakdown is supplied for this place-level result."
+    ],
+    "geographic_precision": "citywide",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Castelló de la Plana",
+      "Citywide"
+    ],
+    "maximum_exact_time_effect_points": 0.06,
+    "runtime_requirements": [
+      "geographic_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "duplicate_group": "uji-2023-citywide-safety"
+  },
+  {
+    "record_id": "castellon-local-001",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "El Grau",
+    "neighbourhood": "El Grau",
+    "street_or_place": "El Grau commercial and residential area",
+    "source_platform": "local news with resident or merchant testimony",
+    "source_class": "local_news_resident_reporting",
+    "source_url": "https://cadenaser.com/comunitat-valenciana/2025/11/13/preocupacion-entre-los-vecinos-del-grao-de-castellon-por-el-aumento-de-delincuencia-en-el-distrito-hay-robos-en-comercios-a-diario-radio-castellon/",
+    "post_date": "2025-11-13",
+    "language": "Spanish",
+    "person_context": "residents or local merchants",
+    "time_context": "night",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "nighttime",
+      "commercial_burglary",
+      "residential_intrusion",
+      "resident_concern"
+    ],
+    "opinion_summary": "Residents and merchants reported repeated nighttime break-ins affecting shops and some homes; the main suspected repeat offender was reported arrested and policing was reinforced.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Area-level reporting; no complete list of affected street segments."
+    ],
+    "geographic_precision": "neighbourhood",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "El Grau",
+      "El Grau commercial and residential area"
+    ],
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "maximum_exact_time_effect_points": -0.684
+  },
+  {
+    "record_id": "castellon-local-002",
+    "city_id": "castellon",
+    "city": "Castelló de la Plana",
+    "province": "Castelló",
+    "country_code": "ES",
+    "area": "Marjaleria",
+    "neighbourhood": "Marjaleria",
+    "street_or_place": "Marjaleria homes and access roads",
+    "source_platform": "local news with resident or merchant testimony",
+    "source_class": "local_news_resident_reporting",
+    "source_url": "https://cadenaser.com/comunitat-valenciana/2025/06/05/el-pspv-psoe-de-castellon-critica-la-gestion-del-ayuntamiento-de-la-capital-en-el-area-de-seguridad-radio-castellon/",
+    "post_date": "2025-06-05",
+    "language": "Spanish",
+    "person_context": "residents or local merchants",
+    "time_context": "unspecified",
+    "overall_sentiment": "negative",
+    "evidence_tier": "resident_complaint",
+    "themes": [
+      "residential_intrusion",
+      "resident_concern"
+    ],
+    "opinion_summary": "Residents reported attempted intrusions into homes; the source also cites municipal complaints data placing insecurity among the city's three leading citizen concerns in early 2025.",
+    "short_supporting_excerpt": null,
+    "number_of_people_expressing_similar_view": null,
+    "contradictory_opinions_found": false,
+    "confidence": 3,
+    "limitations": [
+      "Area-level reporting; no complete list of affected street segments."
+    ],
+    "geographic_precision": "neighbourhood",
+    "rating_eligible": true,
+    "exclusion_reason": null,
+    "geocoding_status": "pending",
+    "match_aliases": [
+      "Marjaleria",
+      "Marjaleria homes and access roads"
+    ],
+    "runtime_requirements": [
+      "geographic_match",
+      "time_match",
+      "recency_decay",
+      "duplicate_group_cap"
+    ],
+    "maximum_exact_time_effect_points": -0.684
+  }
+]

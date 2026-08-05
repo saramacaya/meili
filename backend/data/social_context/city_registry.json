@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "generated_date": "2026-08-05",
+  "cities": {
+    "valencia": {
+      "display_name": "València",
+      "opinions_file": "valencia/public_opinions.json",
+      "vibes_file": "valencia/area_vibes.json"
+    },
+    "castellon": {
+      "display_name": "Castelló de la Plana",
+      "opinions_file": "castellon/public_opinions.json",
+      "vibes_file": "castellon/area_vibes.json"
+    }
+  },
+  "opinion_component_cap_points": {
+    "negative": -3.0,
+    "positive": 2.0
+  },
+  "rule": "Every rating-eligible matching record has non-zero influence. Ineligible records remain for audit only."
+}

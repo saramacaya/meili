@@ -1,0 +1,602 @@
+{
+  "type": "FeatureCollection",
+  "name": "castellon_social_safety_concern_overlays",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-001",
+      "properties": {
+        "overlay_id": "castellon-unsafe-001",
+        "city_id": "castellon",
+        "label": "Raval Universitari",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-op-009",
+          "castellon-op-010"
+        ],
+        "independent_source_count": 2,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.22,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.85,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Raval Universitari",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.075,
+              39.9992
+            ],
+            [
+              -0.071,
+              40.003
+            ],
+            [
+              -0.0633,
+              40.0032
+            ],
+            [
+              -0.0586,
+              39.9987
+            ],
+            [
+              -0.0597,
+              39.991
+            ],
+            [
+              -0.0663,
+              39.9878
+            ],
+            [
+              -0.0729,
+              39.9917
+            ],
+            [
+              -0.075,
+              39.9992
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-002",
+      "properties": {
+        "overlay_id": "castellon-unsafe-002",
+        "city_id": "castellon",
+        "label": "La Guinea",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-op-013",
+          "castellon-uji-003"
+        ],
+        "independent_source_count": 2,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.215,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.835,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "La Guinea",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.0335,
+              40.008
+            ],
+            [
+              -0.027,
+              40.011
+            ],
+            [
+              -0.02,
+              40.0075
+            ],
+            [
+              -0.0185,
+              40.0002
+            ],
+            [
+              -0.0248,
+              39.997
+            ],
+            [
+              -0.0318,
+              39.9992
+            ],
+            [
+              -0.0335,
+              40.008
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-003",
+      "properties": {
+        "overlay_id": "castellon-unsafe-003",
+        "city_id": "castellon",
+        "label": "Parque Ribalta",
+        "scope": "place",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-uji-001"
+        ],
+        "independent_source_count": 1,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.22,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.85,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Parque Ribalta",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "reviewed_place_outline_requires_osm_verification",
+        "geometry_source": "MVP reviewed named-place outline",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.0488,
+              39.9891
+            ],
+            [
+              -0.0437,
+              39.9907
+            ],
+            [
+              -0.0389,
+              39.9875
+            ],
+            [
+              -0.0409,
+              39.9831
+            ],
+            [
+              -0.0465,
+              39.9824
+            ],
+            [
+              -0.0502,
+              39.9855
+            ],
+            [
+              -0.0488,
+              39.9891
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-004",
+      "properties": {
+        "overlay_id": "castellon-unsafe-004",
+        "city_id": "castellon",
+        "label": "San Lorenzo",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-uji-002"
+        ],
+        "independent_source_count": 1,
+        "confidence": "medium",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.152,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.655,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "San Lorenzo",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.054,
+              40.0163
+            ],
+            [
+              -0.047,
+              40.0192
+            ],
+            [
+              -0.0392,
+              40.0141
+            ],
+            [
+              -0.0397,
+              40.006
+            ],
+            [
+              -0.0465,
+              40.0018
+            ],
+            [
+              -0.053,
+              40.0064
+            ],
+            [
+              -0.054,
+              40.0163
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-005",
+      "properties": {
+        "overlay_id": "castellon-unsafe-005",
+        "city_id": "castellon",
+        "label": "Parque del Oeste",
+        "scope": "place",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-uji-004"
+        ],
+        "independent_source_count": 1,
+        "confidence": "low",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.136,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.609,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Parque del Oeste",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "reviewed_place_outline_requires_osm_verification",
+        "geometry_source": "MVP reviewed named-place outline",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.0628,
+              39.9896
+            ],
+            [
+              -0.0576,
+              39.9904
+            ],
+            [
+              -0.0539,
+              39.9868
+            ],
+            [
+              -0.0561,
+              39.9824
+            ],
+            [
+              -0.0617,
+              39.983
+            ],
+            [
+              -0.0641,
+              39.9863
+            ],
+            [
+              -0.0628,
+              39.9896
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-006",
+      "properties": {
+        "overlay_id": "castellon-unsafe-006",
+        "city_id": "castellon",
+        "label": "Grupo San Agustín",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-uji-005"
+        ],
+        "independent_source_count": 1,
+        "confidence": "low",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.124,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.575,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Grupo San Agustín",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.0515,
+              40.008
+            ],
+            [
+              -0.0447,
+              40.011
+            ],
+            [
+              -0.0387,
+              40.0062
+            ],
+            [
+              -0.0398,
+              39.9989
+            ],
+            [
+              -0.0455,
+              39.9958
+            ],
+            [
+              -0.0512,
+              39.9995
+            ],
+            [
+              -0.0515,
+              40.008
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-007",
+      "properties": {
+        "overlay_id": "castellon-unsafe-007",
+        "city_id": "castellon",
+        "label": "El Grau",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-local-001"
+        ],
+        "independent_source_count": 1,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.199,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.79,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "El Grau",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0015,
+              39.984
+            ],
+            [
+              0.011,
+              39.988
+            ],
+            [
+              0.0225,
+              39.9825
+            ],
+            [
+              0.025,
+              39.971
+            ],
+            [
+              0.017,
+              39.9615
+            ],
+            [
+              0.004,
+              39.9635
+            ],
+            [
+              -0.0015,
+              39.973
+            ],
+            [
+              0.0015,
+              39.984
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castellon-unsafe-008",
+      "properties": {
+        "overlay_id": "castellon-unsafe-008",
+        "city_id": "castellon",
+        "label": "Marjaleria",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "castellon-local-002"
+        ],
+        "independent_source_count": 1,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.199,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.79,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Marjaleria",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
+        "geometry_source": "MVP reviewed local evidence zone",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.012,
+              40.031
+            ],
+            [
+              0.005,
+              40.041
+            ],
+            [
+              0.029,
+              40.034
+            ],
+            [
+              0.04,
+              40.016
+            ],
+            [
+              0.032,
+              39.998
+            ],
+            [
+              0.009,
+              39.992
+            ],
+            [
+              -0.009,
+              40.005
+            ],
+            [
+              -0.012,
+              40.031
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

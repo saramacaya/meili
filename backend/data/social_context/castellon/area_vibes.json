@@ -1,0 +1,681 @@
+[
+  {
+    "area": "Casco Histórico",
+    "general_vibe": "Historic core around Plaza Mayor, the Concatedral, El Fadrí, and the Central Market; consistently positive tourist and local sentiment.",
+    "daytime_vibe": "Charming, clean, a natural gathering point for all ages.",
+    "nighttime_vibe": "Character changes noticeably at night (tascas/bar-alley culture around Plaza Santa Clara) but no safety caveat found in any source.",
+    "most_common_positive_themes": [
+      "lively",
+      "clean",
+      "touristy",
+      "locals_recommend"
+    ],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Plaza Santa Clara and the adjoining 'tascas' alleys specifically recommended for evening drinks."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://www.tripadvisor.es/ShowUserReviews-g187522-d4783789-r354819615-Placa_Major-Castellon_de_la_Plana_Province_of_Castellon_Valencian_Community.html"
+    ]
+  },
+  {
+    "area": "Parque Ribalta - Plaza de Toros",
+    "general_vibe": "The city's main historic urban park; a well-used, well-regarded green space in the centre.",
+    "daytime_vibe": "Very popular for walking, running, family use; calm and historic atmosphere.",
+    "nighttime_vibe": "No direct nighttime safety commentary found for the park itself, though a related fencing dispute (linked to the adjacent Rafalafena sports fields project) shows some residents associate reduced perimeter fencing with fears of night access and street-drinking gatherings.",
+    "most_common_positive_themes": [
+      "comfortable_for_walking",
+      "clean",
+      "locals_recommend"
+    ],
+    "most_common_concerns": [
+      "solo_woman_concern (disputed, planning-context only)",
+      "perceived_insecurity",
+      "park_after_dark"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "The UJI survey identifies Parque Ribalta as the city's most frequently named unsafe place (36.9% of unsafe-place responses)."
+    ],
+    "conflicting_opinions": [
+      "Most sources describe the park as universally pleasant; a faction of residents specifically opposed de-fencing over night-safety and botellón concerns."
+    ],
+    "source_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium",
+    "sources": [
+      "https://www.minube.com/rincon/paseo-ribalta-a498251",
+      "https://www.elperiodic.com/castellon/castello-tiene-nueva-ubicacion-para-vallado-retirado-parque-rafalafena_869238"
+    ]
+  },
+  {
+    "area": "Zona Hospital - Plaza del Real",
+    "general_vibe": "A centrally-located residential/institutional zone anchored by the Provincial Hospital; almost no organic social commentary found.",
+    "daytime_vibe": "Unknown -- only real-estate/administrative data available.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.fotocasa.es/es/vivir-en-castellon-de-la-plana-castello-de-la-plana/hospital-plaza-del-real"
+    ]
+  },
+  {
+    "area": "Centro Este",
+    "general_vibe": "No usable perception or incident data found; appears only as an administrative sub-zone label in real-estate platforms.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Centro Norte",
+    "general_vibe": "No usable perception or incident data found; appears only as an administrative sub-zone label.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Centro Oeste",
+    "general_vibe": "No usable perception or incident data found; appears only as an administrative sub-zone label.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Centro Sur",
+    "general_vibe": "No usable perception or incident data found; appears only as an administrative sub-zone label.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Parque Sensal",
+    "general_vibe": "No usable perception or incident data found beyond its existence as a small central park zone.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Grapa",
+    "general_vibe": "Historic working-class 'grupo' housing development, now the subject of both a specific 2025 crime-wave complaint and a longer-term facility-neglect pattern (skatepark).",
+    "daytime_vibe": "Residential, has its own park and sports facilities; families use the skatepark despite its poor condition.",
+    "nighttime_vibe": "No direct nighttime social commentary, but a January 2025 political-party press item reports multiple resident calls about a 'wave of robberies' and residents feeling 'extremely insecure' and 'defenseless,' citing insufficient local police presence.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "theft",
+      "poorly_maintained (skatepark, long-standing)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Named alongside Rafalafena, El Grau, and La Guinea in a formal municipal vulnerable-housing rehabilitation program -- a genuine structural/socioeconomic cluster, independent of the robbery complaint."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 3,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium",
+    "sources": [
+      "https://castellon.elperiodicodeaqui.com/epda-noticias/som-castello-exige-soluciones-urgentes-ante-a-oleada-de-robos-que-sufre-el-barrio-de-grapa/357347",
+      "https://xarxajove.info/es/mapa-de-recursos/espacios/skatepark-grapa-castello/",
+      "https://castellonplaza.com/castellonplaza/castello-contacta-con-viviendas-de-rafalafena-grau-grapa-y-guinea-por-las-ayudas-a-la-rehabilitacion"
+    ]
+  },
+  {
+    "area": "Raval Universitari",
+    "general_vibe": "Mixed student/long-term-resident/new-arrival neighbourhood -- the strongest documented concern area in this Castellón research.",
+    "daytime_vibe": "No specific daytime commentary found beyond general description as a mixed university-adjacent neighbourhood.",
+    "nighttime_vibe": "Named residents (via two outlets, El Debate and El Mundo Castellón) report drug dealing, illegal street racing, assaults, and ongoing squatting concentrated in a specific social-housing block, with 9 units still occupied despite recent evictions; problems reportedly intensify on weekends.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "drug_activity",
+      "aggressive_behaviour",
+      "poorly_maintained",
+      "street_specific_concern"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Concern is concentrated in one specific social-housing block within the neighbourhood, not confirmed to apply evenly across the whole Raval Universitari area."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium-high",
+    "sources": [
+      "https://www.eldebate.com/espana/comunidad-valenciana/20240907/vecinos-castellon-atemorizados-okupas-venta-drogas-agresiones-carreras-ilegales_225421.html",
+      "https://www.elviajerofisgon.com/experiencias/los-barrios-mas-peligrosos-de-castellon/"
+    ]
+  },
+  {
+    "area": "Rafalafena",
+    "general_vibe": "Established residential neighbourhood with its own park and parish; civic/cultural disputes found, but no crime evidence.",
+    "daytime_vibe": "Residential, calm, home to a large park.",
+    "nighttime_vibe": "One faction of residents opposed removing park perimeter fencing over fears of night-access insecurity and street-drinking, but no confirmed incidents were found.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "solo_woman_concern (disputed, planning-context only)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "A cultural controversy over relocating a historic cross to the neighbourhood parish also divided residents, unrelated to safety."
+    ],
+    "source_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "low-medium",
+    "sources": [
+      "https://www.elperiodic.com/castellon/castello-tiene-nueva-ubicacion-para-vallado-retirado-parque-rafalafena_869238",
+      "https://castellonplaza.com/la-cruz-no-deja-indiferente-a-nadie-los-vecinos-delbarrio-rafalafena-se-muestran-divididos"
+    ]
+  },
+  {
+    "area": "La Guinea",
+    "general_vibe": "Established northern-district neighbourhood; only civic/administrative commentary found, no crime evidence.",
+    "daytime_vibe": "Residential; active resident association (50+ members).",
+    "nighttime_vibe": "No commentary found.",
+    "most_common_positive_themes": [
+      "locals_recommend (community organizing)"
+    ],
+    "most_common_concerns": [
+      "perceived_insecurity"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Named alongside Grapa, Rafalafena, and El Grau in the same municipal vulnerable-housing rehabilitation program.",
+      "The UJI survey identifies La Guinea in 20.4% of responses naming an unsafe place; this is stronger evidence than the supplied political venue dispute."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "resident_complaint",
+    "confidence": "medium",
+    "sources": [
+      "https://www.castelloninformacion.com/pp-asociacion-la-guinea-sede-actividades/"
+    ]
+  },
+  {
+    "area": "El Grau",
+    "general_vibe": "Castellón's maritime/port district; the second-strongest documented concern area after Raval Universitari, though the evidence is a single recent snapshot rather than a sustained pattern.",
+    "daytime_vibe": "No specific daytime perception commentary found beyond its identity as the maritime district.",
+    "nighttime_vibe": "No commentary found.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "homelessness_mentions (squatting)",
+      "nighttime_break_ins",
+      "resident_concern"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Local Police confirmed stopping two simultaneous illegal squatting attempts here within a single week in July 2026, thanks to resident tip-offs; also named in the same vulnerable-housing rehabilitation program as Grapa, Rafalafena, and La Guinea.",
+      "Overall district safety was rated 3.4/5 in the UJI survey, while merchants later reported a concentrated run of nighttime break-ins in 2025."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "confirmed_incident_count": 1,
+    "highest_evidence_tier": "confirmed_incident",
+    "confidence": "medium",
+    "sources": [
+      "https://www.cope.es/emisoras/comunidad-valenciana/castellon-provincia/castellon/noticias/policia-local-castellon-frena-tres-okupaciones-ilegales-tres-dias-gracias-colaboracion-vecinal-20260722_3408926.html",
+      "https://castellonplaza.com/castellonplaza/castello-contacta-con-viviendas-de-rafalafena-grau-grapa-y-guinea-por-las-ayudas-a-la-rehabilitacion"
+    ]
+  },
+  {
+    "area": "Marjalería",
+    "general_vibe": "One of the largest zones in the municipality; semi-rural coastal paths, historically agricultural (rice-growing); consistently described as tranquil.",
+    "daytime_vibe": "Quiet, semi-rural, labyrinthine path network -- can be disorienting without a map/GPS, but this is a navigation issue, not a safety one.",
+    "nighttime_vibe": "No commentary found.",
+    "most_common_positive_themes": [
+      "quiet",
+      "residential"
+    ],
+    "most_common_concerns": [
+      "isolated (navigation difficulty, not safety)",
+      "residential_intrusion",
+      "limited_geographic_precision"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Resident reports in 2025 described attempted home intrusions, but no complete street list was available."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 2,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://www.minube.com/rincon/marjaleria-a97695",
+      "https://www.castelloninformacion.com/de-tu-a-tu-en-la-marjaleria-la-oficina-de-proximidad-que-atiende-a-los-vecinos/"
+    ]
+  },
+  {
+    "area": "Sequiol",
+    "general_vibe": "An older housing 'grupo' in a formal EU-funded rehabilitation program; no organic social/safety commentary found.",
+    "daytime_vibe": "Unknown / insufficient data beyond housing-program context.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "poorly_maintained (building stock, per municipal program)"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "municipal_data",
+    "confidence": "low",
+    "sources": [
+      "https://castellondiario.com/oficinas-para-informar-sobre-la-rehabilitacion-de-barrios-en-castellon/"
+    ]
+  },
+  {
+    "area": "Tombatossals",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Rosario",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "San Bernardo",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings and real-estate ads.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "San Lorenzo",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Venta Nova",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Lourdes",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "San Agustín y San Marcos",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Benadresa",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Reyes - San José Obrero",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Las Galeras",
+    "general_vibe": "No usable data found beyond its existence as a named urbanización in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Perpetuo Socorro",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Santo Domingo",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "La Choquera",
+    "general_vibe": "No usable data found beyond its existence as a named urbanización in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Santa Teresa",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Columbretes",
+    "general_vibe": "A residential zone (Plaza Illes Columbretes / Grupo Columbretes) in the Norte district; only demographic/real-estate data found.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [
+      "Real-estate data shows an older resident population (50-65 age skew) and housing built mostly 1970-1979 -- demographic context only, no perception content."
+    ],
+    "conflicting_opinions": [],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "low",
+    "sources": [
+      "https://www.idealista.com/maps/castellon-de-la-plana-castello-de-la-plana/norte/zona-plaza-illes-columbretes/"
+    ]
+  },
+  {
+    "area": "Tossal Gros",
+    "general_vibe": "No usable data found beyond its existence as a named urbanización in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "San Arturo",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Los Ángeles",
+    "general_vibe": "No usable data found beyond its existence as a named urbanización in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Roquetes",
+    "general_vibe": "No usable data found beyond its existence as a named 'grupo' in city event listings.",
+    "daytime_vibe": "Unknown / insufficient data.",
+    "nighttime_vibe": "Unknown / insufficient data.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [],
+    "source_count": 0,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "none",
+    "confidence": "low",
+    "sources": []
+  },
+  {
+    "area": "Parque del Oeste",
+    "general_vibe": "Limited evidence. The UJI resident survey records 5.8% of unsafe-place responses naming this area.",
+    "daytime_vibe": "No reliable time-specific evidence found.",
+    "nighttime_vibe": "No reliable time-specific evidence found.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "perceived_insecurity"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "The result measures perception, not incident prevalence."
+    ],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content"
+    ]
+  },
+  {
+    "area": "Grupo San Agustín",
+    "general_vibe": "Limited evidence. The UJI resident survey records 3.9% of unsafe-place responses naming this area.",
+    "daytime_vibe": "No reliable time-specific evidence found.",
+    "nighttime_vibe": "No reliable time-specific evidence found.",
+    "most_common_positive_themes": [],
+    "most_common_concerns": [
+      "perceived_insecurity"
+    ],
+    "solo_walking_mentions": [],
+    "street_specific_observations": [],
+    "conflicting_opinions": [
+      "The result measures perception, not incident prevalence."
+    ],
+    "source_count": 1,
+    "confirmed_incident_count": 0,
+    "highest_evidence_tier": "perception_only",
+    "confidence": "medium",
+    "sources": [
+      "https://repositori.uji.es/server/api/core/bitstreams/177bb5c5-ea77-4402-8153-7f10c3e59a83/content"
+    ]
+  }
+]

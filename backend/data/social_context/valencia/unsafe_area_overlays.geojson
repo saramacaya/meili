@@ -1,0 +1,562 @@
+{
+  "type": "FeatureCollection",
+  "name": "valencia_social_safety_concern_overlays",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "valencia-unsafe-001",
+      "properties": {
+        "overlay_id": "valencia-unsafe-001",
+        "city_id": "valencia",
+        "label": "El Carme",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "valencia-op-004",
+          "valencia-op-006"
+        ],
+        "independent_source_count": 2,
+        "confidence": "low",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.141,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.626,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "El Carme",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "official_administrative_boundary_simplified",
+        "geometry_source": "Ajuntament de València barrio boundary; simplified for web display",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.381055,
+              39.482232
+            ],
+            [
+              -0.379109,
+              39.481972
+            ],
+            [
+              -0.377955,
+              39.481617
+            ],
+            [
+              -0.376631,
+              39.481006
+            ],
+            [
+              -0.374134,
+              39.479337
+            ],
+            [
+              -0.376204,
+              39.478897
+            ],
+            [
+              -0.376878,
+              39.477376
+            ],
+            [
+              -0.377203,
+              39.477226
+            ],
+            [
+              -0.37798,
+              39.476649
+            ],
+            [
+              -0.380436,
+              39.476304
+            ],
+            [
+              -0.383758,
+              39.475487
+            ],
+            [
+              -0.384191,
+              39.475771
+            ],
+            [
+              -0.383732,
+              39.478342
+            ],
+            [
+              -0.383024,
+              39.480281
+            ],
+            [
+              -0.383395,
+              39.481158
+            ],
+            [
+              -0.381055,
+              39.482232
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "valencia-unsafe-002",
+      "properties": {
+        "overlay_id": "valencia-unsafe-002",
+        "city_id": "valencia",
+        "label": "El Cabanyal",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "valencia-op-007",
+          "valencia-op-008",
+          "valencia-op-009",
+          "valencia-op-010"
+        ],
+        "independent_source_count": 4,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.22,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.849,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "El Cabanyal",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "official_administrative_boundary_simplified",
+        "geometry_source": "Ajuntament de València barrio boundary; simplified for web display",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.333219,
+              39.476446
+            ],
+            [
+              -0.328709,
+              39.475104
+            ],
+            [
+              -0.326457,
+              39.474583
+            ],
+            [
+              -0.324574,
+              39.474558
+            ],
+            [
+              -0.323814,
+              39.472653
+            ],
+            [
+              -0.322728,
+              39.465493
+            ],
+            [
+              -0.322607,
+              39.463076
+            ],
+            [
+              -0.327299,
+              39.46309
+            ],
+            [
+              -0.331158,
+              39.462931
+            ],
+            [
+              -0.336495,
+              39.463675
+            ],
+            [
+              -0.335425,
+              39.465952
+            ],
+            [
+              -0.33498,
+              39.468545
+            ],
+            [
+              -0.335014,
+              39.469496
+            ],
+            [
+              -0.334318,
+              39.471552
+            ],
+            [
+              -0.33344,
+              39.475996
+            ],
+            [
+              -0.333219,
+              39.476446
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "valencia-unsafe-003",
+      "properties": {
+        "overlay_id": "valencia-unsafe-003",
+        "city_id": "valencia",
+        "label": "Orriols",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "valencia-op-018",
+          "valencia-op-019",
+          "valencia-op-020"
+        ],
+        "independent_source_count": 3,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.22,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.85,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Orriols",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "official_administrative_boundary_simplified",
+        "geometry_source": "Ajuntament de València barrio boundary; simplified for web display",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.367195,
+              39.504249
+            ],
+            [
+              -0.368293,
+              39.501749
+            ],
+            [
+              -0.369276,
+              39.500199
+            ],
+            [
+              -0.36813,
+              39.499912
+            ],
+            [
+              -0.369097,
+              39.49761
+            ],
+            [
+              -0.368241,
+              39.49659
+            ],
+            [
+              -0.366339,
+              39.495182
+            ],
+            [
+              -0.368358,
+              39.494152
+            ],
+            [
+              -0.369148,
+              39.491809
+            ],
+            [
+              -0.368314,
+              39.4912
+            ],
+            [
+              -0.369003,
+              39.490288
+            ],
+            [
+              -0.367077,
+              39.488758
+            ],
+            [
+              -0.368418,
+              39.487973
+            ],
+            [
+              -0.373883,
+              39.492061
+            ],
+            [
+              -0.372527,
+              39.494309
+            ],
+            [
+              -0.37163,
+              39.495145
+            ],
+            [
+              -0.371799,
+              39.497031
+            ],
+            [
+              -0.369901,
+              39.500271
+            ],
+            [
+              -0.367757,
+              39.504521
+            ],
+            [
+              -0.367195,
+              39.504249
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "valencia-unsafe-004",
+      "properties": {
+        "overlay_id": "valencia-unsafe-004",
+        "city_id": "valencia",
+        "label": "Torrefiel",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "valencia-op-028",
+          "valencia-op-029"
+        ],
+        "independent_source_count": 2,
+        "confidence": "medium",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.166,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.696,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Torrefiel",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "official_administrative_boundary_simplified",
+        "geometry_source": "Ajuntament de València barrio boundary; simplified for web display",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.371221,
+              39.498391
+            ],
+            [
+              -0.371799,
+              39.497031
+            ],
+            [
+              -0.370233,
+              39.496014
+            ],
+            [
+              -0.37163,
+              39.495145
+            ],
+            [
+              -0.373883,
+              39.492061
+            ],
+            [
+              -0.378573,
+              39.491085
+            ],
+            [
+              -0.382165,
+              39.490288
+            ],
+            [
+              -0.383284,
+              39.49325
+            ],
+            [
+              -0.380097,
+              39.493881
+            ],
+            [
+              -0.381198,
+              39.496933
+            ],
+            [
+              -0.381392,
+              39.498685
+            ],
+            [
+              -0.377783,
+              39.499212
+            ],
+            [
+              -0.375012,
+              39.499241
+            ],
+            [
+              -0.371221,
+              39.498391
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "valencia-unsafe-005",
+      "properties": {
+        "overlay_id": "valencia-unsafe-005",
+        "city_id": "valencia",
+        "label": "Nazaret",
+        "scope": "area",
+        "classification": "community_safety_concern",
+        "evidence_record_ids": [
+          "valencia-op-031",
+          "valencia-op-032",
+          "valencia-op-033",
+          "valencia-op-034"
+        ],
+        "independent_source_count": 4,
+        "confidence": "high",
+        "display": {
+          "fill_color": "#EF4444",
+          "fill_opacity": 0.22,
+          "stroke_color": "#DC2626",
+          "stroke_opacity": 0.85,
+          "stroke_width": 2,
+          "stroke_dash_array": [
+            4,
+            6
+          ]
+        },
+        "interaction": {
+          "tap_title": "Community safety concern",
+          "tap_subtitle": "Nazaret",
+          "show_evidence_count": true,
+          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
+        },
+        "boundary_status": "official_administrative_boundary_simplified",
+        "geometry_source": "Ajuntament de València barrio boundary; simplified for web display",
+        "geometry_role": "visual_evidence_overlay",
+        "rating_double_count": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -0.334591,
+              39.45478
+            ],
+            [
+              -0.332412,
+              39.454883
+            ],
+            [
+              -0.330891,
+              39.454064
+            ],
+            [
+              -0.327099,
+              39.44823
+            ],
+            [
+              -0.32735,
+              39.446285
+            ],
+            [
+              -0.333221,
+              39.440123
+            ],
+            [
+              -0.335676,
+              39.43495
+            ],
+            [
+              -0.336531,
+              39.434978
+            ],
+            [
+              -0.336591,
+              39.436916
+            ],
+            [
+              -0.335975,
+              39.442398
+            ],
+            [
+              -0.335547,
+              39.446559
+            ],
+            [
+              -0.335283,
+              39.448404
+            ],
+            [
+              -0.334905,
+              39.452629
+            ],
+            [
+              -0.334591,
+              39.45478
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
