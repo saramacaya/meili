@@ -4,6 +4,8 @@ import requests
 import uuid
 import httpx
 import math
+import threading
+import time
 
 import unicodedata
 
@@ -144,20 +146,41 @@ class OsmLightingAnalysisRequest(BaseModel):
     )
 
 
-class OsmStreetLampAnalysisRequest(BaseModel):
-    route_geometry: list[tuple[float, float]]
+class LightingRouteCandidate(BaseModel):
+    route_id: str
+    geometry: list[tuple[float, float]]
+    estimated_time_minutes: Optional[int] = None
+    distance_meters: Optional[float] = None
 
-    coverage_radius_meters: float = Field(
-        default=25,
-        ge=5,
-        le=100
-    )
+
+class LightingComparisonRequest(BaseModel):
+    routes: list[LightingRouteCandidate]
 
     sample_interval_meters: float = Field(
         default=15,
         ge=5,
         le=50
     )
+
+    official_lamp_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+
+    osm_lit_match_radius_meters: float = Field(
+        default=15,
+        ge=5,
+        le=50
+    )
+
+    osm_lamp_radius_meters: float = Field(
+        default=25,
+        ge=5,
+        le=100
+    )
+
+    month: Optional[str] = None
 
 class OsmStreetLampAreaScanRequest(BaseModel):
     south: float = Field(..., ge=-90, le=90)
@@ -1103,6 +1126,477 @@ def classify_osm_lit_value(value: Optional[str]) -> str:
 
     return "conditional_or_other"
 
+OSM_LIGHTING_CACHE: dict[str, dict] = {}
+OSM_LIGHTING_CACHE_LOCK = threading.Lock()
+OSM_LIGHTING_CACHE_TTL_SECONDS = 15 * 60
+
+
+def fetch_shared_osm_lighting_data(
+    route_geometries: list[
+        list[tuple[float, float]]
+    ],
+    padding_meters: float
+) -> dict:
+    """
+    Downloads OSM lighting data once for one bounding box
+    covering every route in the comparison.
+
+    The result is cached in memory for 15 minutes.
+    """
+    all_coordinates = [
+        coordinate
+        for geometry in route_geometries
+        for coordinate in geometry
+    ]
+
+    if not all_coordinates:
+        return {
+            "lit_way_elements": [],
+            "street_lamp_elements": [],
+            "debug": {
+                "cache_hit": False,
+                "raw_lit_ways_found": 0,
+                "raw_street_lamps_found": 0
+            }
+        }
+
+    longitudes = [
+        coordinate[0]
+        for coordinate in all_coordinates
+    ]
+
+    latitudes = [
+        coordinate[1]
+        for coordinate in all_coordinates
+    ]
+
+    average_latitude = (
+        sum(latitudes) / len(latitudes)
+    )
+
+    latitude_padding = (
+        padding_meters / 111_000
+    )
+
+    longitude_padding = (
+        padding_meters
+        / (
+            111_000
+            * max(
+                math.cos(
+                    math.radians(
+                        average_latitude
+                    )
+                ),
+                0.01
+            )
+        )
+    )
+
+    south = min(latitudes) - latitude_padding
+    west = min(longitudes) - longitude_padding
+    north = max(latitudes) + latitude_padding
+    east = max(longitudes) + longitude_padding
+
+    bbox = (
+        f"{south},{west},{north},{east}"
+    )
+
+    # Rounded coordinates make repeat requests for the
+    # same route group use the same cache entry.
+    cache_key = (
+        f"{south:.5f},"
+        f"{west:.5f},"
+        f"{north:.5f},"
+        f"{east:.5f}"
+    )
+
+    current_time = time.time()
+
+    with OSM_LIGHTING_CACHE_LOCK:
+        cached_entry = OSM_LIGHTING_CACHE.get(
+            cache_key
+        )
+
+        if cached_entry is not None:
+            cache_age = (
+                current_time
+                - cached_entry["created_at"]
+            )
+
+            if (
+                cache_age
+                < OSM_LIGHTING_CACHE_TTL_SECONDS
+            ):
+                cached_result = (
+                    cached_entry["result"].copy()
+                )
+
+                cached_result["debug"] = (
+                    cached_result["debug"].copy()
+                )
+
+                cached_result["debug"][
+                    "cache_hit"
+                ] = True
+
+                return cached_result
+
+    query = f"""
+    [out:json][timeout:40];
+    (
+      way["highway"]["lit"]({bbox});
+      node["highway"="street_lamp"]({bbox});
+    );
+    out body geom;
+    """
+
+    data = None
+    retrieval_errors = []
+    successful_server = None
+
+    for overpass_url in OVERPASS_API_URLS:
+        try:
+            response = requests.post(
+                overpass_url,
+                data={
+                    "data": query
+                },
+                headers={
+                    "Accept": (
+                        "application/json"
+                    ),
+                    "User-Agent": (
+                        "Meili safety-routing "
+                        "prototype"
+                    )
+                },
+                timeout=60
+            )
+
+            response.raise_for_status()
+            data = response.json()
+            successful_server = overpass_url
+            break
+
+        except (
+            requests.RequestException,
+            ValueError
+        ) as error:
+            retrieval_errors.append(
+                f"{overpass_url}: {error}"
+            )
+
+    if data is None:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Shared OpenStreetMap lighting "
+                "data could not be retrieved from "
+                "the available Overpass servers: "
+                + " | ".join(retrieval_errors)
+            )
+        )
+
+    elements = data.get(
+        "elements",
+        []
+    )
+
+    lit_way_elements = [
+        element
+        for element in elements
+        if element.get("type") == "way"
+        and element.get(
+            "tags",
+            {}
+        ).get("lit") is not None
+    ]
+
+    street_lamp_elements = [
+        element
+        for element in elements
+        if element.get("type") == "node"
+        and element.get(
+            "tags",
+            {}
+        ).get("highway") == "street_lamp"
+    ]
+
+    result = {
+        "lit_way_elements": (
+            lit_way_elements
+        ),
+        "street_lamp_elements": (
+            street_lamp_elements
+        ),
+        "debug": {
+            "cache_hit": False,
+            "overpass_server": (
+                successful_server
+            ),
+            "bbox": {
+                "south": south,
+                "west": west,
+                "north": north,
+                "east": east
+            },
+            "raw_lit_ways_found": len(
+                lit_way_elements
+            ),
+            "raw_street_lamps_found": len(
+                street_lamp_elements
+            )
+        }
+    }
+
+    with OSM_LIGHTING_CACHE_LOCK:
+        OSM_LIGHTING_CACHE[cache_key] = {
+            "created_at": current_time,
+            "result": result
+        }
+
+    return result
+
+def filter_shared_osm_lit_ways_for_route(
+    route_coordinates: list[
+        tuple[float, float]
+    ],
+    shared_lit_way_elements: list[dict],
+    match_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Keeps only shared OSM lit=* ways that are close
+    to one particular route.
+
+    This function performs no network request.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_lit_ways_found": len(
+                shared_lit_way_elements
+            ),
+            "lit_ways_near_route": 0,
+            "lit_value_counts": {}
+        }
+
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=15
+    )
+
+    nearby_lit_ways = []
+
+    for element in shared_lit_way_elements:
+        geometry = element.get(
+            "geometry",
+            []
+        )
+
+        way_coordinates = [
+            (
+                float(point["lon"]),
+                float(point["lat"])
+            )
+            for point in geometry
+            if point.get("lon") is not None
+            and point.get("lat") is not None
+        ]
+
+        if len(way_coordinates) < 2:
+            continue
+
+        way_samples = densify_route(
+            way_coordinates,
+            interval_meters=10
+        )
+
+        nearest_route_distance = min(
+            distance_meters(
+                route_sample,
+                way_sample
+            )
+            for route_sample in route_samples
+            for way_sample in way_samples
+        )
+
+        if (
+            nearest_route_distance
+            > match_radius_meters
+        ):
+            continue
+
+        tags = element.get(
+            "tags",
+            {}
+        )
+
+        lit_value = tags.get("lit")
+
+        nearby_lit_ways.append({
+            "osm_type": element.get("type"),
+            "osm_id": element.get("id"),
+            "name": tags.get("name"),
+            "highway": tags.get("highway"),
+            "lit_value": lit_value,
+            "lit_classification": (
+                classify_osm_lit_value(
+                    lit_value
+                )
+            ),
+            "distance_to_route_meters": round(
+                nearest_route_distance,
+                1
+            ),
+            "sampled_geometry": way_samples
+        })
+
+    lit_values = {
+        way["lit_value"]
+        for way in nearby_lit_ways
+        if way["lit_value"] is not None
+    }
+
+    retrieval_debug = {
+        "raw_lit_ways_found": len(
+            shared_lit_way_elements
+        ),
+        "lit_ways_near_route": len(
+            nearby_lit_ways
+        ),
+        "lit_value_counts": {
+            value: sum(
+                1
+                for way in nearby_lit_ways
+                if way["lit_value"] == value
+            )
+            for value in sorted(lit_values)
+        }
+    }
+
+    return nearby_lit_ways, retrieval_debug
+
+
+def filter_shared_osm_street_lamps_for_route(
+    route_coordinates: list[
+        tuple[float, float]
+    ],
+    shared_street_lamp_elements: list[dict],
+    coverage_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Keeps only shared highway=street_lamp nodes that
+    are close to one particular route.
+
+    This function performs no network request.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_street_lamps_found": len(
+                shared_street_lamp_elements
+            ),
+            "street_lamps_near_route": 0,
+            "lamps_with_reference_number": 0,
+            "lamps_with_model_or_type_data": 0
+        }
+
+    route_samples = densify_route(
+        route_coordinates,
+        interval_meters=5
+    )
+
+    nearby_street_lamps = []
+
+    for element in shared_street_lamp_elements:
+        latitude = element.get("lat")
+        longitude = element.get("lon")
+
+        if (
+            latitude is None
+            or longitude is None
+        ):
+            continue
+
+        lamp_coordinate = (
+            float(longitude),
+            float(latitude)
+        )
+
+        nearest_route_distance = min(
+            distance_meters(
+                lamp_coordinate,
+                route_sample
+            )
+            for route_sample in route_samples
+        )
+
+        if (
+            nearest_route_distance
+            > coverage_radius_meters
+        ):
+            continue
+
+        tags = element.get(
+            "tags",
+            {}
+        )
+
+        nearby_street_lamps.append({
+            "osm_type": element.get("type"),
+            "osm_id": element.get("id"),
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "distance_to_route_meters": round(
+                nearest_route_distance,
+                1
+            ),
+            "ref": tags.get("ref"),
+            "operator": tags.get("operator"),
+            "lamp_type": tags.get(
+                "lamp_type"
+            ),
+            "lamp_mount": tags.get(
+                "lamp_mount"
+            ),
+            "lamp_model": tags.get(
+                "lamp_model"
+            ),
+            "light_source": tags.get(
+                "light_source"
+            ),
+            "height": tags.get("height"),
+            "direction": tags.get(
+                "direction"
+            )
+        })
+
+    retrieval_debug = {
+        "raw_street_lamps_found": len(
+            shared_street_lamp_elements
+        ),
+        "street_lamps_near_route": len(
+            nearby_street_lamps
+        ),
+        "lamps_with_reference_number": sum(
+            1
+            for lamp in nearby_street_lamps
+            if lamp["ref"]
+        ),
+        "lamps_with_model_or_type_data": sum(
+            1
+            for lamp in nearby_street_lamps
+            if (
+                lamp["lamp_model"]
+                or lamp["lamp_type"]
+                or lamp["light_source"]
+            )
+        )
+    }
+
+    return (
+        nearby_street_lamps,
+        retrieval_debug
+    )
 
 def fetch_osm_lit_ways_near_route(
     route_coordinates: list[tuple[float, float]],
@@ -2142,6 +2636,294 @@ def analyse_combined_lighting(
         },
         "source_errors": source_errors,
         **combined_analysis
+    }
+
+@app.post("/safety/lighting/compare")
+def compare_lighting_routes(
+    request: LightingComparisonRequest
+):
+    if len(request.routes) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route candidates "
+                "are required."
+            )
+        )
+
+    if len(request.routes) > 5:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "A maximum of five route candidates "
+                "can be compared at once."
+            )
+        )
+
+    for route in request.routes:
+        if len(route.geometry) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Route {route.route_id} must contain "
+                    "at least two coordinates."
+                )
+            )
+
+    route_geometries = [
+        route.geometry
+        for route in request.routes
+    ]
+
+    shared_osm_padding = max(
+        request.osm_lit_match_radius_meters,
+        request.osm_lamp_radius_meters
+    )
+
+    shared_source_errors = {}
+
+    shared_lit_way_elements = []
+    shared_street_lamp_elements = []
+
+    shared_osm_debug = {
+        "cache_hit": False,
+        "overpass_server": None,
+        "bbox": None,
+        "raw_lit_ways_found": 0,
+        "raw_street_lamps_found": 0
+    }
+
+    try:
+        shared_osm_data = (
+            fetch_shared_osm_lighting_data(
+                route_geometries=route_geometries,
+                padding_meters=shared_osm_padding
+            )
+        )
+
+        shared_lit_way_elements = (
+            shared_osm_data[
+                "lit_way_elements"
+            ]
+        )
+
+        shared_street_lamp_elements = (
+            shared_osm_data[
+                "street_lamp_elements"
+            ]
+        )
+
+        shared_osm_debug = (
+            shared_osm_data["debug"]
+        )
+
+    except HTTPException as error:
+        shared_source_errors[
+            "osm_lit"
+        ] = error.detail
+
+        shared_source_errors[
+            "osm_individual_lamps"
+        ] = error.detail
+
+    route_results = []
+
+    for route in request.routes:
+        route_samples = densify_route(
+            route.geometry,
+            interval_meters=(
+                request.sample_interval_meters
+            )
+        )
+
+        source_errors = dict(
+            shared_source_errors
+        )
+
+        official_streetlights = []
+        official_debug = {}
+
+        try:
+            (
+                official_streetlights,
+                official_debug
+            ) = fetch_valencia_streetlights(
+                route.geometry
+            )
+
+        except HTTPException as error:
+            source_errors[
+                "official_valencia_lamps"
+            ] = error.detail
+
+        (
+            osm_lit_ways,
+            osm_lit_debug
+        ) = filter_shared_osm_lit_ways_for_route(
+            route_coordinates=route.geometry,
+            shared_lit_way_elements=(
+                shared_lit_way_elements
+            ),
+            match_radius_meters=(
+                request.osm_lit_match_radius_meters
+            )
+        )
+
+        (
+            osm_street_lamps,
+            osm_lamp_debug
+        ) = (
+            filter_shared_osm_street_lamps_for_route(
+                route_coordinates=route.geometry,
+                shared_street_lamp_elements=(
+                    shared_street_lamp_elements
+                ),
+                coverage_radius_meters=(
+                    request.osm_lamp_radius_meters
+                )
+            )
+        )
+
+        nasa_analysis = None
+
+        try:
+            nasa_analysis = (
+                analyse_nasa_route_samples(
+                    route_samples=route_samples,
+                    requested_month=request.month
+                )
+            )
+
+        except HTTPException as error:
+            source_errors[
+                "nasa_background"
+            ] = error.detail
+
+        combined_analysis = (
+            combine_lighting_sources(
+                route_samples=route_samples,
+                official_streetlights=(
+                    official_streetlights
+                ),
+                osm_lit_ways=osm_lit_ways,
+                osm_street_lamps=(
+                    osm_street_lamps
+                ),
+                nasa_analysis=nasa_analysis,
+                official_coverage_radius_meters=(
+                    request.official_lamp_radius_meters
+                ),
+                osm_lit_match_radius_meters=(
+                    request.osm_lit_match_radius_meters
+                ),
+                osm_lamp_coverage_radius_meters=(
+                    request.osm_lamp_radius_meters
+                )
+            )
+        )
+
+        route_results.append({
+            "route_id": route.route_id,
+            "estimated_time_minutes": (
+                route.estimated_time_minutes
+            ),
+            "distance_meters": (
+                route.distance_meters
+            ),
+            "sample_interval_meters": (
+                request.sample_interval_meters
+            ),
+            "month_requested": request.month,
+            "month_used": (
+                nasa_analysis.get("month")
+                if nasa_analysis
+                else None
+            ),
+            "source_availability": {
+                "official_valencia_lamps": (
+                    "available"
+                    if official_streetlights
+                    else "missing_or_unavailable"
+                ),
+                "osm_lit": (
+                    "unavailable"
+                    if "osm_lit" in source_errors
+                    else (
+                        "available"
+                        if osm_lit_ways
+                        else "no_mapped_data_found"
+                    )
+                ),
+                "osm_individual_lamps": (
+                    "unavailable"
+                    if (
+                        "osm_individual_lamps"
+                        in source_errors
+                    )
+                    else (
+                        "available"
+                        if osm_street_lamps
+                        else "no_mapped_data_found"
+                    )
+                ),
+                "nasa_background": (
+                    "available"
+                    if nasa_analysis
+                    else "unavailable"
+                )
+            },
+            "source_counts": {
+                "official_streetlights_near_route": (
+                    len(official_streetlights)
+                ),
+                "osm_lit_ways_near_route": (
+                    len(osm_lit_ways)
+                ),
+                "osm_individual_lamps_near_route": (
+                    len(osm_street_lamps)
+                ),
+                "nasa_unique_cells": (
+                    nasa_analysis.get(
+                        "unique_nasa_cell_count"
+                    )
+                    if nasa_analysis
+                    else 0
+                )
+            },
+            "source_debug": {
+                "official_valencia_lamps": (
+                    official_debug
+                ),
+                "osm_lit": osm_lit_debug,
+                "osm_individual_lamps": (
+                    osm_lamp_debug
+                ),
+                "nasa_memory_cache_hit": (
+                    nasa_analysis.get(
+                        "memory_cache_hit"
+                    )
+                    if nasa_analysis
+                    else None
+                )
+            },
+            "source_errors": source_errors,
+            **combined_analysis
+        })
+
+    return {
+        "status": "lighting_routes_compared",
+        "route_count": len(route_results),
+        "shared_osm_download": {
+            "one_download_used_for_all_routes": True,
+            **shared_osm_debug
+        },
+        "routes": route_results,
+        "interpretation": (
+            "All route candidates were analysed using "
+            "the same shared OpenStreetMap lighting "
+            "download. This avoids making separate "
+            "Overpass requests for every route."
+        )
     }
 
 @app.get("/health")
