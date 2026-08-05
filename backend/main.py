@@ -14,6 +14,7 @@ from supabase import create_client
 from datetime import datetime, timedelta
 from opening_hours import OpeningHours
 from zoneinfo import ZoneInfo
+from nasa_route_analysis import analyse_nasa_route_samples
 
 VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
 
@@ -167,6 +168,19 @@ class OsmStreetLampAreaScanRequest(BaseModel):
         ge=0,
         le=100
     )
+
+class NasaNightLightsAnalysisRequest(BaseModel):
+    route_geometry: list[tuple[float, float]]
+
+    sample_interval_meters: float = Field(
+        default=15,
+        ge=5,
+        le=100
+    )
+
+    # Leave empty to use the latest month in Supabase.
+    # Example historical value: "2026-05".
+    month: Optional[str] = None
 
 class ActivePlacesAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
@@ -1868,6 +1882,39 @@ def google_duration_to_seconds(duration: str) -> int:
         return int(round(float(duration[:-1])))
     except ValueError:
         return 0
+
+@app.post("/safety/nasa-night-lights/analyse")
+def analyse_nasa_night_lights(
+    request: NasaNightLightsAnalysisRequest
+):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "At least two route coordinates "
+                "are required."
+            )
+        )
+
+    route_samples = densify_route(
+        request.route_geometry,
+        interval_meters=(
+            request.sample_interval_meters
+        )
+    )
+
+    analysis = analyse_nasa_route_samples(
+        route_samples=route_samples,
+        requested_month=request.month
+    )
+
+    return {
+        "status": "nasa_night_lights_analysed",
+        "sample_interval_meters": (
+            request.sample_interval_meters
+        ),
+        **analysis
+    }
 
 @app.get("/health")
 def health_check():
