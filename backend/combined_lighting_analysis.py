@@ -187,24 +187,64 @@ def nasa_brightness_percentile(
 
 def nearest_official_lamp_result(
     sample: tuple[float, float],
-    streetlights: list[tuple[float, float]],
+    streetlights: list[
+        tuple[float, float]
+    ],
     coverage_radius_meters: float,
 ) -> dict:
+    """
+    Finds the nearest official Valencia streetlight.
+
+    A nearby official lamp provides positive evidence.
+
+    A very distant lamp does not prove that the route point
+    is dark, so it is treated as unavailable evidence rather
+    than receiving a score of zero.
+    """
     if not streetlights:
         return {
             "available": False,
+            "positive_evidence_available": False,
             "nearest_distance_meters": None,
             "covered": None,
             "source_score": None,
         }
 
     nearest_distance = min(
-        distance_meters(sample, streetlight)
+        distance_meters(
+            sample,
+            streetlight
+        )
         for streetlight in streetlights
+    )
+
+    maximum_evidence_distance = (
+        coverage_radius_meters * 2
+    )
+
+    # Beyond twice the requested radius, the official
+    # dataset provides no useful evidence for this point.
+    # Do not treat this as confirmed darkness.
+    if nearest_distance > maximum_evidence_distance:
+        return {
+            "available": True,
+            "positive_evidence_available": False,
+            "nearest_distance_meters": round(
+                nearest_distance,
+                1,
+            ),
+            "covered": False,
+            "source_score": None,
+        }
+
+    distance_score = positive_distance_score(
+        nearest_distance,
+        coverage_radius_meters,
     )
 
     return {
         "available": True,
+        "positive_evidence_available": True,
         "nearest_distance_meters": round(
             nearest_distance,
             1,
@@ -214,15 +254,10 @@ def nearest_official_lamp_result(
             <= coverage_radius_meters
         ),
         "source_score": round(
-            100
-            * positive_distance_score(
-                nearest_distance,
-                coverage_radius_meters,
-            ),
+            100 * distance_score,
             1,
         ),
     }
-
 
 def nearest_osm_lit_result(
     sample: tuple[float, float],
@@ -527,24 +562,30 @@ def combine_lighting_sources(
             )
 
         if source_weights:
-            combined_score = round(
-                sum(
-                    value * weight
-                    for value, weight in zip(
-                        source_values,
-                        source_weights,
-                    )
+            weighted_contribution = sum(
+                value * weight
+                for value, weight in zip(
+                    source_values,
+                    source_weights,
                 )
-                / sum(source_weights),
+            )
+
+            combined_score = round(
+                max(
+                    0.0,
+                    min(
+                        100.0,
+                        weighted_contribution
+                    )
+                ),
                 1,
             )
-            combined_scores.append(combined_score)
+
+            combined_scores.append(
+                combined_score
+            )
         else:
             combined_score = None
-
-        classification = classify_combined_score(
-            combined_score
-        )
 
         confidence = calculate_confidence(
             official_available=(
@@ -741,11 +782,13 @@ def combine_lighting_sources(
         },
         "sample_results": sample_results,
         "interpretation": (
-            "The score combines available lighting evidence "
-            "at each approximately equal-distance route point. "
-            "Missing OSM lamp points are not treated as darkness. "
-            "NASA has the lowest weight because it measures "
-            "regional background radiance rather than street-level "
-            "illuminance. This is an evidence score, not a lux value."
+            "The score adds fixed contributions from "
+            "the available lighting sources at each "
+            "approximately equal-distance route point. "
+            "Missing evidence is not treated as proof "
+            "of darkness, and missing source weights "
+            "are not redistributed. NASA contributes "
+            "only regional background context. This is "
+            "a lighting-evidence score, not a lux value."
         ),
     }
