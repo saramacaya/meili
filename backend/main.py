@@ -27,6 +27,11 @@ from open_establishments import (
     router as open_establishments_router,
 )
 
+from social_context_analysis import (
+    analyse_social_context,
+    load_overlays,
+)
+
 VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
 
 load_dotenv()
@@ -264,7 +269,11 @@ class CombinedLightingAnalysisRequest(BaseModel):
     # Leave empty to use the latest NASA month.
     month: Optional[str] = None
 
-
+class SocialContextAnalysisRequest(BaseModel):
+    city: Literal["valencia", "castellon"]
+    route_geometry: list[tuple[float, float]]
+    departure_datetime: datetime
+    route_duration_seconds: int = Field(..., gt=0)
 
 def feature_representative_point(
     feature: dict
@@ -3066,6 +3075,41 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             "Safety scoring has not yet been applied."
         )
     }
+
+@app.post("/safety/social-context/analyse")
+def analyse_route_social_context(
+    request: SocialContextAnalysisRequest
+):
+    try:
+        return analyse_social_context(
+            city=request.city,
+            route_geometry=request.route_geometry,
+            departure_datetime=request.departure_datetime,
+            route_duration_seconds=request.route_duration_seconds,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        )
+
+
+@app.get("/social-context/overlays")
+def get_social_context_overlays(
+    city: Literal["valencia", "castellon"]
+):
+    try:
+        return load_overlays(city)
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        )
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
