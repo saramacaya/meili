@@ -20,12 +20,16 @@ from nasa_route_analysis import analyse_nasa_route_samples
 
 from combined_lighting_analysis import combine_lighting_sources
 from open_establishments import (
+    ActivePlacesAnalysisRequest,
+    analyse_active_places,
     densify_route,
     distance_meters,
     flatten_geojson_coordinates,
     normalise_text,
     router as open_establishments_router,
 )
+
+from street_scoring import value_route_sections
 
 from social_context_analysis import (
     analyse_social_context,
@@ -274,6 +278,15 @@ class SocialContextAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
     departure_datetime: datetime
     route_duration_seconds: int = Field(..., gt=0)
+
+class StreetScoringRequest(BaseModel):
+    city: Literal["valencia", "castellon"]
+    route_geometry: list[tuple[float, float]]
+    departure_datetime: datetime
+    route_duration_seconds: int = Field(..., ge=60, le=21_600)
+    month: Optional[str] = None
+
+
 
 def feature_representative_point(
     feature: dict
@@ -3250,6 +3263,67 @@ def generate_routes(request: RouteRequest):
             "status": "error",
             "message": str(error)
         }
+
+@app.post("/safety/street-score/analyse")
+def analyse_street_score(request: StreetScoringRequest):
+    if len(request.route_geometry) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="At least two route coordinates are required.",
+        )
+
+    lighting = analyse_combined_lighting(
+        CombinedLightingAnalysisRequest(
+            route_geometry=request.route_geometry,
+            month=request.month,
+        )
+    )
+
+    active_places = analyse_active_places(
+        ActivePlacesAnalysisRequest(
+            route_geometry=request.route_geometry,
+            evaluation_datetime=request.departure_datetime,
+            route_duration_seconds=request.route_duration_seconds,
+        )
+    )
+
+    social_context = analyse_social_context(
+        city=request.city,
+        route_geometry=request.route_geometry,
+        departure_datetime=request.departure_datetime,
+        route_duration_seconds=request.route_duration_seconds,
+    )
+
+    valuation = value_route_sections(
+        lighting_analysis=lighting,
+        active_places_analysis=active_places,
+        social_context_analysis=social_context,
+        departure_datetime=request.departure_datetime,
+        route_duration_seconds=request.route_duration_seconds,
+    )
+
+    return {
+        "status": "street_score_analysed",
+        "city": request.city,
+        **valuation,
+        "component_summaries": {
+            "lighting_mean_score": lighting[
+                "combined_score_statistics"
+            ]["mean_score"],
+            "route_activity_score": active_places[
+                "route_activity_score"
+            ],
+            "social_context_adjustment_points": social_context[
+                "score_adjustment_points"
+            ],
+        },
+        "component_details": {
+            "lighting": lighting,
+            "active_places": active_places,
+            "social_context": social_context,
+        },
+    }
+
 @app.post("/routes/select")
 def select_route(request: RouteSelectionRequest):
     origin_key = normalise_text(request.origin)
