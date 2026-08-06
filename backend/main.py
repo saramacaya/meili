@@ -22,14 +22,18 @@ from combined_lighting_analysis import combine_lighting_sources
 from open_establishments import (
     ActivePlacesAnalysisRequest,
     analyse_active_places,
+    build_active_places_response,
     densify_route,
     distance_meters,
+    fetch_shared_osm_places,
+    filter_shared_places_for_route,
     flatten_geojson_coordinates,
     normalise_text,
     router as open_establishments_router,
+    score_places_for_route,
 )
 
-from street_scoring import value_route_sections
+from street_scoring import assign_route_labels, value_route_sections
 
 from social_context_analysis import (
     analyse_social_context,
@@ -327,9 +331,45 @@ def is_streetlight(feature: dict) -> bool:
     return "FAROLA" in values or "FANAL" in values
 
 
+# Priority 1/4: a coarse box around Valencia city, used only to skip a
+# pointless network call to Valencia's own official streetlight dataset
+# when a route is clearly nowhere near Valencia (e.g. Castellon,
+# Alicante). It intentionally errs generous -- it must never exclude a
+# real Valencia route, it only needs to exclude routes that obviously
+# cannot be Valencia.
+VALENCIA_OFFICIAL_COVERAGE_BOUNDS = {
+    "south": 39.35,
+    "west": -0.48,
+    "north": 39.58,
+    "east": -0.28,
+}
+
+
+def _route_intersects_valencia_official_coverage(
+    route_coordinates: list[tuple[float, float]]
+) -> bool:
+    bounds = VALENCIA_OFFICIAL_COVERAGE_BOUNDS
+    return any(
+        bounds["west"] <= longitude <= bounds["east"]
+        and bounds["south"] <= latitude <= bounds["north"]
+        for longitude, latitude in route_coordinates
+    )
+
+
 def fetch_valencia_streetlights(
     route_coordinates: list[tuple[float, float]]
 ) -> tuple[list[tuple[float, float]], dict]:
+    if not _route_intersects_valencia_official_coverage(route_coordinates):
+        return [], {
+            "skipped_reason": "route_outside_valencia_official_coverage_area",
+            "object_ids_found": 0,
+            "raw_features_downloaded": 0,
+            "download_batches": 0,
+            "recognised_streetlights": 0,
+            "rejected_objects_count": 0,
+            "rejected_element_categories": []
+        }
+
     longitudes = [
         coordinate[0]
         for coordinate in route_coordinates
@@ -3575,3 +3615,258 @@ def create_user(request: UserCreateRequest):
             "status": "error",
             "message": str(error)
         }
+
+
+# ---------------------------------------------------------------------------
+# Priority 3: one combined three-route comparison endpoint.
+#
+# Each route candidate used to require separate calls to lighting, active-
+# places and social-context analysis, each of which (for lighting and
+# active-places) made its own live OpenStreetMap/ArcGIS/NASA requests with
+# no sharing between routes. For three routes that meant repeating the same
+# OSM downloads three times over, which is exactly what produced the
+# five-to-ten-minute waits described in the first real run. This endpoint
+# downloads OSM lighting data once and OSM places data once for a bounding
+# box covering every route being compared, then reuses those shared
+# downloads (and the already-cached NASA regional grid) for every route's
+# lighting/activity/social-context scoring. Safest/Fastest/Balanced labels
+# are assigned only once every route has a complete score (Priority 6).
+# ---------------------------------------------------------------------------
+
+class RouteComparisonCandidate(BaseModel):
+    route_id: str
+    geometry: list[tuple[float, float]]
+    estimated_time_minutes: int = Field(..., gt=0)
+    distance_meters: float = Field(..., ge=0)
+
+
+class RouteComparisonRequest(BaseModel):
+    routes: list[RouteComparisonCandidate]
+    departure_datetime: datetime
+
+    sample_interval_meters: float = Field(default=15, ge=5, le=50)
+    official_lamp_radius_meters: float = Field(default=25, ge=5, le=100)
+    osm_lit_match_radius_meters: float = Field(default=15, ge=5, le=50)
+    osm_lamp_radius_meters: float = Field(default=25, ge=5, le=100)
+    activity_search_radius_meters: float = Field(default=75, ge=25, le=200)
+
+    # Leave empty to use the latest NASA month in Supabase.
+    month: Optional[str] = None
+
+    # Accepted for backward compatibility only; ignored. See
+    # SocialContextAnalysisRequest.city for why.
+    city: Optional[str] = None
+
+
+@app.post("/safety/routes/compare")
+def compare_routes(request: RouteComparisonRequest):
+    if len(request.routes) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="At least two route candidates are required."
+        )
+
+    if len(request.routes) > 5:
+        raise HTTPException(
+            status_code=400,
+            detail="A maximum of five route candidates can be compared at once."
+        )
+
+    for route in request.routes:
+        if len(route.geometry) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Route {route.route_id} must contain at least two coordinates."
+            )
+
+    route_geometries = [route.geometry for route in request.routes]
+    shared_source_errors: dict[str, str] = {}
+
+    # --- One shared OSM lighting download for every route ---
+    shared_lit_way_elements: list[dict] = []
+    shared_street_lamp_elements: list[dict] = []
+    shared_osm_lighting_debug = {
+        "cache_hit": False,
+        "overpass_server": None,
+        "bbox": None,
+        "raw_lit_ways_found": 0,
+        "raw_street_lamps_found": 0
+    }
+
+    try:
+        shared_osm_lighting_data = fetch_shared_osm_lighting_data(
+            route_geometries=route_geometries,
+            padding_meters=max(
+                request.osm_lit_match_radius_meters,
+                request.osm_lamp_radius_meters
+            )
+        )
+        shared_lit_way_elements = shared_osm_lighting_data["lit_way_elements"]
+        shared_street_lamp_elements = shared_osm_lighting_data["street_lamp_elements"]
+        shared_osm_lighting_debug = shared_osm_lighting_data["debug"]
+    except HTTPException as error:
+        shared_source_errors["osm_lit"] = error.detail
+        shared_source_errors["osm_individual_lamps"] = error.detail
+
+    # --- One shared OSM places download for every route ---
+    shared_places_elements: list[dict] = []
+    shared_places_debug = {"cache_hit": False, "raw_places_found": 0}
+
+    try:
+        shared_places_elements, shared_places_debug = fetch_shared_osm_places(
+            route_geometries=route_geometries,
+            search_radius_meters=request.activity_search_radius_meters
+        )
+    except HTTPException as error:
+        shared_source_errors["active_places"] = error.detail
+
+    route_results = []
+    label_inputs = []
+
+    for route in request.routes:
+        route_duration_seconds = route.estimated_time_minutes * 60
+        route_samples = densify_route(
+            route.geometry,
+            interval_meters=request.sample_interval_meters
+        )
+        source_errors = dict(shared_source_errors)
+
+        official_streetlights: list[tuple[float, float]] = []
+        official_debug: dict = {}
+
+        try:
+            official_streetlights, official_debug = fetch_valencia_streetlights(
+                route.geometry
+            )
+        except HTTPException as error:
+            source_errors["official_valencia_lamps"] = error.detail
+
+        osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
+            route_coordinates=route.geometry,
+            shared_lit_way_elements=shared_lit_way_elements,
+            match_radius_meters=request.osm_lit_match_radius_meters
+        )
+
+        osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
+            route_coordinates=route.geometry,
+            shared_street_lamp_elements=shared_street_lamp_elements,
+            coverage_radius_meters=request.osm_lamp_radius_meters
+        )
+
+        nasa_analysis = None
+
+        try:
+            nasa_analysis = analyse_nasa_route_samples(
+                route_samples=route_samples,
+                requested_month=request.month
+            )
+        except HTTPException as error:
+            source_errors["nasa_background"] = error.detail
+
+        lighting_analysis = combine_lighting_sources(
+            route_samples=route_samples,
+            official_streetlights=official_streetlights,
+            osm_lit_ways=osm_lit_ways,
+            osm_street_lamps=osm_street_lamps,
+            nasa_analysis=nasa_analysis,
+            official_coverage_radius_meters=request.official_lamp_radius_meters,
+            osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
+            osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters
+        )
+
+        raw_places, places_debug = filter_shared_places_for_route(
+            route_coordinates=route.geometry,
+            shared_elements=shared_places_elements,
+            search_radius_meters=request.activity_search_radius_meters
+        )
+
+        scored_places = score_places_for_route(
+            places=raw_places,
+            route_geometry=route.geometry,
+            evaluation_datetime=request.departure_datetime,
+            route_duration_seconds=route_duration_seconds,
+            search_radius_meters=request.activity_search_radius_meters
+        )
+
+        active_places_analysis = build_active_places_response(
+            places=scored_places,
+            evaluation_datetime=request.departure_datetime
+        )
+        active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
+        active_places_analysis["retrieval_debug"] = places_debug
+
+        social_context_analysis = analyse_social_context(
+            route_geometry=route.geometry,
+            departure_datetime=request.departure_datetime,
+            route_duration_seconds=route_duration_seconds,
+            city=request.city
+        )
+
+        valuation = value_route_sections(
+            lighting_analysis=lighting_analysis,
+            active_places_analysis=active_places_analysis,
+            social_context_analysis=social_context_analysis,
+            departure_datetime=request.departure_datetime,
+            route_duration_seconds=route_duration_seconds
+        )
+
+        label_inputs.append({
+            "route_id": route.route_id,
+            "route_value_score": valuation["route_value_score"],
+            "estimated_time_minutes": route.estimated_time_minutes
+        })
+
+        route_results.append({
+            "route_id": route.route_id,
+            "estimated_time_minutes": route.estimated_time_minutes,
+            "distance_meters": route.distance_meters,
+            "source_errors": source_errors,
+            **valuation,
+            "component_summaries": {
+                "lighting_mean_score": lighting_analysis["combined_score_statistics"]["mean_score"],
+                "route_activity_score": active_places_analysis["route_activity_score"],
+                "social_context_adjustment_points": social_context_analysis["score_adjustment_points"]
+            },
+            "component_details": {
+                "lighting": lighting_analysis,
+                "active_places": active_places_analysis,
+                "social_context": social_context_analysis
+            },
+            "source_debug": {
+                "official_valencia_lamps": official_debug,
+                "osm_lit": osm_lit_debug,
+                "osm_individual_lamps": osm_lamp_debug
+            }
+        })
+
+    label_assignment = assign_route_labels(label_inputs)
+
+    for route_result in route_results:
+        route_result["labels"] = label_assignment["labels_by_route_id"].get(
+            route_result["route_id"], []
+        )
+
+    return {
+        "status": "routes_compared_and_scored",
+        "route_count": len(route_results),
+        "shared_downloads": {
+            "osm_lighting": {
+                "one_download_used_for_all_routes": True,
+                **shared_osm_lighting_debug
+            },
+            "osm_places": {
+                "one_download_used_for_all_routes": True,
+                **shared_places_debug
+            }
+        },
+        "labels": label_assignment,
+        "routes": route_results,
+        "interpretation": (
+            "All route candidates were analysed together, sharing one "
+            "OpenStreetMap lighting download and one OpenStreetMap places "
+            "download across every route, instead of repeating those "
+            "downloads once per route. Safest, Fastest and Balanced labels "
+            "are assigned only after every route has a complete score, "
+            "never from the order the routes were provided in."
+        )
+    }

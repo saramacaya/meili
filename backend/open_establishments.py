@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta
 import math
+import time
+import threading
 import unicodedata
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -529,7 +531,20 @@ ACTIVITY_CATEGORY_WEIGHTS = {
 }
 
 
-SEGMENT_ACTIVITY_TARGET_POINTS = 3.0
+# How much weighted activity a segment needs to reach a 100 score.
+#
+# Recalibrated (Priority 5): the previous value of 3.0 meant a segment
+# needed roughly three simultaneously-open, immediately-adjacent places to
+# reach 100. In the first real run, routes with 32-33 confirmed/estimated
+# active places along the whole walk (spread across 10 segments, so ~3-4
+# per segment, each rarely both fully "open_activity" AND within a few
+# metres of the route) still scored a flat 30/100 -- the target was too
+# strict for how sparse and imperfect real OSM opening-hours data actually
+# is. 1.6 means two moderately-confident, reasonably-close active places
+# (or one help point) are enough to call a segment fully active, which
+# matches what the feedback described as "roughly 32-33 confirmed or
+# estimated active" places no longer being undervalued.
+SEGMENT_ACTIVITY_TARGET_POINTS = 1.6
 
 
 def calculate_place_activity_contribution(
@@ -692,62 +707,10 @@ def calculate_route_activity_analysis(
         "segment_count": segment_count,
         "segments": segments
     }
-def fetch_osm_places_near_route(
-    route_coordinates: list[tuple[float, float]],
-    search_radius_meters: float
-) -> tuple[list[dict], dict]:
-    """
-    Retrieves relevant places from OpenStreetMap and keeps
-    only places within the requested distance of the route.
-    """
-    if not route_coordinates:
-        return [], {
-            "raw_places_found": 0,
-            "relevant_places_near_route": 0
-        }
 
-    route_samples = densify_route(
-        route_coordinates,
-        interval_meters=30
-    )
 
-    longitudes = [
-        coordinate[0]
-        for coordinate in route_coordinates
-    ]
-
-    latitudes = [
-        coordinate[1]
-        for coordinate in route_coordinates
-    ]
-
-    latitude_padding = (
-        search_radius_meters / 111_000
-    )
-
-    average_latitude = sum(latitudes) / len(latitudes)
-
-    longitude_padding = (
-        search_radius_meters
-        / (
-            111_000
-            * max(
-                math.cos(
-                    math.radians(average_latitude)
-                ),
-                0.01
-            )
-        )
-    )
-
-    south = min(latitudes) - latitude_padding
-    west = min(longitudes) - longitude_padding
-    north = max(latitudes) + latitude_padding
-    east = max(longitudes) + longitude_padding
-
-    bbox = f"{south},{west},{north},{east}"
-
-    query = f"""
+def _overpass_places_query(bbox: str) -> str:
+    return f"""
     [out:json][timeout:25];
     (
       nwr["amenity"~"^(cafe|restaurant|fast_food|pharmacy|hospital|clinic|doctors|police|fire_station|bar|pub|nightclub)$"]({bbox});
@@ -757,6 +720,29 @@ def fetch_osm_places_near_route(
     out tags center;
     """
 
+
+def _route_padded_bbox(
+    route_coordinates: list[tuple[float, float]],
+    search_radius_meters: float
+) -> str:
+    longitudes = [coordinate[0] for coordinate in route_coordinates]
+    latitudes = [coordinate[1] for coordinate in route_coordinates]
+
+    latitude_padding = search_radius_meters / 111_000
+    average_latitude = sum(latitudes) / len(latitudes)
+    longitude_padding = search_radius_meters / (
+        111_000 * max(math.cos(math.radians(average_latitude)), 0.01)
+    )
+
+    south = min(latitudes) - latitude_padding
+    west = min(longitudes) - longitude_padding
+    north = max(latitudes) + latitude_padding
+    east = max(longitudes) + longitude_padding
+
+    return f"{south},{west},{north},{east}"
+
+
+def _run_overpass_query(query: str, timeout_seconds: int = 35) -> dict:
     data = None
     retrieval_errors = []
 
@@ -767,108 +753,308 @@ def fetch_osm_places_near_route(
                 data={"data": query},
                 headers={
                     "Accept": "application/json",
-                    "User-Agent": (
-                        "Meili safety-routing prototype"
-                    )
+                    "User-Agent": "Meili safety-routing prototype"
                 },
-                timeout=35
+                timeout=timeout_seconds
             )
             response.raise_for_status()
             data = response.json()
             break
-
-        except (
-            requests.RequestException,
-            ValueError
-        ) as error:
-            retrieval_errors.append(
-                f"{overpass_url}: {error}"
-            )
+        except (requests.RequestException, ValueError) as error:
+            retrieval_errors.append(f"{overpass_url}: {error}")
 
     if data is None:
         raise HTTPException(
             status_code=502,
             detail=(
-                "OpenStreetMap place data could not "
-                "be retrieved from the available "
-                "Overpass servers: "
-                + " | ".join(retrieval_errors)
+                "OpenStreetMap place data could not be retrieved from the "
+                "available Overpass servers: " + " | ".join(retrieval_errors)
             )
         )
 
-    raw_elements = data.get("elements", [])
+    return data
+
+
+def _place_from_element(element: dict) -> Optional[dict]:
+    tags = element.get("tags", {})
+    category = classify_place(tags)
+
+    if category is None:
+        return None
+
+    latitude = element.get("lat")
+    longitude = element.get("lon")
+
+    if latitude is None or longitude is None:
+        center = element.get("center", {})
+        latitude = center.get("lat")
+        longitude = center.get("lon")
+
+    if latitude is None or longitude is None:
+        return None
+
+    return {
+        "osm_type": element.get("type"),
+        "osm_id": element.get("id"),
+        "establishment_type": get_establishment_type(tags),
+        "name": tags.get("name") or tags.get("brand") or "Unnamed place",
+        "category": category,
+        "latitude": float(latitude),
+        "longitude": float(longitude),
+        "opening_hours": tags.get("opening_hours")
+    }
+
+
+SHARED_PLACES_CACHE: dict[str, dict] = {}
+SHARED_PLACES_CACHE_LOCK = threading.Lock()
+SHARED_PLACES_CACHE_TTL_SECONDS = 15 * 60
+
+
+def fetch_shared_osm_places(
+    route_geometries: list[list[tuple[float, float]]],
+    search_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Downloads relevant OpenStreetMap places once for a bounding box that
+    covers every route being compared, instead of one Overpass request per
+    route (Priority 3/4: routes being compared together should not pay for
+    a separate slow external download each).
+
+    The raw elements are cached in memory for 15 minutes, keyed by the
+    rounded bounding box, so repeat comparisons over the same area of the
+    Comunitat Valenciana reuse the same download.
+    """
+    all_coordinates = [
+        coordinate
+        for geometry in route_geometries
+        for coordinate in geometry
+    ]
+
+    if not all_coordinates:
+        return [], {
+            "cache_hit": False,
+            "raw_places_found": 0
+        }
+
+    bbox = _route_padded_bbox(all_coordinates, search_radius_meters)
+    cache_key = bbox
+
+    now = time.time()
+
+    with SHARED_PLACES_CACHE_LOCK:
+        cached_entry = SHARED_PLACES_CACHE.get(cache_key)
+        if cached_entry is not None and (now - cached_entry["created_at"]) < SHARED_PLACES_CACHE_TTL_SECONDS:
+            elements = cached_entry["elements"]
+            return elements, {"cache_hit": True, "raw_places_found": len(elements)}
+
+    data = _run_overpass_query(_overpass_places_query(bbox), timeout_seconds=35)
+    elements = data.get("elements", [])
+
+    with SHARED_PLACES_CACHE_LOCK:
+        SHARED_PLACES_CACHE[cache_key] = {
+            "created_at": now,
+            "elements": elements
+        }
+
+    return elements, {"cache_hit": False, "raw_places_found": len(elements)}
+
+
+def filter_shared_places_for_route(
+    route_coordinates: list[tuple[float, float]],
+    shared_elements: list[dict],
+    search_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Keeps only shared OSM places close to one particular route.
+
+    This performs no network request -- it is the per-route counterpart to
+    :func:`fetch_shared_osm_places`, mirroring the existing
+    fetch_shared_osm_lighting_data / filter_shared_osm_*_for_route pattern
+    already used for lighting comparisons.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_places_found": len(shared_elements),
+            "relevant_places_near_route": 0
+        }
+
+    route_samples = densify_route(route_coordinates, interval_meters=30)
     relevant_places = []
 
-    for element in raw_elements:
-        tags = element.get("tags", {})
-        category = classify_place(tags)
-
-        if category is None:
+    for element in shared_elements:
+        place = _place_from_element(element)
+        if place is None:
             continue
 
-        latitude = element.get("lat")
-        longitude = element.get("lon")
-
-        if latitude is None or longitude is None:
-            center = element.get("center", {})
-            latitude = center.get("lat")
-            longitude = center.get("lon")
-
-        if latitude is None or longitude is None:
-            continue
-
-        place_coordinate = (
-            float(longitude),
-            float(latitude)
-        )
-
+        place_coordinate = (place["longitude"], place["latitude"])
         nearest_route_distance = min(
-            distance_meters(
-                place_coordinate,
-                route_sample
-            )
+            distance_meters(place_coordinate, route_sample)
             for route_sample in route_samples
         )
 
         if nearest_route_distance > search_radius_meters:
             continue
 
-        relevant_places.append({
-            "osm_type": element.get("type"),
-            "osm_id": element.get("id"),
-            "establishment_type": (
-                get_establishment_type(tags)
-            ),
-            "name": (
-                tags.get("name")
-                or tags.get("brand")
-                or "Unnamed place"
-            ),
-            "category": category,
-            "latitude": float(latitude),
-            "longitude": float(longitude),
-            "distance_to_route_meters": round(
-                nearest_route_distance,
-                1
-            ),
-            "opening_hours": tags.get(
-                "opening_hours"
-            )
-        })
+        place["distance_to_route_meters"] = round(nearest_route_distance, 1)
+        relevant_places.append(place)
 
     retrieval_debug = {
-        "raw_places_found": len(raw_elements),
-        "relevant_places_near_route": len(
-            relevant_places
-        ),
+        "raw_places_found": len(shared_elements),
+        "relevant_places_near_route": len(relevant_places),
         "places_with_opening_hours": sum(
-            1
-            for place in relevant_places
-            if place["opening_hours"]
+            1 for place in relevant_places if place["opening_hours"]
         )
     }
 
     return relevant_places, retrieval_debug
+
+
+def fetch_osm_places_near_route(
+    route_coordinates: list[tuple[float, float]],
+    search_radius_meters: float
+) -> tuple[list[dict], dict]:
+    """
+    Retrieves relevant places from OpenStreetMap and keeps
+    only places within the requested distance of the route.
+
+    Kept for the single-route endpoint; batch comparisons should prefer
+    fetch_shared_osm_places + filter_shared_places_for_route so multiple
+    routes share one download.
+    """
+    if not route_coordinates:
+        return [], {
+            "raw_places_found": 0,
+            "relevant_places_near_route": 0
+        }
+
+    bbox = _route_padded_bbox(route_coordinates, search_radius_meters)
+    data = _run_overpass_query(_overpass_places_query(bbox), timeout_seconds=35)
+
+    return filter_shared_places_for_route(
+        route_coordinates=route_coordinates,
+        shared_elements=data.get("elements", []),
+        search_radius_meters=search_radius_meters
+    )
+
+
+def score_places_for_route(
+    places: list[dict],
+    route_geometry: list[tuple[float, float]],
+    evaluation_datetime: datetime,
+    route_duration_seconds: int,
+    search_radius_meters: float
+) -> list[dict]:
+    """
+    Adds arrival time, opening status and activity contribution to each
+    place. Shared between the single-route and batch-comparison code paths
+    so the underlying scoring logic never diverges between them.
+    """
+    scored_places = []
+
+    for place in places:
+        place = dict(place)
+        place_coordinate = (place["longitude"], place["latitude"])
+
+        route_progress = calculate_place_route_progress(
+            place_coordinate=place_coordinate,
+            route_coordinates=route_geometry
+        )
+
+        estimated_arrival_datetime = calculate_place_arrival_time(
+            route_progress=route_progress,
+            departure_datetime=evaluation_datetime,
+            route_duration_seconds=route_duration_seconds
+        )
+
+        place["route_progress_percentage"] = round(route_progress * 100, 1)
+        place["estimated_arrival_datetime"] = estimated_arrival_datetime.isoformat()
+
+        place["opening_status"] = determine_place_opening_status(
+            opening_hours_value=place["opening_hours"],
+            evaluation_datetime=estimated_arrival_datetime,
+            latitude=place["latitude"],
+            longitude=place["longitude"],
+            establishment_type=place["establishment_type"]
+        )
+
+        place["activity_status"] = determine_place_activity_status(
+            opening_status=place["opening_status"],
+            opening_hours_value=place["opening_hours"],
+            evaluation_datetime=estimated_arrival_datetime,
+            transition_window_minutes=30
+        )
+
+        place["activity_contribution"] = calculate_place_activity_contribution(
+            place=place,
+            search_radius_meters=search_radius_meters
+        )
+
+        scored_places.append(place)
+
+    return scored_places
+
+
+def build_active_places_response(places: list[dict], evaluation_datetime: datetime) -> dict:
+    """Shared response-shaping logic for both the single-route endpoint and
+    the batch comparison endpoint, so their output stays identical in shape."""
+    activity_analysis = calculate_route_activity_analysis(
+        places=places,
+        segment_count=10
+    )
+
+    def _of_category(category):
+        return [place for place in places if place["category"] == category]
+
+    def _of_opening_status(status):
+        return [place for place in places if place["opening_status"] == status]
+
+    def _of_activity_status(status):
+        return [place for place in places if place["activity_status"] == status]
+
+    active_places = _of_category("active_place")
+    help_points = _of_category("help_point")
+    nightlife_places = _of_category("nightlife")
+
+    return {
+        "status": "active_places_analysed",
+        "opening_hours_logic_version": "v3_explicit_timezone",
+        "source": "OpenStreetMap contributors",
+        "source_license": "ODbL",
+        "evaluation_datetime": evaluation_datetime.isoformat(),
+        "route_activity_score": activity_analysis["route_activity_score"],
+        "minimum_segment_activity_score": activity_analysis["minimum_segment_activity_score"],
+        "low_activity_segment_count": activity_analysis["low_activity_segment_count"],
+        "activity_segments": activity_analysis["segments"],
+        "total_relevant_places": len(places),
+        "active_place_count": len(active_places),
+        "help_point_count": len(help_points),
+        "nightlife_count": len(nightlife_places),
+        "places_with_opening_hours_count": sum(1 for place in places if place["opening_hours"]),
+        "places_with_unknown_hours_count": sum(1 for place in places if not place["opening_hours"]),
+        "confirmed_open_count": len(_of_opening_status("confirmed_open")),
+        "confirmed_closed_count": len(_of_opening_status("confirmed_closed")),
+        "estimated_open_count": len(_of_opening_status("estimated_open")),
+        "estimated_closed_count": len(_of_opening_status("estimated_closed")),
+        "unknown_opening_status_count": len(_of_opening_status("unknown")),
+        "transition_activity_window_minutes": 30,
+        "open_activity_count": len(_of_activity_status("open_activity")),
+        "closing_activity_count": len(_of_activity_status("closing_activity")),
+        "opening_activity_count": len(_of_activity_status("opening_activity")),
+        "estimated_activity_count": len(_of_activity_status("estimated_activity")),
+        "closed_activity_count": len(_of_activity_status("closed_activity")),
+        "unknown_activity_count": len(_of_activity_status("unknown_activity")),
+        "active_places": active_places,
+        "help_points": help_points,
+        "nightlife_places": nightlife_places,
+        "data_confidence": "testing",
+        "interpretation": (
+            "This checks the availability of relevant OpenStreetMap places and "
+            "their opening-hours data near the route. Missing opening hours "
+            "mean unknown, not closed."
+        )
+    }
+
+
 @router.post("/safety/active-places/analyse")
 def analyse_active_places(
     request: ActivePlacesAnalysisRequest
@@ -891,267 +1077,18 @@ def analyse_active_places(
         )
     )
 
-    for place in places:
-        place_coordinate = (
-            place["longitude"],
-            place["latitude"]
-        )
-
-        route_progress = (
-            calculate_place_route_progress(
-                place_coordinate=place_coordinate,
-                route_coordinates=(
-                    request.route_geometry
-                )
-            )
-        )
-
-        estimated_arrival_datetime = (
-            calculate_place_arrival_time(
-                route_progress=route_progress,
-                departure_datetime=(
-                    request.evaluation_datetime
-                ),
-                route_duration_seconds=(
-                    request.route_duration_seconds
-                )
-            )
-        )
-
-        place["route_progress_percentage"] = round(
-            route_progress * 100,
-            1
-        )
-
-        place["estimated_arrival_datetime"] = (
-            estimated_arrival_datetime.isoformat()
-        )
-
-        place["opening_status"] = (
-            determine_place_opening_status(
-                opening_hours_value=(
-                    place["opening_hours"]
-                ),
-                evaluation_datetime=(
-                    estimated_arrival_datetime
-                ),
-                latitude=place["latitude"],
-                longitude=place["longitude"],
-                establishment_type=place[
-                    "establishment_type"
-                ]
-            )
-        )
-
-        place["activity_status"] = (
-            determine_place_activity_status(
-                opening_status=(
-                    place["opening_status"]
-                ),
-                opening_hours_value=(
-                    place["opening_hours"]
-                ),
-                evaluation_datetime=(
-                    estimated_arrival_datetime
-                ),
-                transition_window_minutes=30
-            )
-        )
-
-        place["activity_contribution"] = (
-            calculate_place_activity_contribution(
-                place=place,
-                search_radius_meters=(
-                    request.search_radius_meters
-                )
-            )
-        )
-
-    activity_analysis = (
-        calculate_route_activity_analysis(
-            places=places,
-            segment_count=10
-        )
+    scored_places = score_places_for_route(
+        places=places,
+        route_geometry=request.route_geometry,
+        evaluation_datetime=request.evaluation_datetime,
+        route_duration_seconds=request.route_duration_seconds,
+        search_radius_meters=request.search_radius_meters
     )
 
-    active_places = [
-        place
-        for place in places
-        if place["category"] == "active_place"
-    ]
-
-    help_points = [
-        place
-        for place in places
-        if place["category"] == "help_point"
-    ]
-
-    nightlife_places = [
-        place
-        for place in places
-        if place["category"] == "nightlife"
-    ]
-
-    places_with_opening_hours = [
-        place
-        for place in places
-        if place["opening_hours"]
-    ]
-
-    places_with_unknown_hours = [
-        place
-        for place in places
-        if not place["opening_hours"]
-    ]
-
-    confirmed_open_places = [
-        place
-        for place in places
-        if place["opening_status"] == "confirmed_open"
-    ]
-
-    confirmed_closed_places = [
-        place
-        for place in places
-        if place["opening_status"] == "confirmed_closed"
-    ]
-
-    estimated_open_places = [
-        place
-        for place in places
-        if place["opening_status"] == "estimated_open"
-    ]
-
-    estimated_closed_places = [
-        place
-        for place in places
-        if place["opening_status"] == "estimated_closed"
-    ]
-
-    unknown_status_places = [
-        place
-        for place in places
-        if place["opening_status"] == "unknown"
-    ]
-
-    open_activity_places = [
-    place
-    for place in places
-    if place["activity_status"] == "open_activity"
-    ]   
-
-    closing_activity_places = [
-        place
-        for place in places
-        if place["activity_status"] == "closing_activity"
-    ]
-
-    opening_activity_places = [
-        place
-        for place in places
-        if place["activity_status"] == "opening_activity"
-    ]
-
-    estimated_activity_places = [
-        place
-        for place in places
-        if place["activity_status"] == "estimated_activity"
-    ]
-
-    closed_activity_places = [
-        place
-        for place in places
-        if place["activity_status"] == "closed_activity"
-    ]
-
-    unknown_activity_places = [
-        place
-        for place in places
-        if place["activity_status"] == "unknown_activity"
-    ]
-
-    return {
-        "status": "active_places_analysed",
-        "opening_hours_logic_version": "v3_explicit_timezone",
-        "source": "OpenStreetMap contributors",
-        "source_license": "ODbL",
-        "evaluation_datetime": (
-            request.evaluation_datetime.isoformat()
-        ),
-        "search_radius_meters": (
-            request.search_radius_meters
-        ),
-        "route_activity_score": (
-            activity_analysis[
-                "route_activity_score"
-            ]
-        ),
-        "minimum_segment_activity_score": (
-            activity_analysis[
-                "minimum_segment_activity_score"
-            ]
-        ),
-        "low_activity_segment_count": (
-            activity_analysis[
-                "low_activity_segment_count"
-            ]
-        ),
-        "activity_segments": (
-            activity_analysis["segments"]
-        ),
-        "retrieval_debug": retrieval_debug,
-        "total_relevant_places": len(places),
-        "active_place_count": len(active_places),
-        "help_point_count": len(help_points),
-        "nightlife_count": len(nightlife_places),
-        "places_with_opening_hours_count": len(
-            places_with_opening_hours
-        ),
-        "places_with_unknown_hours_count": len(
-            places_with_unknown_hours
-        ),
-        "confirmed_open_count": len(
-            confirmed_open_places
-        ),
-        "confirmed_closed_count": len(
-            confirmed_closed_places
-        ),
-        "estimated_open_count": len(
-            estimated_open_places
-        ),
-        "estimated_closed_count": len(
-            estimated_closed_places
-        ),
-        "unknown_opening_status_count": len(
-            unknown_status_places
-        ),
-        "transition_activity_window_minutes": 30,
-        "open_activity_count": len(
-            open_activity_places
-        ),
-        "closing_activity_count": len(
-            closing_activity_places
-        ),
-        "opening_activity_count": len(
-            opening_activity_places
-        ),
-        "estimated_activity_count": len(
-            estimated_activity_places
-        ),
-        "closed_activity_count": len(
-            closed_activity_places
-        ),
-        "unknown_activity_count": len(
-            unknown_activity_places
-        ),
-        "active_places": active_places,
-        "help_points": help_points,
-        "nightlife_places": nightlife_places,
-        "data_confidence": "testing",
-        "interpretation": (
-            "This test checks the availability of "
-            "relevant OpenStreetMap places and their "
-            "opening-hours data near the route. Missing "
-            "opening hours mean unknown, not closed."
-        )
-    }
+    response = build_active_places_response(
+        places=scored_places,
+        evaluation_datetime=request.evaluation_datetime
+    )
+    response["search_radius_meters"] = request.search_radius_meters
+    response["retrieval_debug"] = retrieval_debug
+    return response
