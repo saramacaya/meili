@@ -3724,121 +3724,131 @@ def compare_routes(request: RouteComparisonRequest):
     label_inputs = []
 
     for route in request.routes:
-        route_duration_seconds = route.estimated_time_minutes * 60
-        route_samples = densify_route(
-            route.geometry,
-            interval_meters=request.sample_interval_meters
-        )
-        source_errors = dict(shared_source_errors)
-
-        official_streetlights: list[tuple[float, float]] = []
-        official_debug: dict = {}
-
         try:
-            official_streetlights, official_debug = fetch_valencia_streetlights(
-                route.geometry
+            route_duration_seconds = route.estimated_time_minutes * 60
+            route_samples = densify_route(
+                route.geometry,
+                interval_meters=request.sample_interval_meters
             )
-        except HTTPException as error:
-            source_errors["official_valencia_lamps"] = error.detail
+            source_errors = dict(shared_source_errors)
 
-        osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
-            route_coordinates=route.geometry,
-            shared_lit_way_elements=shared_lit_way_elements,
-            match_radius_meters=request.osm_lit_match_radius_meters
-        )
+            official_streetlights: list[tuple[float, float]] = []
+            official_debug: dict = {}
 
-        osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
-            route_coordinates=route.geometry,
-            shared_street_lamp_elements=shared_street_lamp_elements,
-            coverage_radius_meters=request.osm_lamp_radius_meters
-        )
+            try:
+                official_streetlights, official_debug = fetch_valencia_streetlights(
+                    route.geometry
+                )
+            except HTTPException as error:
+                source_errors["official_valencia_lamps"] = error.detail
 
-        nasa_analysis = None
+            osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
+                route_coordinates=route.geometry,
+                shared_lit_way_elements=shared_lit_way_elements,
+                match_radius_meters=request.osm_lit_match_radius_meters
+            )
 
-        try:
-            nasa_analysis = analyse_nasa_route_samples(
+            osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
+                route_coordinates=route.geometry,
+                shared_street_lamp_elements=shared_street_lamp_elements,
+                coverage_radius_meters=request.osm_lamp_radius_meters
+            )
+
+            nasa_analysis = None
+
+            try:
+                nasa_analysis = analyse_nasa_route_samples(
+                    route_samples=route_samples,
+                    requested_month=request.month
+                )
+            except HTTPException as error:
+                source_errors["nasa_background"] = error.detail
+
+            lighting_analysis = combine_lighting_sources(
                 route_samples=route_samples,
-                requested_month=request.month
+                official_streetlights=official_streetlights,
+                osm_lit_ways=osm_lit_ways,
+                osm_street_lamps=osm_street_lamps,
+                nasa_analysis=nasa_analysis,
+                official_coverage_radius_meters=request.official_lamp_radius_meters,
+                osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
+                osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters
             )
-        except HTTPException as error:
-            source_errors["nasa_background"] = error.detail
 
-        lighting_analysis = combine_lighting_sources(
-            route_samples=route_samples,
-            official_streetlights=official_streetlights,
-            osm_lit_ways=osm_lit_ways,
-            osm_street_lamps=osm_street_lamps,
-            nasa_analysis=nasa_analysis,
-            official_coverage_radius_meters=request.official_lamp_radius_meters,
-            osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
-            osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters
-        )
+            raw_places, places_debug = filter_shared_places_for_route(
+                route_coordinates=route.geometry,
+                shared_elements=shared_places_elements,
+                search_radius_meters=request.activity_search_radius_meters
+            )
 
-        raw_places, places_debug = filter_shared_places_for_route(
-            route_coordinates=route.geometry,
-            shared_elements=shared_places_elements,
-            search_radius_meters=request.activity_search_radius_meters
-        )
+            scored_places = score_places_for_route(
+                places=raw_places,
+                route_geometry=route.geometry,
+                evaluation_datetime=request.departure_datetime,
+                route_duration_seconds=route_duration_seconds,
+                search_radius_meters=request.activity_search_radius_meters
+            )
 
-        scored_places = score_places_for_route(
-            places=raw_places,
-            route_geometry=route.geometry,
-            evaluation_datetime=request.departure_datetime,
-            route_duration_seconds=route_duration_seconds,
-            search_radius_meters=request.activity_search_radius_meters
-        )
+            active_places_analysis = build_active_places_response(
+                places=scored_places,
+                evaluation_datetime=request.departure_datetime
+            )
+            active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
+            active_places_analysis["retrieval_debug"] = places_debug
 
-        active_places_analysis = build_active_places_response(
-            places=scored_places,
-            evaluation_datetime=request.departure_datetime
-        )
-        active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
-        active_places_analysis["retrieval_debug"] = places_debug
+            social_context_analysis = analyse_social_context(
+                route_geometry=route.geometry,
+                departure_datetime=request.departure_datetime,
+                route_duration_seconds=route_duration_seconds,
+                city=request.city
+            )
 
-        social_context_analysis = analyse_social_context(
-            route_geometry=route.geometry,
-            departure_datetime=request.departure_datetime,
-            route_duration_seconds=route_duration_seconds,
-            city=request.city
-        )
+            valuation = value_route_sections(
+                lighting_analysis=lighting_analysis,
+                active_places_analysis=active_places_analysis,
+                social_context_analysis=social_context_analysis,
+                departure_datetime=request.departure_datetime,
+                route_duration_seconds=route_duration_seconds
+            )
 
-        valuation = value_route_sections(
-            lighting_analysis=lighting_analysis,
-            active_places_analysis=active_places_analysis,
-            social_context_analysis=social_context_analysis,
-            departure_datetime=request.departure_datetime,
-            route_duration_seconds=route_duration_seconds
-        )
+            label_inputs.append({
+                "route_id": route.route_id,
+                "route_value_score": valuation["route_value_score"],
+                "estimated_time_minutes": route.estimated_time_minutes
+            })
 
-        label_inputs.append({
-            "route_id": route.route_id,
-            "route_value_score": valuation["route_value_score"],
-            "estimated_time_minutes": route.estimated_time_minutes
-        })
+            route_results.append({
+                "route_id": route.route_id,
+                "estimated_time_minutes": route.estimated_time_minutes,
+                "distance_meters": route.distance_meters,
+                "source_errors": source_errors,
+                **valuation,
+                "component_summaries": {
+                    "lighting_mean_score": lighting_analysis["combined_score_statistics"]["mean_score"],
+                    "route_activity_score": active_places_analysis["route_activity_score"],
+                    "social_context_adjustment_points": social_context_analysis["score_adjustment_points"]
+                },
+                "component_details": {
+                    "lighting": lighting_analysis,
+                    "active_places": active_places_analysis,
+                    "social_context": social_context_analysis
+                },
+                "source_debug": {
+                    "official_valencia_lamps": official_debug,
+                    "osm_lit": osm_lit_debug,
+                    "osm_individual_lamps": osm_lamp_debug
+                }
+            })
 
-        route_results.append({
-            "route_id": route.route_id,
-            "estimated_time_minutes": route.estimated_time_minutes,
-            "distance_meters": route.distance_meters,
-            "source_errors": source_errors,
-            **valuation,
-            "component_summaries": {
-                "lighting_mean_score": lighting_analysis["combined_score_statistics"]["mean_score"],
-                "route_activity_score": active_places_analysis["route_activity_score"],
-                "social_context_adjustment_points": social_context_analysis["score_adjustment_points"]
-            },
-            "component_details": {
-                "lighting": lighting_analysis,
-                "active_places": active_places_analysis,
-                "social_context": social_context_analysis
-            },
-            "source_debug": {
-                "official_valencia_lamps": official_debug,
-                "osm_lit": osm_lit_debug,
-                "osm_individual_lamps": osm_lamp_debug
-            }
-        })
-
+        except Exception as error:
+            route_results.append({
+                "route_id": route.route_id,
+                "estimated_time_minutes": route.estimated_time_minutes,
+                "distance_meters": route.distance_meters,
+                "status": "analysis_failed",
+                "error": f"{type(error).__name__}: {error}",
+            })
+            continue
     label_assignment = assign_route_labels(label_inputs)
 
     for route_result in route_results:
