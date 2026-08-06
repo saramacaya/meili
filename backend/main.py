@@ -34,6 +34,7 @@ from street_scoring import value_route_sections
 from social_context_analysis import (
     analyse_social_context,
     load_overlays,
+    load_all_overlays,
 )
 
 VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -274,13 +275,19 @@ class CombinedLightingAnalysisRequest(BaseModel):
     month: Optional[str] = None
 
 class SocialContextAnalysisRequest(BaseModel):
-    city: Literal["valencia", "castellon"]
+    # city is accepted only for backward compatibility with older
+    # frontend builds. It is never used: evidence selection is always
+    # driven by route_geometry so a wrong/missing city can no longer
+    # hide evidence (this was the Parque Ribalta bug).
+    city: Optional[str] = None
     route_geometry: list[tuple[float, float]]
     departure_datetime: datetime
     route_duration_seconds: int = Field(..., gt=0)
 
 class StreetScoringRequest(BaseModel):
-    city: Literal["valencia", "castellon"]
+    # See SocialContextAnalysisRequest.city -- accepted for backward
+    # compatibility only, never used for evidence selection.
+    city: Optional[str] = None
     route_geometry: list[tuple[float, float]]
     departure_datetime: datetime
     route_duration_seconds: int = Field(..., ge=60, le=21_600)
@@ -3094,11 +3101,14 @@ def analyse_route_social_context(
     request: SocialContextAnalysisRequest
 ):
     try:
+        # request.city is accepted for backward compatibility only and
+        # is passed through purely for auditability in the response;
+        # it never controls which evidence is loaded (Priority 1/2).
         return analyse_social_context(
-            city=request.city,
             route_geometry=request.route_geometry,
             departure_datetime=request.departure_datetime,
             route_duration_seconds=request.route_duration_seconds,
+            city=request.city,
         )
     except ValueError as error:
         raise HTTPException(
@@ -3114,10 +3124,23 @@ def analyse_route_social_context(
 
 @app.get("/social-context/overlays")
 def get_social_context_overlays(
-    city: Literal["valencia", "castellon"]
+    south: Optional[float] = None,
+    west: Optional[float] = None,
+    north: Optional[float] = None,
+    east: Optional[float] = None,
 ):
+    """Returns flagged public-opinion areas for the map.
+
+    No city parameter: overlays for every registered municipality are
+    returned by default (Priority 7 -- overlays should stay visible for
+    the current geographic view). Pass south/west/north/east to limit
+    the result to the current map viewport instead of the whole region.
+    """
     try:
-        return load_overlays(city)
+        bbox = None
+        if None not in (south, west, north, east):
+            bbox = (west, south, east, north)
+        return load_all_overlays(bbox=bbox)
     except RuntimeError as error:
         raise HTTPException(
             status_code=500,
@@ -3288,10 +3311,10 @@ def analyse_street_score(request: StreetScoringRequest):
     )
 
     social_context = analyse_social_context(
-        city=request.city,
         route_geometry=request.route_geometry,
         departure_datetime=request.departure_datetime,
         route_duration_seconds=request.route_duration_seconds,
+        city=request.city,
     )
 
     valuation = value_route_sections(
@@ -3304,7 +3327,7 @@ def analyse_street_score(request: StreetScoringRequest):
 
     return {
         "status": "street_score_analysed",
-        "city": request.city,
+        "city_ids_checked": social_context.get("city_ids_checked", []),
         **valuation,
         "component_summaries": {
             "lighting_mean_score": lighting[
