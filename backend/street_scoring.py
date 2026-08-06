@@ -6,6 +6,7 @@ active-place and social-context analyses, then passes their results here.
 
 from __future__ import annotations
 
+import math
 from datetime import datetime
 from typing import Any
 
@@ -164,5 +165,95 @@ def value_route_sections(
             "The route is divided into ten approximately equal-distance sections. "
             "Missing lighting observations remain neutral inside the lighting component; "
             "they are not treated as evidence that a section is dark."
+        ),
+    }
+
+
+def assign_route_labels(routes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Assigns Safest / Fastest / Balanced strictly from each route's own
+    scored values -- never from the order routes were provided in
+    (Priority 6).
+
+    ``routes`` is a list of ``{"route_id", "route_value_score",
+    "estimated_time_minutes"}`` for routes that have *already* been fully
+    scored. A single route can end up holding more than one label (for
+    example the safest route might also be the fastest); rather than
+    inventing a meaningless "Alternative" label for a route that doesn't
+    distinctly win any category, every route's label list is reported as-is
+    and the frontend decides how to display a multi-label route.
+
+    Safest is selected as the default route, per the feedback guardrail
+    that the safest route should be selected first.
+    """
+    if not routes:
+        return {
+            "labels_by_route_id": {},
+            "safest_route_id": None,
+            "fastest_route_id": None,
+            "balanced_route_id": None,
+            "default_route_id": None,
+        }
+
+    safest = max(
+        routes,
+        key=lambda route: (route["route_value_score"], -route["estimated_time_minutes"]),
+    )
+    fastest = min(
+        routes,
+        key=lambda route: (route["estimated_time_minutes"], -route["route_value_score"]),
+    )
+
+    times = [route["estimated_time_minutes"] for route in routes]
+    scores = [route["route_value_score"] for route in routes]
+    minimum_time, maximum_time = min(times), max(times)
+    minimum_score, maximum_score = min(scores), max(scores)
+
+    def _normalised_time_score(route: dict[str, Any]) -> float:
+        if maximum_time == minimum_time:
+            return 1.0
+        return 1.0 - (route["estimated_time_minutes"] - minimum_time) / (
+            maximum_time - minimum_time
+        )
+
+    def _normalised_safety_score(route: dict[str, Any]) -> float:
+        if maximum_score == minimum_score:
+            return 1.0
+        return (route["route_value_score"] - minimum_score) / (
+            maximum_score - minimum_score
+        )
+
+    def _distance_from_ideal(route: dict[str, Any]) -> float:
+        # "Best compromise" is the route closest to the (impossible) ideal
+        # of both maximum safety and minimum time at once -- NOT the route
+        # with the best weighted sum of the two. A weighted sum always
+        # collapses onto whichever extreme scores best on that weighting,
+        # so it can never actually pick a genuine middle-ground route; only
+        # distance-to-ideal can.
+        safety_gap = 1.0 - _normalised_safety_score(route)
+        time_gap = 1.0 - _normalised_time_score(route)
+        return math.sqrt(safety_gap ** 2 + time_gap ** 2)
+
+    balanced = min(
+        routes,
+        key=lambda route: (_distance_from_ideal(route), -route["route_value_score"]),
+    )
+
+    labels_by_route_id: dict[str, list[str]] = {route["route_id"]: [] for route in routes}
+    labels_by_route_id[safest["route_id"]].append("safest")
+    labels_by_route_id[fastest["route_id"]].append("fastest")
+    labels_by_route_id[balanced["route_id"]].append("balanced")
+
+    return {
+        "labels_by_route_id": labels_by_route_id,
+        "safest_route_id": safest["route_id"],
+        "fastest_route_id": fastest["route_id"],
+        "balanced_route_id": balanced["route_id"],
+        "default_route_id": safest["route_id"],
+        "method_note": (
+            "Labels are assigned strictly after every route has a complete score, "
+            "computed purely from route_value_score and estimated_time_minutes -- "
+            "never from the order the routing provider returned the routes in. "
+            "A route can legitimately hold more than one label. The safest route "
+            "is selected as the default."
         ),
     }
