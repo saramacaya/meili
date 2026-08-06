@@ -3803,6 +3803,12 @@ def compare_routes(request: RouteComparisonRequest):
                 route_duration_seconds=route_duration_seconds,
                 city=request.city
             )
+            if social_context_analysis is None:
+                raise RuntimeError(
+                    "DIAGNOSTIC: analyse_social_context returned None for "
+                    f"route_id={route.route_id!r}, geometry_len={len(route.geometry)}, "
+                    f"duration={route_duration_seconds}, city={request.city!r}"
+                )
 
             valuation = value_route_sections(
                 lighting_analysis=lighting_analysis,
