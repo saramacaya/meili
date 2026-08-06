@@ -445,3 +445,28 @@ def analyse_social_context(
         (item for item in matched if item["effect_points"] < 0),
         key=lambda item: item["effect_points"],
     )
+    positive = sorted(
+        (item for item in matched if item["effect_points"] > 0),
+        key=lambda item: item["effect_points"],
+        reverse=True,
+    )
+
+    return {
+        "city_ids_checked": sorted(checked_city_ids),
+        "requested_city": city,
+        "score_adjustment_points": round(capped, 3),
+        "uncapped_adjustment_points": round(uncapped, 3),
+        "component_limits": {"minimum": -3.0, "maximum": 2.0},
+        "rating_eligible_records_checked": eligible_count,
+        "matched_record_count": len(matched),
+        "matched_records_display_eligible": display_eligible,
+        "strongest_negative_factors": negative[:3],
+        "strongest_positive_factors": positive[:3],
+        "matched_records": matched,
+        "method_note": (
+            "Every geographically matching, rating-eligible opinion from every "
+            "registered municipality contributes -- evidence selection is driven "
+            "entirely by the route's own coordinates, never by a declared city. "
+            "Its pre-audited maximum effect is reduced by distance and time mismatch."
+        ),
+    }
