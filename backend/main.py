@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 import os
+import traceback
 import requests
 import uuid
 import httpx
@@ -3847,6 +3848,7 @@ def compare_routes(request: RouteComparisonRequest):
                 "distance_meters": route.distance_meters,
                 "status": "analysis_failed",
                 "error": f"{type(error).__name__}: {error}",
+                "debug_traceback": traceback.format_exc(),
             })
             continue
     label_assignment = assign_route_labels(label_inputs)
