@@ -72,11 +72,13 @@ def positive_distance_score(
     coverage_radius_meters: float,
 ) -> Optional[float]:
     """
-    Converts distance to a positive lighting-evidence score.
+    Converts distance to positive lighting evidence.
 
-    - Inside the coverage radius: full positive evidence.
-    - Between one and two radii: evidence fades linearly.
-    - Beyond two radii: no usable positive evidence.
+    - Within the coverage radius: score 100.
+    - Between one and two coverage radii: score fades
+      from 100 to 50.
+    - Beyond two coverage radii: no usable evidence,
+      so the result is None rather than a penalty.
     """
     if distance is None:
         return None
@@ -89,16 +91,13 @@ def positive_distance_score(
     )
 
     if distance >= maximum_evidence_distance:
-        return 0.0
+        return None
 
-    return max(
-        0.0,
-        1.0
-        - (
-            distance - coverage_radius_meters
-        )
-        / coverage_radius_meters,
-    )
+    fade_fraction = (
+        distance - coverage_radius_meters
+    ) / coverage_radius_meters
+
+    return 1.0 - (0.5 * fade_fraction)
 
 
 def classify_combined_score(score: Optional[float]) -> str:
@@ -208,19 +207,15 @@ def nasa_brightness_percentile(
 
 def nearest_official_lamp_result(
     sample: tuple[float, float],
-    streetlights: list[
-        tuple[float, float]
-    ],
+    streetlights: list[tuple[float, float]],
     coverage_radius_meters: float,
 ) -> dict:
     """
     Finds the nearest official Valencia streetlight.
 
-    A nearby official lamp provides positive evidence.
-
-    A very distant lamp does not prove that the route point
-    is dark, so it is treated as unavailable evidence rather
-    than receiving a score of zero.
+    A nearby mapped lamp is positive evidence. Failure to find
+    a sufficiently close lamp is neutral rather than evidence
+    that the route is dark.
     """
     if not streetlights:
         return {
@@ -234,19 +229,17 @@ def nearest_official_lamp_result(
     nearest_distance = min(
         distance_meters(
             sample,
-            streetlight
+            streetlight,
         )
         for streetlight in streetlights
     )
 
-    maximum_evidence_distance = (
-        coverage_radius_meters * 2
+    distance_score = positive_distance_score(
+        distance=nearest_distance,
+        coverage_radius_meters=coverage_radius_meters,
     )
 
-    # Beyond twice the requested radius, the official
-    # dataset provides no useful evidence for this point.
-    # Do not treat this as confirmed darkness.
-    if nearest_distance > maximum_evidence_distance:
+    if distance_score is None:
         return {
             "available": True,
             "positive_evidence_available": False,
@@ -257,11 +250,6 @@ def nearest_official_lamp_result(
             "covered": False,
             "source_score": None,
         }
-
-    distance_score = positive_distance_score(
-        nearest_distance,
-        coverage_radius_meters,
-    )
 
     return {
         "available": True,
