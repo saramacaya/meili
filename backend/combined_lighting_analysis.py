@@ -18,6 +18,27 @@ LIGHTING_SOURCE_WEIGHTS = {
     "nasa_background": 0.10,
 }
 
+# A source that has no usable observation contributes nothing.
+# Available sources move the score away from this neutral point.
+NEUTRAL_LIGHTING_SCORE = 50.0
+
+
+def classify_nasa_brightness(
+    percentile: Optional[float],
+) -> str:
+    """Classifies only valid NASA observations; missing data is unknown."""
+    if percentile is None:
+        return "unknown"
+    if percentile < 25:
+        return "dark"
+    if percentile < 45:
+        return "dim"
+    if percentile <= 55:
+        return "neutral"
+    if percentile <= 75:
+        return "bright"
+    return "very_bright"
+
 
 def distance_meters(
     point_a: tuple[float, float],
@@ -562,8 +583,12 @@ def combine_lighting_sources(
             )
 
         if source_weights:
-            weighted_contribution = sum(
-                value * weight
+            # Centre every available source on 50. A valid low
+            # NASA percentile therefore reduces the score, while
+            # a missing NASA/OSM/official observation is neutral
+            # because it is not added to this calculation at all.
+            weighted_effect = sum(
+                (value - NEUTRAL_LIGHTING_SCORE) * weight
                 for value, weight in zip(
                     source_values,
                     source_weights,
@@ -575,7 +600,8 @@ def combine_lighting_sources(
                     0.0,
                     min(
                         100.0,
-                        weighted_contribution
+                        NEUTRAL_LIGHTING_SCORE
+                        + weighted_effect
                     )
                 ),
                 1,
@@ -663,6 +689,13 @@ def combine_lighting_sources(
                 ),
                 "brightness_percentile_within_processed_region": (
                     nasa_percentile
+                ),
+                "lighting_evidence": (
+                    classify_nasa_brightness(
+                        nasa_percentile
+                        if nasa_available
+                        else None
+                    )
                 ),
                 "quality": (
                     nasa_result.get("quality")
@@ -786,13 +819,14 @@ def combine_lighting_sources(
         },
         "sample_results": sample_results,
         "interpretation": (
-            "The score adds fixed contributions from "
-            "the available lighting sources at each "
+            "The score starts at a neutral 50 and available "
+            "sources move it up or down at each "
             "approximately equal-distance route point. "
-            "Missing evidence is not treated as proof "
-            "of darkness, and missing source weights "
-            "are not redistributed. NASA contributes "
-            "only regional background context. This is "
+            "A valid low NASA radiance percentile is negative "
+            "lighting evidence. Missing NASA observations, "
+            "missing OSM lit tags and absent mapped lamps are "
+            "neutral, not proof of darkness. NASA contributes "
+            "regional background context. This is "
             "a lighting-evidence score, not a lux value."
         ),
     }
