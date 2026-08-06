@@ -40,8 +40,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -50,36 +50,136 @@
         "coordinates": [
           [
             [
-              -0.075,
-              39.9992
+              -0.066,
+              40.000439
             ],
             [
-              -0.071,
-              40.003
+              -0.064513,
+              40.000327
             ],
             [
-              -0.0633,
-              40.0032
+              -0.063083,
+              39.999995
             ],
             [
-              -0.0586,
-              39.9987
+              -0.061766,
+              39.999455
             ],
             [
-              -0.0597,
-              39.991
+              -0.060611,
+              39.998729
             ],
             [
-              -0.0663,
-              39.9878
+              -0.059663,
+              39.997844
             ],
             [
-              -0.0729,
-              39.9917
+              -0.058958,
+              39.996834
             ],
             [
-              -0.075,
-              39.9992
+              -0.058525,
+              39.995739
+            ],
+            [
+              -0.058378,
+              39.9946
+            ],
+            [
+              -0.058525,
+              39.993461
+            ],
+            [
+              -0.058958,
+              39.992366
+            ],
+            [
+              -0.059663,
+              39.991356
+            ],
+            [
+              -0.060611,
+              39.990471
+            ],
+            [
+              -0.061766,
+              39.989745
+            ],
+            [
+              -0.063083,
+              39.989205
+            ],
+            [
+              -0.064513,
+              39.988873
+            ],
+            [
+              -0.066,
+              39.988761
+            ],
+            [
+              -0.067487,
+              39.988873
+            ],
+            [
+              -0.068917,
+              39.989205
+            ],
+            [
+              -0.070234,
+              39.989745
+            ],
+            [
+              -0.071389,
+              39.990471
+            ],
+            [
+              -0.072337,
+              39.991356
+            ],
+            [
+              -0.073042,
+              39.992366
+            ],
+            [
+              -0.073475,
+              39.993461
+            ],
+            [
+              -0.073622,
+              39.9946
+            ],
+            [
+              -0.073475,
+              39.995739
+            ],
+            [
+              -0.073042,
+              39.996834
+            ],
+            [
+              -0.072337,
+              39.997844
+            ],
+            [
+              -0.071389,
+              39.998729
+            ],
+            [
+              -0.070234,
+              39.999455
+            ],
+            [
+              -0.068917,
+              39.999995
+            ],
+            [
+              -0.067487,
+              40.000327
+            ],
+            [
+              -0.066,
+              40.000439
             ]
           ]
         ]
@@ -117,8 +217,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -127,32 +227,136 @@
         "coordinates": [
           [
             [
-              -0.0335,
-              40.008
+              -0.0258,
+              40.009539
             ],
             [
-              -0.027,
-              40.011
+              -0.024313,
+              40.009427
             ],
             [
-              -0.02,
-              40.0075
+              -0.022883,
+              40.009095
             ],
             [
-              -0.0185,
-              40.0002
+              -0.021565,
+              40.008555
             ],
             [
-              -0.0248,
-              39.997
+              -0.02041,
+              40.007829
             ],
             [
-              -0.0318,
-              39.9992
+              -0.019462,
+              40.006944
             ],
             [
-              -0.0335,
-              40.008
+              -0.018758,
+              40.005934
+            ],
+            [
+              -0.018324,
+              40.004839
+            ],
+            [
+              -0.018177,
+              40.0037
+            ],
+            [
+              -0.018324,
+              40.002561
+            ],
+            [
+              -0.018758,
+              40.001466
+            ],
+            [
+              -0.019462,
+              40.000456
+            ],
+            [
+              -0.02041,
+              39.999571
+            ],
+            [
+              -0.021565,
+              39.998845
+            ],
+            [
+              -0.022883,
+              39.998305
+            ],
+            [
+              -0.024313,
+              39.997973
+            ],
+            [
+              -0.0258,
+              39.997861
+            ],
+            [
+              -0.027287,
+              39.997973
+            ],
+            [
+              -0.028717,
+              39.998305
+            ],
+            [
+              -0.030035,
+              39.998845
+            ],
+            [
+              -0.03119,
+              39.999571
+            ],
+            [
+              -0.032138,
+              40.000456
+            ],
+            [
+              -0.032842,
+              40.001466
+            ],
+            [
+              -0.033276,
+              40.002561
+            ],
+            [
+              -0.033423,
+              40.0037
+            ],
+            [
+              -0.033276,
+              40.004839
+            ],
+            [
+              -0.032842,
+              40.005934
+            ],
+            [
+              -0.032138,
+              40.006944
+            ],
+            [
+              -0.03119,
+              40.007829
+            ],
+            [
+              -0.030035,
+              40.008555
+            ],
+            [
+              -0.028717,
+              40.009095
+            ],
+            [
+              -0.027287,
+              40.009427
+            ],
+            [
+              -0.0258,
+              40.009539
             ]
           ]
         ]
@@ -189,8 +393,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "reviewed_place_outline_requires_osm_verification",
-        "geometry_source": "MVP reviewed named-place outline",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -199,32 +403,136 @@
         "coordinates": [
           [
             [
-              -0.0488,
-              39.9891
+              -0.0439,
+              39.992239
             ],
             [
-              -0.0437,
-              39.9907
+              -0.042413,
+              39.992127
             ],
             [
-              -0.0389,
-              39.9875
+              -0.040984,
+              39.991795
             ],
             [
-              -0.0409,
-              39.9831
+              -0.039666,
+              39.991255
             ],
             [
-              -0.0465,
-              39.9824
+              -0.038511,
+              39.990529
             ],
             [
-              -0.0502,
-              39.9855
+              -0.037564,
+              39.989644
             ],
             [
-              -0.0488,
-              39.9891
+              -0.036859,
+              39.988634
+            ],
+            [
+              -0.036426,
+              39.987539
+            ],
+            [
+              -0.036279,
+              39.9864
+            ],
+            [
+              -0.036426,
+              39.985261
+            ],
+            [
+              -0.036859,
+              39.984166
+            ],
+            [
+              -0.037564,
+              39.983156
+            ],
+            [
+              -0.038511,
+              39.982271
+            ],
+            [
+              -0.039666,
+              39.981545
+            ],
+            [
+              -0.040984,
+              39.981005
+            ],
+            [
+              -0.042413,
+              39.980673
+            ],
+            [
+              -0.0439,
+              39.980561
+            ],
+            [
+              -0.045387,
+              39.980673
+            ],
+            [
+              -0.046816,
+              39.981005
+            ],
+            [
+              -0.048134,
+              39.981545
+            ],
+            [
+              -0.049289,
+              39.982271
+            ],
+            [
+              -0.050236,
+              39.983156
+            ],
+            [
+              -0.050941,
+              39.984166
+            ],
+            [
+              -0.051374,
+              39.985261
+            ],
+            [
+              -0.051521,
+              39.9864
+            ],
+            [
+              -0.051374,
+              39.987539
+            ],
+            [
+              -0.050941,
+              39.988634
+            ],
+            [
+              -0.050236,
+              39.989644
+            ],
+            [
+              -0.049289,
+              39.990529
+            ],
+            [
+              -0.048134,
+              39.991255
+            ],
+            [
+              -0.046816,
+              39.991795
+            ],
+            [
+              -0.045387,
+              39.992127
+            ],
+            [
+              -0.0439,
+              39.992239
             ]
           ]
         ]
@@ -261,8 +569,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -271,32 +579,136 @@
         "coordinates": [
           [
             [
-              -0.054,
-              40.0163
+              -0.0465,
+              40.015839
             ],
             [
-              -0.047,
-              40.0192
+              -0.045013,
+              40.015727
             ],
             [
-              -0.0392,
-              40.0141
+              -0.043583,
+              40.015395
             ],
             [
-              -0.0397,
-              40.006
+              -0.042265,
+              40.014855
+            ],
+            [
+              -0.041109,
+              40.014129
+            ],
+            [
+              -0.040161,
+              40.013244
+            ],
+            [
+              -0.039457,
+              40.012234
+            ],
+            [
+              -0.039023,
+              40.011139
+            ],
+            [
+              -0.038877,
+              40.01
+            ],
+            [
+              -0.039023,
+              40.008861
+            ],
+            [
+              -0.039457,
+              40.007766
+            ],
+            [
+              -0.040161,
+              40.006756
+            ],
+            [
+              -0.041109,
+              40.005871
+            ],
+            [
+              -0.042265,
+              40.005145
+            ],
+            [
+              -0.043583,
+              40.004605
+            ],
+            [
+              -0.045013,
+              40.004273
             ],
             [
               -0.0465,
-              40.0018
+              40.004161
             ],
             [
-              -0.053,
-              40.0064
+              -0.047987,
+              40.004273
             ],
             [
-              -0.054,
-              40.0163
+              -0.049417,
+              40.004605
+            ],
+            [
+              -0.050735,
+              40.005145
+            ],
+            [
+              -0.051891,
+              40.005871
+            ],
+            [
+              -0.052839,
+              40.006756
+            ],
+            [
+              -0.053543,
+              40.007766
+            ],
+            [
+              -0.053977,
+              40.008861
+            ],
+            [
+              -0.054123,
+              40.01
+            ],
+            [
+              -0.053977,
+              40.011139
+            ],
+            [
+              -0.053543,
+              40.012234
+            ],
+            [
+              -0.052839,
+              40.013244
+            ],
+            [
+              -0.051891,
+              40.014129
+            ],
+            [
+              -0.050735,
+              40.014855
+            ],
+            [
+              -0.049417,
+              40.015395
+            ],
+            [
+              -0.047987,
+              40.015727
+            ],
+            [
+              -0.0465,
+              40.015839
             ]
           ]
         ]
@@ -333,8 +745,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "reviewed_place_outline_requires_osm_verification",
-        "geometry_source": "MVP reviewed named-place outline",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -343,32 +755,136 @@
         "coordinates": [
           [
             [
-              -0.0628,
-              39.9896
+              -0.0582,
+              39.991939
             ],
             [
-              -0.0576,
-              39.9904
+              -0.056713,
+              39.991827
             ],
             [
-              -0.0539,
-              39.9868
+              -0.055284,
+              39.991495
             ],
             [
-              -0.0561,
-              39.9824
+              -0.053966,
+              39.990955
             ],
             [
-              -0.0617,
-              39.983
+              -0.052811,
+              39.990229
             ],
             [
-              -0.0641,
-              39.9863
+              -0.051864,
+              39.989344
             ],
             [
-              -0.0628,
-              39.9896
+              -0.051159,
+              39.988334
+            ],
+            [
+              -0.050726,
+              39.987239
+            ],
+            [
+              -0.050579,
+              39.9861
+            ],
+            [
+              -0.050726,
+              39.984961
+            ],
+            [
+              -0.051159,
+              39.983866
+            ],
+            [
+              -0.051864,
+              39.982856
+            ],
+            [
+              -0.052811,
+              39.981971
+            ],
+            [
+              -0.053966,
+              39.981245
+            ],
+            [
+              -0.055284,
+              39.980705
+            ],
+            [
+              -0.056713,
+              39.980373
+            ],
+            [
+              -0.0582,
+              39.980261
+            ],
+            [
+              -0.059687,
+              39.980373
+            ],
+            [
+              -0.061116,
+              39.980705
+            ],
+            [
+              -0.062434,
+              39.981245
+            ],
+            [
+              -0.063589,
+              39.981971
+            ],
+            [
+              -0.064536,
+              39.982856
+            ],
+            [
+              -0.065241,
+              39.983866
+            ],
+            [
+              -0.065674,
+              39.984961
+            ],
+            [
+              -0.065821,
+              39.9861
+            ],
+            [
+              -0.065674,
+              39.987239
+            ],
+            [
+              -0.065241,
+              39.988334
+            ],
+            [
+              -0.064536,
+              39.989344
+            ],
+            [
+              -0.063589,
+              39.990229
+            ],
+            [
+              -0.062434,
+              39.990955
+            ],
+            [
+              -0.061116,
+              39.991495
+            ],
+            [
+              -0.059687,
+              39.991827
+            ],
+            [
+              -0.0582,
+              39.991939
             ]
           ]
         ]
@@ -405,8 +921,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -415,32 +931,136 @@
         "coordinates": [
           [
             [
-              -0.0515,
-              40.008
+              -0.045,
+              40.008839
             ],
             [
-              -0.0447,
-              40.011
+              -0.043513,
+              40.008727
             ],
             [
-              -0.0387,
-              40.0062
+              -0.042083,
+              40.008395
             ],
             [
-              -0.0398,
-              39.9989
+              -0.040765,
+              40.007855
             ],
             [
-              -0.0455,
-              39.9958
+              -0.03961,
+              40.007129
             ],
             [
-              -0.0512,
-              39.9995
+              -0.038662,
+              40.006244
             ],
             [
-              -0.0515,
-              40.008
+              -0.037958,
+              40.005234
+            ],
+            [
+              -0.037524,
+              40.004139
+            ],
+            [
+              -0.037377,
+              40.003
+            ],
+            [
+              -0.037524,
+              40.001861
+            ],
+            [
+              -0.037958,
+              40.000766
+            ],
+            [
+              -0.038662,
+              39.999756
+            ],
+            [
+              -0.03961,
+              39.998871
+            ],
+            [
+              -0.040765,
+              39.998145
+            ],
+            [
+              -0.042083,
+              39.997605
+            ],
+            [
+              -0.043513,
+              39.997273
+            ],
+            [
+              -0.045,
+              39.997161
+            ],
+            [
+              -0.046487,
+              39.997273
+            ],
+            [
+              -0.047917,
+              39.997605
+            ],
+            [
+              -0.049235,
+              39.998145
+            ],
+            [
+              -0.05039,
+              39.998871
+            ],
+            [
+              -0.051338,
+              39.999756
+            ],
+            [
+              -0.052042,
+              40.000766
+            ],
+            [
+              -0.052476,
+              40.001861
+            ],
+            [
+              -0.052623,
+              40.003
+            ],
+            [
+              -0.052476,
+              40.004139
+            ],
+            [
+              -0.052042,
+              40.005234
+            ],
+            [
+              -0.051338,
+              40.006244
+            ],
+            [
+              -0.05039,
+              40.007129
+            ],
+            [
+              -0.049235,
+              40.007855
+            ],
+            [
+              -0.047917,
+              40.008395
+            ],
+            [
+              -0.046487,
+              40.008727
+            ],
+            [
+              -0.045,
+              40.008839
             ]
           ]
         ]
@@ -477,8 +1097,8 @@
           "show_evidence_count": true,
           "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
         },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
+        "boundary_status": "capped_visual_radius_not_an_administrative_boundary",
+        "geometry_source": "fixed_650m_radius_circle_around_evidence_centroid",
         "geometry_role": "visual_evidence_overlay",
         "rating_double_count": false
       },
@@ -487,112 +1107,136 @@
         "coordinates": [
           [
             [
-              0.0015,
-              39.984
+              0.0132,
+              39.979639
             ],
             [
-              0.011,
-              39.988
+              0.014686,
+              39.979527
             ],
             [
-              0.0225,
-              39.9825
+              0.016116,
+              39.979195
             ],
             [
-              0.025,
-              39.971
+              0.017433,
+              39.978655
             ],
             [
-              0.017,
-              39.9615
+              0.018588,
+              39.977929
             ],
             [
-              0.004,
-              39.9635
+              0.019535,
+              39.977044
             ],
             [
-              -0.0015,
-              39.973
+              0.020239,
+              39.976034
             ],
             [
-              0.0015,
-              39.984
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "castellon-unsafe-008",
-      "properties": {
-        "overlay_id": "castellon-unsafe-008",
-        "city_id": "castellon",
-        "label": "Marjaleria",
-        "scope": "area",
-        "classification": "community_safety_concern",
-        "evidence_record_ids": [
-          "castellon-local-002"
-        ],
-        "independent_source_count": 1,
-        "confidence": "high",
-        "display": {
-          "fill_color": "#EF4444",
-          "fill_opacity": 0.199,
-          "stroke_color": "#DC2626",
-          "stroke_opacity": 0.79,
-          "stroke_width": 2,
-          "stroke_dash_array": [
-            4,
-            6
-          ]
-        },
-        "interaction": {
-          "tap_title": "Community safety concern",
-          "tap_subtitle": "Marjaleria",
-          "show_evidence_count": true,
-          "wording_guardrail": "Describe this as reported or perceived concern, not proof that every street is unsafe."
-        },
-        "boundary_status": "non_administrative_evidence_zone_requires_local_verification",
-        "geometry_source": "MVP reviewed local evidence zone",
-        "geometry_role": "visual_evidence_overlay",
-        "rating_double_count": false
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -0.012,
-              40.031
+              0.020673,
+              39.974939
             ],
             [
-              0.005,
-              40.041
+              0.020819,
+              39.9738
             ],
             [
-              0.029,
-              40.034
+              0.020673,
+              39.972661
             ],
             [
-              0.04,
-              40.016
+              0.020239,
+              39.971566
             ],
             [
-              0.032,
-              39.998
+              0.019535,
+              39.970556
             ],
             [
-              0.009,
-              39.992
+              0.018588,
+              39.969671
             ],
             [
-              -0.009,
-              40.005
+              0.017433,
+              39.968945
             ],
             [
-              -0.012,
-              40.031
+              0.016116,
+              39.968405
+            ],
+            [
+              0.014686,
+              39.968073
+            ],
+            [
+              0.0132,
+              39.967961
+            ],
+            [
+              0.011714,
+              39.968073
+            ],
+            [
+              0.010284,
+              39.968405
+            ],
+            [
+              0.008967,
+              39.968945
+            ],
+            [
+              0.007812,
+              39.969671
+            ],
+            [
+              0.006865,
+              39.970556
+            ],
+            [
+              0.006161,
+              39.971566
+            ],
+            [
+              0.005727,
+              39.972661
+            ],
+            [
+              0.005581,
+              39.9738
+            ],
+            [
+              0.005727,
+              39.974939
+            ],
+            [
+              0.006161,
+              39.976034
+            ],
+            [
+              0.006865,
+              39.977044
+            ],
+            [
+              0.007812,
+              39.977929
+            ],
+            [
+              0.008967,
+              39.978655
+            ],
+            [
+              0.010284,
+              39.979195
+            ],
+            [
+              0.011714,
+              39.979527
+            ],
+            [
+              0.0132,
+              39.979639
             ]
           ]
         ]
