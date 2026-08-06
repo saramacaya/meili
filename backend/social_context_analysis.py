@@ -38,6 +38,16 @@ TIME_WEIGHTS = {
     "weekend": 1.0,
 }
 
+# Priority 8: precision tiers broad enough that a match should never be
+# presented as if it directly describes one specific walk -- e.g. a
+# citywide or district-level record can still legitimately nudge a route's
+# score a little (that logic is untouched below), but the user-facing
+# explanation must not name it as if it were about that exact street. A
+# real example from the first app run: a "district"-precision Quatre
+# Carreres record with an 1800m radius matched a route 1.57km away and was
+# displayed as though it described that walk.
+BROAD_EVIDENCE_PRECISION_TIERS = {"district", "city_sector", "citywide"}
+
 
 def _read_json(path: Path) -> Any:
     try:
@@ -398,6 +408,13 @@ def analyse_social_context(
             if effect == 0:
                 continue
 
+            precision = str(location_match["location"].get("precision") or "").lower()
+            match_strength = (
+                "broad_context"
+                if precision in BROAD_EVIDENCE_PRECISION_TIERS
+                else "specific"
+            )
+
             matched.append({
                 "city_id": city_id,
                 "record_id": record.get("record_id"),
@@ -413,35 +430,18 @@ def analyse_social_context(
                 "distance_weight": round(location_match["distance_weight"], 3),
                 "time_weight": round(time_weight, 3),
                 "effect_points": round(effect, 3),
+                "precision": precision or None,
+                "match_strength": match_strength,
             })
 
     uncapped = sum(item["effect_points"] for item in matched)
     capped = max(-3.0, min(2.0, uncapped))
+    display_eligible = sorted(
+        (item for item in matched if item["match_strength"] == "specific"),
+        key=lambda item: abs(item["effect_points"]),
+        reverse=True,
+    )
     negative = sorted(
         (item for item in matched if item["effect_points"] < 0),
         key=lambda item: item["effect_points"],
     )
-    positive = sorted(
-        (item for item in matched if item["effect_points"] > 0),
-        key=lambda item: item["effect_points"],
-        reverse=True,
-    )
-
-    return {
-        "city_ids_checked": sorted(checked_city_ids),
-        "requested_city": city,
-        "score_adjustment_points": round(capped, 3),
-        "uncapped_adjustment_points": round(uncapped, 3),
-        "component_limits": {"minimum": -3.0, "maximum": 2.0},
-        "rating_eligible_records_checked": eligible_count,
-        "matched_record_count": len(matched),
-        "strongest_negative_factors": negative[:3],
-        "strongest_positive_factors": positive[:3],
-        "matched_records": matched,
-        "method_note": (
-            "Every geographically matching, rating-eligible opinion from every "
-            "registered municipality contributes -- evidence selection is driven "
-            "entirely by the route's own coordinates, never by a declared city. "
-            "Its pre-audited maximum effect is reduced by distance and time mismatch."
-        ),
-    }
