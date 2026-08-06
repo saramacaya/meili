@@ -756,8 +756,6 @@ def combine_lighting_sources(
             "maximum_score": None,
         }
 
-        
-
     positive_evidence_count = (
         classification_counts[
             "strong_lighting_evidence"
