@@ -1,6 +1,5 @@
 from typing import Literal, Optional
 import os
-import traceback
 import requests
 import uuid
 import httpx
@@ -3803,12 +3802,6 @@ def compare_routes(request: RouteComparisonRequest):
                 route_duration_seconds=route_duration_seconds,
                 city=request.city
             )
-            if social_context_analysis is None:
-                raise RuntimeError(
-                    "DIAGNOSTIC: analyse_social_context returned None for "
-                    f"route_id={route.route_id!r}, geometry_len={len(route.geometry)}, "
-                    f"duration={route_duration_seconds}, city={request.city!r}"
-                )
 
             valuation = value_route_sections(
                 lighting_analysis=lighting_analysis,
@@ -3854,7 +3847,6 @@ def compare_routes(request: RouteComparisonRequest):
                 "distance_meters": route.distance_meters,
                 "status": "analysis_failed",
                 "error": f"{type(error).__name__}: {error}",
-                "debug_traceback": traceback.format_exc(),
             })
             continue
     label_assignment = assign_route_labels(label_inputs)
