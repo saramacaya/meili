@@ -2877,7 +2877,7 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
     }
 
     if request.latitude is not None and request.longitude is not None:
-        payload["locationBias"] = {
+        payload["locationRestriction"] = {
             "circle": {
                 "center": {
                     "latitude": request.latitude,
