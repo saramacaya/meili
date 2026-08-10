@@ -2850,6 +2850,53 @@ def test_real_route(request: RouteRequest):
         "route": route
     }
 @app.post("/places/autocomplete")
+async def _google_autocomplete_request(payload: dict) -> dict:
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": (
+            "suggestions.placePrediction.placeId,"
+            "suggestions.placePrediction.text.text,"
+            "suggestions.placePrediction.structuredFormat.mainText.text,"
+            "suggestions.placePrediction.structuredFormat.secondaryText.text,"
+            "suggestions.placePrediction.types"
+        )
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        google_response = await client.post(
+            "https://places.googleapis.com/v1/places:autocomplete",
+            json=payload,
+            headers=headers
+        )
+    if google_response.status_code != 200:
+        raise HTTPException(
+            status_code=google_response.status_code,
+            detail=google_response.text
+        )
+    return google_response.json()
+
+
+def _parse_place_suggestions(google_data: dict) -> list:
+    suggestions = []
+    for suggestion in google_data.get("suggestions", []):
+        prediction = suggestion.get("placePrediction")
+        if not prediction:
+            continue
+        structured = prediction.get("structuredFormat", {})
+        main_text = structured.get("mainText", {}).get("text")
+        secondary_text = structured.get("secondaryText", {}).get("text")
+        full_text = prediction.get("text", {}).get("text")
+        suggestions.append({
+            "place_id": prediction.get("placeId"),
+            "name": main_text or full_text,
+            "address": secondary_text,
+            "label": full_text,
+            "types": prediction.get("types", [])
+        })
+    return suggestions
+
+
+@app.post("/places/autocomplete")
 async def autocomplete_places(request: PlaceAutocompleteRequest):
     search_text = request.input.strip()
 
@@ -2868,71 +2915,51 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
 
     session_token = request.session_token or str(uuid.uuid4())
 
-    payload = {
+    base_payload = {
         "input": search_text,
         "languageCode": "en",
         "regionCode": "es",
         "sessionToken": session_token
     }
 
-    if request.latitude is not None and request.longitude is not None:
-        payload["locationRestriction"] = {
-            "circle": {
-                "center": {
-                    "latitude": request.latitude,
-                    "longitude": request.longitude
-                },
-                "radius": 50000.0
-            }
-        }
-
-    headers = {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask": (
-            "suggestions.placePrediction.placeId,"
-            "suggestions.placePrediction.text.text,"
-            "suggestions.placePrediction.structuredFormat.mainText.text,"
-            "suggestions.placePrediction.structuredFormat.secondaryText.text,"
-            "suggestions.placePrediction.types"
-        )
-    }
+    has_bias_point = request.latitude is not None and request.longitude is not None
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            google_response = await client.post(
-                "https://places.googleapis.com/v1/places:autocomplete",
-                json=payload,
-                headers=headers
-            )
-
-        if google_response.status_code != 200:
-            raise HTTPException(
-                status_code=google_response.status_code,
-                detail=google_response.text
-            )
-
-        google_data = google_response.json()
         suggestions = []
 
-        for suggestion in google_data.get("suggestions", []):
-            prediction = suggestion.get("placePrediction")
+        if has_bias_point:
+            # Pass 1: hard-restrict to 50km around the bias point so a strong
+            # nearby match is never crowded out by an unrelated far-away one.
+            restricted_payload = dict(base_payload)
+            restricted_payload["locationRestriction"] = {
+                "circle": {
+                    "center": {
+                        "latitude": request.latitude,
+                        "longitude": request.longitude
+                    },
+                    "radius": 50000.0
+                }
+            }
+            google_data = await _google_autocomplete_request(restricted_payload)
+            suggestions = _parse_place_suggestions(google_data)
 
-            if not prediction:
-                continue
-
-            structured = prediction.get("structuredFormat", {})
-            main_text = structured.get("mainText", {}).get("text")
-            secondary_text = structured.get("secondaryText", {}).get("text")
-            full_text = prediction.get("text", {}).get("text")
-
-            suggestions.append({
-                "place_id": prediction.get("placeId"),
-                "name": main_text or full_text,
-                "address": secondary_text,
-                "label": full_text,
-                "types": prediction.get("types", [])
-            })
+        if not suggestions:
+            # Nothing nearby (or no bias point at all) — fall back to a normal
+            # search so genuinely distant places are still findable, softly
+            # nudged toward the bias point when we have one.
+            fallback_payload = dict(base_payload)
+            if has_bias_point:
+                fallback_payload["locationBias"] = {
+                    "circle": {
+                        "center": {
+                            "latitude": request.latitude,
+                            "longitude": request.longitude
+                        },
+                        "radius": 50000.0
+                    }
+                }
+            google_data = await _google_autocomplete_request(fallback_payload)
+            suggestions = _parse_place_suggestions(google_data)
 
         return {
             "status": "success",
@@ -2945,6 +2972,7 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
             status_code=502,
             detail=f"Could not contact Google Places: {str(error)}"
         )
+        
 @app.post("/places/details")
 async def get_place_details(request: PlaceDetailsRequest):
     if not request.place_id.strip():
