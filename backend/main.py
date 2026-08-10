@@ -2849,7 +2849,8 @@ def test_real_route(request: RouteRequest):
         "requested_destination": request.destination,
         "route": route
     }
-@app.post("/places/autocomplete")
+
+
 async def _google_autocomplete_request(payload: dict) -> dict:
     headers = {
         "Content-Type": "application/json",
@@ -2972,7 +2973,7 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
             status_code=502,
             detail=f"Could not contact Google Places: {str(error)}"
         )
-        
+
 @app.post("/places/details")
 async def get_place_details(request: PlaceDetailsRequest):
     if not request.place_id.strip():
