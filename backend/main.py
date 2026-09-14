@@ -2176,6 +2176,42 @@ def health_check():
         "status": "Meili backend is running"
     }
 
+@app.get("/system/keepalive")
+def keepalive_check():
+    """
+    Touches Supabase with a trivial read so the project's own activity
+    tracker sees real usage and doesn't auto-pause it after a period of
+    inactivity. Meant to be hit periodically by a scheduled job (see
+    .github/workflows/keepalive.yml), not by the app itself.
+    """
+    if supabase is None:
+        return {
+            "status": "keepalive_skipped",
+            "message": "Supabase is not configured on this backend."
+        }
+
+    try:
+        response = (
+            supabase
+            .table("users")
+            .select("id")
+            .limit(1)
+            .execute()
+        )
+
+        return {
+            "status": "keepalive_ok",
+            "supabase_reachable": True,
+            "rows_seen": len(response.data or [])
+        }
+
+    except Exception as error:
+        return {
+            "status": "keepalive_failed",
+            "supabase_reachable": False,
+            "message": str(error)
+        }
+
 @app.post("/safety/osm-street-lamps/area-scan")
 def scan_osm_street_lamps_in_area(
     request: OsmStreetLampAreaScanRequest
