@@ -1,0 +1,54 @@
+name: Prefill city map tiles
+
+# Downloads map data for priority cities into Meili's tile cache, so
+# routes there are instant from the first request. Runs on the 1st of
+# every month (tiles refresh after 30 days) and can be run by hand.
+on:
+  schedule:
+    - cron: "0 3 1 * *"
+  workflow_dispatch: {}
+
+jobs:
+  prefill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      max-parallel: 1          # one city at a time, to be polite to Overpass
+      matrix:
+        city:
+          # name, south, west, north, east   (each side under 0.3 degrees)
+          - "valencia 39.42 -0.43 39.51 -0.32"
+    steps:
+      - name: Prefill ${{ matrix.city }}
+        env:
+          PREFILL_TOKEN: ${{ secrets.PREFILL_TOKEN }}
+        run: |
+          set -- ${{ matrix.city }}
+          name=$1; south=$2; west=$3; north=$4; east=$5
+          api="https://meili-backend.onrender.com"
+
+          echo "Waking the backend..."
+          curl -s --max-time 120 --retry 3 --retry-delay 20 "$api/health" > /dev/null
+
+          echo "Starting prefill for $name"
+          curl -s --max-time 60 -X POST "$api/tiles/prefill" \
+            -H "Content-Type: application/json" \
+            -H "x-prefill-token: $PREFILL_TOKEN" \
+            -d "{\"south\":$south,\"west\":$west,\"north\":$north,\"east\":$east}"
+          echo
+
+          for i in $(seq 1 110); do
+            sleep 60
+            status=$(curl -s --max-time 60 "$api/tiles/prefill/status")
+            echo "$status"
+            if echo "$status" | grep -q '"state":"finished"'; then
+              if echo "$status" | grep -q '"errors":\[\]'; then
+                echo "Done: $name"
+                exit 0
+              fi
+              echo "::warning::$name finished with some errors (see above)."
+              exit 0
+            fi
+          done
+          echo "::error::Prefill for $name did not finish in time."
+          exit 1
