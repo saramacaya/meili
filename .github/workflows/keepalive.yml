@@ -1,35 +1,59 @@
 name: Keep Supabase and Render backend alive
 
-# Runs on a schedule so the Supabase free-tier project (and the Render
-# backend) see periodic real traffic and don't auto-pause / cold-start.
-# Also runnable manually from the Actions tab for a quick check.
+# Supabase free tier pauses after ~7 days without activity.
+# This pings Supabase DIRECTLY (so it works even if Render is down)
+# and then pings the backend. It FAILS LOUDLY if either is not healthy,
+# so GitHub emails you instead of silently passing.
 on:
   schedule:
-    # Every 2 days at 09:00 UTC. Supabase free tier pauses after ~7 days
-    # of inactivity, so this leaves a wide safety margin.
-    - cron: "0 9 */2 * *"
+    - cron: "0 9 * * *"   # every day at 09:00 UTC
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Hit the backend keepalive endpoint
+      - name: Ping Supabase directly
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          url="https://meili-backend.onrender.com/system/keepalive"
-          echo "Pinging $url"
-
-          http_status=$(curl -s -o response.json -w "%{http_code}" "$url")
-          echo "HTTP status: $http_status"
-          echo "Response body:"
-          cat response.json
-
-          if [ "$http_status" -ne 200 ]; then
-            echo "::error::Keepalive ping failed with HTTP $http_status"
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Add SUPABASE_URL and SUPABASE_ANON_KEY as repository secrets."
             exit 1
           fi
 
-          if grep -q '"supabase_reachable": false' response.json; then
-            echo "::error::Backend reached, but Supabase was not reachable."
+          http_status=$(curl -s -o supabase.json -w "%{http_code}" \
+            --max-time 60 --retry 3 --retry-delay 10 \
+            "$SUPABASE_URL/rest/v1/users?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY")
+
+          echo "Supabase HTTP status: $http_status"
+          if [ "$http_status" -ne 200 ]; then
+            echo "::error::Supabase did not answer with 200 (it may be paused)."
+            cat supabase.json
+            exit 1
+          fi
+
+      - name: Ping the backend keepalive endpoint
+        run: |
+          url="https://meili-backend.onrender.com/system/keepalive"
+
+          # Render free tier can take ~1 minute to wake up.
+          http_status=$(curl -s -o response.json -w "%{http_code}" \
+            --max-time 120 --retry 3 --retry-delay 20 "$url")
+
+          echo "HTTP status: $http_status"
+          cat response.json
+
+          if [ "$http_status" -ne 200 ]; then
+            echo "::error::Backend keepalive failed with HTTP $http_status"
+            exit 1
+          fi
+
+          # Require explicit success. (FastAPI returns compact JSON with no
+          # spaces, so check for the exact success marker.)
+          if ! grep -q '"status":"keepalive_ok"' response.json; then
+            echo "::error::Backend is up but could not reach Supabase."
             exit 1
           fi
