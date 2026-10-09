@@ -4031,6 +4031,10 @@ def compare_routes(request: RouteComparisonRequest):
     response = {
         "status": "routes_compared_and_scored",
         "route_count": len(route_results),
+        "data_complete": area["complete"],
+        # True when some map data was still downloading: the app should ask
+        # again in a few seconds to get the full-quality scores.
+        "refresh_recommended": (not area["complete"]) and area["still_downloading"],
         "data_loading": area["debug"],
         "labels": label_assignment,
         "routes": route_results,

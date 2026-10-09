@@ -276,14 +276,21 @@ def _short_error(error: Exception) -> str:
 def _fetch_osm_group(group: list[TileId]) -> dict[TileId, dict]:
     south, west, north, east = group_bbox(group)
     bbox = f"{south},{west},{north},{east}"
-    query = (
+    lighting_query = (
         f"[out:json][timeout:{OVERPASS_TIMEOUT_SECONDS}];"
         f'(way["highway"]["lit"]({bbox});node["highway"="street_lamp"]({bbox}););'
         "out body geom;"
+    )
+    places_query = (
+        f"[out:json][timeout:{OVERPASS_TIMEOUT_SECONDS}];"
         f"({PLACE_FILTERS.format(bbox=bbox)});"
         "out tags center;"
     )
-    elements = _overpass(query).get("elements", [])
+    # Two smaller queries in parallel finish sooner than one big one.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        lighting_future = pool.submit(_overpass, lighting_query)
+        places_future = pool.submit(_overpass, places_query)
+        elements = lighting_future.result().get("elements", []) + places_future.result().get("elements", [])
 
     now = time.time()
     tiles: dict[TileId, dict] = {
@@ -410,7 +417,7 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
     stale = [t for t in found if _is_stale(found[t])]
     errors: list[str] = []
 
-    groups = group_tiles(missing)
+    groups = group_tiles(missing, max_group=4)   # small groups = quick answers
     futures = [_POOL.submit(_fetch_and_save, layer, g) for g in groups]
     for future in as_completed(futures):
         try:
@@ -434,29 +441,67 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
 
 # ---------------------------------------------------------------- public API
 
-def load_area(route_geometries: list[list[tuple[float, float]]], padding_meters: float) -> dict[str, Any]:
-    """Loads every layer needed for a set of routes, all layers in parallel."""
+AREA_DEADLINE_SECONDS = 8.0
+
+
+def load_area(
+    route_geometries: list[list[tuple[float, float]]],
+    padding_meters: float,
+    deadline_seconds: float = AREA_DEADLINE_SECONDS,
+) -> dict[str, Any]:
+    """Loads every layer needed for a set of routes, all layers in parallel.
+
+    Never waits longer than `deadline_seconds`: tiles still downloading after
+    that keep downloading in the background (and are saved), while this
+    request scores with what has arrived and reports itself as partial.
+    """
     tiles: set[TileId] = set()
     for geometry in route_geometries:
         tiles.update(tiles_for_bbox(padded_bbox(geometry, padding_meters)))
     tile_list = sorted(tiles)
     valencia_tiles = [t for t in tile_list if _tile_in_valencia(t)]
 
-    osm_future = _POOL.submit(load_layer, "osm", tile_list)
-    valencia_future = _POOL.submit(load_layer, "valencia_lamps", valencia_tiles) if valencia_tiles else None
+    futures = {"osm": _POOL.submit(load_layer, "osm", tile_list)}
+    if valencia_tiles:
+        futures["valencia_lamps"] = _POOL.submit(load_layer, "valencia_lamps", valencia_tiles)
+    wait(list(futures.values()), timeout=deadline_seconds)
 
-    osm_tiles, osm_info = osm_future.result()
-    valencia_tiles_data, valencia_info = (
-        valencia_future.result() if valencia_future else ({}, {"debug": {"skipped": "outside Valencia"}, "errors": []})
-    )
+    def collect(layer: str, wanted: list[TileId]) -> tuple[dict, dict]:
+        future = futures.get(layer)
+        if future is not None and future.done():
+            try:
+                return future.result()
+            except Exception as error:  # noqa: BLE001
+                return {}, {"debug": {}, "errors": [str(error)]}
+        # Still downloading: use whatever tiles are already in memory.
+        found = {}
+        for tile in wanted:
+            data = STORE.memory_get(_path(layer, tile))
+            if data is not None:
+                found[tile] = data
+        missing = len(wanted) - len(found)
+        return found, {
+            "debug": {"tiles_needed": len(wanted), "tiles_ready": len(found),
+                      "still_downloading": missing, "deadline_seconds": deadline_seconds},
+            "errors": [f"{missing} map tiles still downloading"] if missing else [],
+        }
+
+    osm_tiles, osm_info = collect("osm", tile_list)
+    if valencia_tiles:
+        valencia_tiles_data, valencia_info = collect("valencia_lamps", valencia_tiles)
+    else:
+        valencia_tiles_data, valencia_info = {}, {"debug": {"skipped": "outside Valencia"}, "errors": []}
 
     osm_complete = len(osm_tiles) == len(tile_list)
     valencia_complete = len(valencia_tiles_data) == len(valencia_tiles)
+    still_downloading = any(not f.done() for f in futures.values())
 
     return {
         "osm_tiles": osm_tiles,
         "valencia_tiles": valencia_tiles_data,
         "valencia_covered": bool(valencia_tiles),
+        "complete": osm_complete and valencia_complete,
+        "still_downloading": still_downloading,
         "osm_error": None if osm_complete else "; ".join(osm_info["errors"]) or "Some map tiles could not be loaded.",
         "valencia_error": None if valencia_complete else "; ".join(valencia_info["errors"]) or "Some Valencia streetlight tiles could not be loaded.",
         "debug": {"osm": osm_info["debug"], "valencia_lamps": valencia_info["debug"]},
