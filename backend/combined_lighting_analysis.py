@@ -209,6 +209,7 @@ def nearest_official_lamp_result(
     sample: tuple[float, float],
     streetlights: list[tuple[float, float]],
     coverage_radius_meters: float,
+    _index=None,
 ) -> dict:
     """
     Finds the nearest official Valencia streetlight.
@@ -226,12 +227,17 @@ def nearest_official_lamp_result(
             "source_score": None,
         }
 
+    candidates = (
+        [point for point, _ in _index.candidates(sample)]
+        if _index is not None
+        else None
+    )
     nearest_distance = min(
         distance_meters(
             sample,
             streetlight,
         )
-        for streetlight in streetlights
+        for streetlight in (candidates or streetlights)
     )
 
     distance_score = positive_distance_score(
@@ -272,9 +278,20 @@ def nearest_osm_lit_result(
     sample: tuple[float, float],
     lit_ways: list[dict],
     match_radius_meters: float,
+    _index=None,
 ) -> dict:
     nearest_way = None
     nearest_distance = None
+
+    if _index is not None:
+        # Same answer as the full scan whenever a way is within the match
+        # radius (the only case that produces evidence), far fewer checks.
+        for way_sample, way in _index.candidates(sample):
+            distance_to_way = distance_meters(sample, way_sample)
+            if nearest_distance is None or distance_to_way < nearest_distance:
+                nearest_distance = distance_to_way
+                nearest_way = way
+        lit_ways = []
 
     for way in lit_ways:
         sampled_geometry = way.get(
@@ -472,6 +489,20 @@ def combine_lighting_sources(
     osm_lamp_positive_count = 0
     nasa_available_count = 0
 
+    from fast_geo import PointIndex
+    official_index = PointIndex(
+        [(tuple(p), None) for p in official_streetlights],
+        2 * official_coverage_radius_meters,
+    ) if official_streetlights else None
+    lit_index = PointIndex(
+        [
+            (tuple(way_sample), way)
+            for way in osm_lit_ways
+            for way_sample in way.get("sampled_geometry", [])
+        ],
+        osm_lit_match_radius_meters,
+    ) if osm_lit_ways else None
+
     for index, sample in enumerate(route_samples):
         official_result = nearest_official_lamp_result(
             sample=sample,
@@ -479,6 +510,7 @@ def combine_lighting_sources(
             coverage_radius_meters=(
                 official_coverage_radius_meters
             ),
+            _index=official_index,
         )
 
         osm_lit_result = nearest_osm_lit_result(
@@ -487,6 +519,7 @@ def combine_lighting_sources(
             match_radius_meters=(
                 osm_lit_match_radius_meters
             ),
+            _index=lit_index,
         )
 
         osm_lamp_result = nearest_osm_lamp_result(

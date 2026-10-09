@@ -98,6 +98,19 @@ def densify_route(
 
     return samples
 
+from functools import lru_cache
+
+
+@lru_cache(maxsize=32)
+def _route_progress_profile(route_key: tuple) -> tuple[list, list]:
+    """Densified route + running distance, computed once per route."""
+    route_samples = densify_route(list(route_key), interval_meters=10)
+    cumulative = [0.0]
+    for previous, current in zip(route_samples, route_samples[1:]):
+        cumulative.append(cumulative[-1] + distance_meters(previous, current))
+    return route_samples, cumulative
+
+
 def calculate_place_route_progress(
     place_coordinate: tuple[float, float],
     route_coordinates: list[tuple[float, float]]
@@ -110,24 +123,12 @@ def calculate_place_route_progress(
     0.5 = halfway
     1.0 = route end
     """
-    route_samples = densify_route(
-        route_coordinates,
-        interval_meters=10
+    route_samples, cumulative_distances = _route_progress_profile(
+        tuple(tuple(c) for c in route_coordinates)
     )
 
     if len(route_samples) < 2:
         return 0.0
-
-    cumulative_distances = [0.0]
-
-    for previous, current in zip(
-        route_samples,
-        route_samples[1:]
-    ):
-        cumulative_distances.append(
-            cumulative_distances[-1]
-            + distance_meters(previous, current)
-        )
 
     total_distance = cumulative_distances[-1]
 
@@ -881,6 +882,8 @@ def filter_shared_places_for_route(
         }
 
     route_samples = densify_route(route_coordinates, interval_meters=30)
+    from fast_geo import RouteIndex
+    route_index = RouteIndex(route_samples, search_radius_meters, distance_meters)
     relevant_places = []
 
     for element in shared_elements:
@@ -889,12 +892,9 @@ def filter_shared_places_for_route(
             continue
 
         place_coordinate = (place["longitude"], place["latitude"])
-        nearest_route_distance = min(
-            distance_meters(place_coordinate, route_sample)
-            for route_sample in route_samples
-        )
+        nearest_route_distance = route_index.nearest_within(place_coordinate)
 
-        if nearest_route_distance > search_radius_meters:
+        if nearest_route_distance is None:
             continue
 
         place["distance_to_route_meters"] = round(nearest_route_distance, 1)

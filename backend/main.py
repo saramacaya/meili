@@ -44,6 +44,7 @@ import hashlib
 import json as _json
 from collections import OrderedDict
 import tile_cache
+from fast_geo import RouteIndex
 
 from social_context_analysis import (
     analyse_social_context,
@@ -817,6 +818,7 @@ def filter_shared_osm_lit_ways_for_route(
         route_coordinates,
         interval_meters=15
     )
+    route_index = RouteIndex(route_samples, match_radius_meters, distance_meters)
 
     nearby_lit_ways = []
 
@@ -844,19 +846,9 @@ def filter_shared_osm_lit_ways_for_route(
             interval_meters=10
         )
 
-        nearest_route_distance = min(
-            distance_meters(
-                route_sample,
-                way_sample
-            )
-            for route_sample in route_samples
-            for way_sample in way_samples
-        )
+        nearest_route_distance = route_index.nearest_within_any(way_samples)
 
-        if (
-            nearest_route_distance
-            > match_radius_meters
-        ):
+        if nearest_route_distance is None:
             continue
 
         tags = element.get(
@@ -937,6 +929,7 @@ def filter_shared_osm_street_lamps_for_route(
         route_coordinates,
         interval_meters=5
     )
+    lamp_index = RouteIndex(route_samples, coverage_radius_meters, distance_meters)
 
     nearby_street_lamps = []
 
@@ -955,18 +948,9 @@ def filter_shared_osm_street_lamps_for_route(
             float(latitude)
         )
 
-        nearest_route_distance = min(
-            distance_meters(
-                lamp_coordinate,
-                route_sample
-            )
-            for route_sample in route_samples
-        )
+        nearest_route_distance = lamp_index.nearest_within(lamp_coordinate)
 
-        if (
-            nearest_route_distance
-            > coverage_radius_meters
-        ):
+        if nearest_route_distance is None:
             continue
 
         tags = element.get(
