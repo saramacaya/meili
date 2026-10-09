@@ -3823,6 +3823,54 @@ def warm_up_on_startup():
     threading.Thread(target=warm, daemon=True, name="warm-up").start()
 
 
+
+def _sections_without_map_data(route_samples, area, radius_meters) -> list[int]:
+    """Indices (0-9) of route sections that cross a map tile that did not load."""
+    loaded = area["osm_tiles"]
+    missing_sections = []
+    count = len(route_samples)
+    for section in range(10):
+        start = section * count // 10
+        end = max(start + 1, (section + 1) * count // 10)
+        points = route_samples[start:end]
+        if not points:
+            continue
+        needed = tile_cache.tiles_for_route_corridor(points, radius_meters)
+        if any(tile not in loaded for tile in needed):
+            missing_sections.append(section)
+    return missing_sections
+
+
+def _route_data_confidence(lighting_analysis: dict, active_places_analysis: dict) -> dict:
+    """How much real evidence the score rests on, in plain terms."""
+    counts = lighting_analysis.get("classification_counts") or {}
+    total = sum(counts.values()) or 1
+    lighting_coverage = round(100 * (total - counts.get("unknown", 0)) / total)
+    unavailable = len(active_places_analysis.get("unavailable_sections") or [])
+    if active_places_analysis.get("data_unavailable"):
+        unavailable = 10
+    activity_coverage = 100 - unavailable * 10
+    combined = 0.6 * lighting_coverage + 0.4 * activity_coverage
+    if combined >= 70:
+        level = "high"
+    elif combined >= 45:
+        level = "medium"
+    elif combined >= 20:
+        level = "low"
+    else:
+        level = "very_low"
+    return {
+        "level": level,
+        "lighting_evidence_coverage_percentage": lighting_coverage,
+        "activity_data_coverage_percentage": activity_coverage,
+        "explanation": (
+            f"Lighting evidence covers {lighting_coverage}% of the route; "
+            f"business data loaded for {activity_coverage}% of it. "
+            "Where there is no evidence the score stays neutral (50)."
+        ),
+    }
+
+
 @app.post("/safety/routes/compare")
 def compare_routes(request: RouteComparisonRequest):
     if len(request.routes) < 2:
@@ -3946,14 +3994,21 @@ def compare_routes(request: RouteComparisonRequest):
             active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
             active_places_analysis["retrieval_debug"] = places_debug
             if "active_places" in source_errors:
-                # Places could not be downloaded: treat activity as unknown
-                # (neutral), not as an empty street.
-                active_places_analysis["data_unavailable"] = True
+                # Some map tiles are missing. Only the sections that run through
+                # missing tiles are treated as unknown (neutral); the rest keep
+                # their real activity score.
+                unavailable_sections = _sections_without_map_data(
+                    route_samples, area, request.activity_search_radius_meters
+                )
+                if len(unavailable_sections) == 10:
+                    active_places_analysis["data_unavailable"] = True
+                else:
+                    active_places_analysis["unavailable_sections"] = unavailable_sections
 
             no_lighting = (
                 lighting_analysis.get("combined_score_statistics", {}).get("mean_score") is None
             )
-            if no_lighting and "active_places" in source_errors:
+            if no_lighting and active_places_analysis.get("data_unavailable"):
                 route_results.append({
                     "route_id": route.route_id,
                     "estimated_time_minutes": route.estimated_time_minutes,
@@ -3963,6 +4018,35 @@ def compare_routes(request: RouteComparisonRequest):
                     "source_errors": source_errors,
                 })
                 continue
+
+            # What the app's explanation screen needs: which lighting sources
+            # had data, and how much.
+            some_map_data = not active_places_analysis.get("data_unavailable")
+            osm_state = (
+                "available" if "osm_lit" not in source_errors
+                else "partial" if some_map_data
+                else "unavailable"
+            )
+            lighting_analysis["source_availability"] = {
+                "osm_lit": osm_state,
+                "osm_individual_lamps": osm_state,
+                "official_valencia_lamps": (
+                    "not_covered" if not area["valencia_covered"]
+                    else "unavailable" if "official_valencia_lamps" in source_errors
+                    else "available"
+                ),
+                "nasa_background": (
+                    "available"
+                    if nasa_analysis and nasa_analysis.get("valid_brightness_sample_count")
+                    else "not_covered"
+                ),
+            }
+            lighting_analysis["source_counts"] = {
+                "osm_lit_ways_near_route": osm_lit_debug.get("lit_ways_near_route", 0),
+                "osm_individual_lamps_near_route": osm_lamp_debug.get("street_lamps_near_route", 0),
+                "official_streetlights_near_route": len(official_streetlights) if area["valencia_covered"] else 0,
+                "nasa_unique_cells": (nasa_analysis or {}).get("unique_nasa_cell_count", 0),
+            }
 
             social_context_analysis = analyse_social_context(
                 route_geometry=route.geometry,
@@ -3985,12 +4069,15 @@ def compare_routes(request: RouteComparisonRequest):
                 "estimated_time_minutes": route.estimated_time_minutes
             })
 
+            data_confidence = _route_data_confidence(lighting_analysis, active_places_analysis)
+
             route_results.append({
                 "route_id": route.route_id,
                 "estimated_time_minutes": route.estimated_time_minutes,
                 "distance_meters": route.distance_meters,
                 "source_errors": source_errors,
                 **valuation,
+                "data_confidence": data_confidence,
                 "component_summaries": {
                     "lighting_mean_score": lighting_analysis["combined_score_statistics"]["mean_score"],
                     "route_activity_score": active_places_analysis["route_activity_score"],

@@ -48,7 +48,10 @@ def _lighting_by_section(lighting_analysis: dict[str, Any]) -> list[float]:
         evidence = sample.get("combined_lighting_evidence") or {}
         score = evidence.get("score")
         if score is None:
-            continue
+            # No evidence here: neutral, as the method promises. (Previously
+            # such points were skipped, so a few lit points elsewhere set the
+            # lighting score for whole sections with no data at all.)
+            score = 50.0
         # Lighting samples are already approximately equally spaced.
         progress = index / max(1, len(samples) - 1)
         section_index = min(SECTION_COUNT - 1, int(progress * SECTION_COUNT))
@@ -57,7 +60,7 @@ def _lighting_by_section(lighting_analysis: dict[str, Any]) -> list[float]:
     route_mean = (
         lighting_analysis.get("combined_score_statistics", {}).get("mean_score")
     )
-    fallback = 50.0 if route_mean is None else float(route_mean)
+    fallback = 50.0
     return [
         sum(bucket) / len(bucket) if bucket else fallback
         for bucket in buckets
@@ -72,6 +75,11 @@ def _activity_by_section(active_places_analysis: dict[str, Any]) -> list[float]:
     fallback = float(active_places_analysis.get("route_activity_score", 0.0))
 
     if len(scores) == SECTION_COUNT:
+        # Only sections whose map data failed to load are neutral; sections
+        # with data keep their real activity score.
+        for index in active_places_analysis.get("unavailable_sections") or []:
+            if 0 <= index < SECTION_COUNT:
+                scores[index] = 50.0
         return scores
     if not scores:
         return [fallback] * SECTION_COUNT
