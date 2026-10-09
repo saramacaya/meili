@@ -108,6 +108,24 @@ def tiles_for_bbox(bbox: tuple[float, float, float, float]) -> list[TileId]:
     ]
 
 
+def tiles_for_route_corridor(geometry: list[tuple[float, float]], padding_meters: float) -> list[TileId]:
+    """Only the tiles within `padding_meters` of the route line itself.
+
+    For long or diagonal routes this is far fewer tiles than the rectangle
+    around the route.
+    """
+    step_degrees = TILE_DEGREES / 3
+    tiles: set[TileId] = set()
+    for (lon1, lat1), (lon2, lat2) in zip(geometry, geometry[1:] or geometry):
+        steps = max(1, int(max(abs(lon2 - lon1), abs(lat2 - lat1)) / step_degrees))
+        for i in range(steps + 1):
+            point = (lon1 + (lon2 - lon1) * i / steps, lat1 + (lat2 - lat1) * i / steps)
+            tiles.update(tiles_for_bbox(padded_bbox([point], padding_meters)))
+    if len(geometry) == 1:
+        tiles.update(tiles_for_bbox(padded_bbox(geometry, padding_meters)))
+    return sorted(tiles)
+
+
 def _in_bbox(lon: float, lat: float, bbox: tuple[float, float, float, float]) -> bool:
     south, west, north, east = bbox
     return south <= lat <= north and west <= lon <= east
@@ -222,6 +240,11 @@ def _is_stale(tile: dict) -> bool:
 
 # ---------------------------------------------------------------- sources
 
+# Public Overpass servers allow about 2 simultaneous requests per user;
+# more than that gets rejected (HTTP 429), so we queue instead.
+_SERVER_SLOTS = {url: threading.BoundedSemaphore(2) for url in OVERPASS_API_URLS}
+
+
 def _overpass(query: str) -> dict:
     """Hedged request: asks the first Overpass mirror; if it has not answered
     within a few seconds (or fails), also asks the next one, and so on.
@@ -230,12 +253,13 @@ def _overpass(query: str) -> dict:
     errors: list[str] = []
 
     def ask(url: str) -> dict:
-        response = requests.post(
-            url,
-            data={"data": query},
-            headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
-            timeout=OVERPASS_TIMEOUT_SECONDS + 5,
-        )
+        with _SERVER_SLOTS[url]:
+            response = requests.post(
+                url,
+                data={"data": query},
+                headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
+                timeout=OVERPASS_TIMEOUT_SECONDS + 5,
+            )
         response.raise_for_status()
         return response.json()
 
@@ -417,7 +441,9 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
     stale = [t for t in found if _is_stale(found[t])]
     errors: list[str] = []
 
-    groups = group_tiles(missing, max_group=4)   # small groups = quick answers
+    # Few tiles: small groups answer quickly. Many tiles: fewer, larger
+    # requests are faster overall than lots of small queued ones.
+    groups = group_tiles(missing, max_group=4 if len(missing) <= 8 else 16)
     futures = [_POOL.submit(_fetch_and_save, layer, g) for g in groups]
     for future in as_completed(futures):
         try:
@@ -457,7 +483,7 @@ def load_area(
     """
     tiles: set[TileId] = set()
     for geometry in route_geometries:
-        tiles.update(tiles_for_bbox(padded_bbox(geometry, padding_meters)))
+        tiles.update(tiles_for_route_corridor(geometry, padding_meters))
     tile_list = sorted(tiles)
     valencia_tiles = [t for t in tile_list if _tile_in_valencia(t)]
 
