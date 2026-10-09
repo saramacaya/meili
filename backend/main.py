@@ -3873,10 +3873,12 @@ def _route_data_confidence(lighting_analysis: dict, active_places_analysis: dict
 
 @app.post("/safety/routes/compare")
 def compare_routes(request: RouteComparisonRequest):
-    if len(request.routes) < 2:
+    # A single route (Google often returns only one for long walks) is scored
+    # normally and simply holds every label.
+    if len(request.routes) < 1:
         raise HTTPException(
             status_code=400,
-            detail="At least two route candidates are required."
+            detail="At least one route is required."
         )
 
     if len(request.routes) > 5:
