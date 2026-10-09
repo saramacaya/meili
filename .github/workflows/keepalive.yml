@@ -25,15 +25,19 @@ jobs:
 
           http_status=$(curl -s -o supabase.json -w "%{http_code}" \
             --max-time 60 --retry 3 --retry-delay 10 \
-            "$SUPABASE_URL/rest/v1/users?select=id&limit=1" \
+            "$SUPABASE_URL/rest/v1/keepalive?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY")
 
           echo "Supabase HTTP status: $http_status"
+          cat supabase.json; echo
+
+          # Reads the one-row public.keepalive table: a real, successful
+          # database query. Anything other than 200 means a problem.
           if [ "$http_status" -ne 200 ]; then
-            echo "::error::Supabase did not answer with 200 (it may be paused)."
-            cat supabase.json
+            echo "::error::Supabase did not answer with 200 (HTTP $http_status). It may be paused."
             exit 1
           fi
+          echo "Supabase is awake."
 
       - name: Ping the backend keepalive endpoint
         run: |
