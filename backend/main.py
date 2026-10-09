@@ -16,13 +16,13 @@ from dotenv import load_dotenv
 import socket as _socket
 import urllib3.util.connection as _urllib3_connection
 _urllib3_connection.allowed_gai_family = lambda: _socket.AF_INET
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
 from datetime import datetime, timedelta
 from opening_hours import OpeningHours
 from zoneinfo import ZoneInfo
-from nasa_route_analysis import analyse_nasa_route_samples
+from nasa_route_analysis import analyse_nasa_route_samples, load_nasa_month_data
 
 from combined_lighting_analysis import combine_lighting_sources
 from open_establishments import (
@@ -40,6 +40,10 @@ from open_establishments import (
 )
 
 from street_scoring import assign_route_labels, value_route_sections
+import hashlib
+import json as _json
+from collections import OrderedDict
+import tile_cache
 
 from social_context_analysis import (
     analyse_social_context,
@@ -3731,6 +3735,93 @@ class RouteComparisonRequest(BaseModel):
     city: Optional[str] = None
 
 
+
+# ---- Fast-path caches -------------------------------------------------------
+
+tile_cache.VALENCIA_LAMP_FETCHER = lambda corners: fetch_valencia_streetlights(corners)
+
+COMPARISON_CACHE: "OrderedDict[str, tuple[float, dict]]" = OrderedDict()
+COMPARISON_CACHE_LOCK = threading.Lock()
+COMPARISON_CACHE_TTL_SECONDS = 30 * 60
+COMPARISON_CACHE_LIMIT = 200
+
+
+def _comparison_cache_key(request: "RouteComparisonRequest") -> str:
+    """Same routes + same 15-minute departure window = same answer."""
+    departure = request.departure_datetime
+    window = departure.replace(minute=(departure.minute // 15) * 15, second=0, microsecond=0)
+    payload = {
+        "routes": [
+            [route.route_id, route.estimated_time_minutes,
+             [[round(lon, 5), round(lat, 5)] for lon, lat in route.geometry]]
+            for route in request.routes
+        ],
+        "window": window.isoformat(),
+        "month": request.month,
+        "params": [
+            request.sample_interval_meters, request.official_lamp_radius_meters,
+            request.osm_lit_match_radius_meters, request.osm_lamp_radius_meters,
+            request.activity_search_radius_meters,
+        ],
+    }
+    return hashlib.sha256(_json.dumps(payload).encode()).hexdigest()
+
+
+def _comparison_cache_get(key: str):
+    with COMPARISON_CACHE_LOCK:
+        entry = COMPARISON_CACHE.get(key)
+        if entry is None or time.time() - entry[0] > COMPARISON_CACHE_TTL_SECONDS:
+            return None
+        COMPARISON_CACHE.move_to_end(key)
+        return entry[1]
+
+
+def _comparison_cache_put(key: str, response: dict) -> None:
+    # Do not cache answers where map data failed to load: try again next time.
+    # (NASA is optional and regional, so its absence does not block caching.)
+    blocking = {"osm_lit", "osm_individual_lamps", "active_places", "official_valencia_lamps"}
+    if any(blocking & set(route.get("source_errors") or {}) for route in response.get("routes", [])):
+        return
+    with COMPARISON_CACHE_LOCK:
+        COMPARISON_CACHE[key] = (time.time(), response)
+        while len(COMPARISON_CACHE) > COMPARISON_CACHE_LIMIT:
+            COMPARISON_CACHE.popitem(last=False)
+
+
+class TilePrefillRequest(BaseModel):
+    south: float
+    west: float
+    north: float
+    east: float
+
+
+@app.post("/tiles/prefill")
+def prefill_tiles(request: TilePrefillRequest, x_prefill_token: Optional[str] = Header(default=None)):
+    """Fills the tile cache for an area in the background (e.g. a whole city)."""
+    expected = os.getenv("PREFILL_TOKEN")
+    if expected and x_prefill_token != expected:
+        raise HTTPException(status_code=401, detail="Invalid prefill token.")
+    if request.north - request.south > 0.3 or request.east - request.west > 0.3:
+        raise HTTPException(status_code=400, detail="Area too large: keep each side under 0.3 degrees.")
+    return tile_cache.start_prefill((request.south, request.west, request.north, request.east))
+
+
+@app.get("/tiles/prefill/status")
+def prefill_tiles_status():
+    return tile_cache.prefill_status()
+
+
+@app.on_event("startup")
+def warm_up_on_startup():
+    """Loads the latest NASA month in the background so the first route is fast."""
+    def warm():
+        try:
+            load_nasa_month_data()
+        except Exception:
+            pass
+    threading.Thread(target=warm, daemon=True, name="warm-up").start()
+
+
 @app.post("/safety/routes/compare")
 def compare_routes(request: RouteComparisonRequest):
     if len(request.routes) < 2:
@@ -3752,46 +3843,28 @@ def compare_routes(request: RouteComparisonRequest):
                 detail=f"Route {route.route_id} must contain at least two coordinates."
             )
 
+    cache_key = _comparison_cache_key(request)
+    cached_response = _comparison_cache_get(cache_key)
+    if cached_response is not None:
+        return cached_response
+
     route_geometries = [route.geometry for route in request.routes]
+    # Load only the map tiles these routes touch (memory -> Supabase -> source).
+    data_padding_meters = max(
+        request.official_lamp_radius_meters * 2,
+        request.osm_lit_match_radius_meters * 2,
+        request.osm_lamp_radius_meters * 2,
+        request.activity_search_radius_meters,
+    ) + 25
+    area = tile_cache.load_area(route_geometries, data_padding_meters)
+
     shared_source_errors: dict[str, str] = {}
-
-    # --- One shared OSM lighting download for every route ---
-    shared_lit_way_elements: list[dict] = []
-    shared_street_lamp_elements: list[dict] = []
-    shared_osm_lighting_debug = {
-        "cache_hit": False,
-        "overpass_server": None,
-        "bbox": None,
-        "raw_lit_ways_found": 0,
-        "raw_street_lamps_found": 0
-    }
-
-    try:
-        shared_osm_lighting_data = fetch_shared_osm_lighting_data(
-            route_geometries=route_geometries,
-            padding_meters=max(
-                request.osm_lit_match_radius_meters,
-                request.osm_lamp_radius_meters
-            )
-        )
-        shared_lit_way_elements = shared_osm_lighting_data["lit_way_elements"]
-        shared_street_lamp_elements = shared_osm_lighting_data["street_lamp_elements"]
-        shared_osm_lighting_debug = shared_osm_lighting_data["debug"]
-    except HTTPException as error:
-        shared_source_errors["osm_lit"] = error.detail
-        shared_source_errors["osm_individual_lamps"] = error.detail
-
-    # --- One shared OSM places download for every route ---
-    shared_places_elements: list[dict] = []
-    shared_places_debug = {"cache_hit": False, "raw_places_found": 0}
-
-    try:
-        shared_places_elements, shared_places_debug = fetch_shared_osm_places(
-            route_geometries=route_geometries,
-            search_radius_meters=request.activity_search_radius_meters
-        )
-    except HTTPException as error:
-        shared_source_errors["active_places"] = error.detail
+    if area["osm_error"]:
+        shared_source_errors["osm_lit"] = area["osm_error"]
+        shared_source_errors["osm_individual_lamps"] = area["osm_error"]
+        shared_source_errors["active_places"] = area["osm_error"]
+    if area["valencia_error"]:
+        shared_source_errors["official_valencia_lamps"] = area["valencia_error"]
 
     route_results = []
     label_inputs = []
@@ -3805,25 +3878,28 @@ def compare_routes(request: RouteComparisonRequest):
             )
             source_errors = dict(shared_source_errors)
 
-            official_streetlights: list[tuple[float, float]] = []
-            official_debug: dict = {}
+            route_data = tile_cache.route_slice(area, route.geometry, data_padding_meters)
 
-            try:
-                official_streetlights, official_debug = fetch_valencia_streetlights(
-                    route.geometry
-                )
-            except HTTPException as error:
-                source_errors["official_valencia_lamps"] = error.detail
+            official_streetlights = tile_cache.corridor_filter(
+                route_data["official_lamps"],
+                route_samples,
+                request.official_lamp_radius_meters * 2 + 10,
+            ) or route_data["official_lamps"]
+            official_debug = (
+                {"source": "tile_cache", "streetlights_near_route": len(official_streetlights)}
+                if area["valencia_covered"]
+                else {"skipped_reason": "route_outside_valencia_official_coverage_area"}
+            )
 
             osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
                 route_coordinates=route.geometry,
-                shared_lit_way_elements=shared_lit_way_elements,
+                shared_lit_way_elements=route_data["lit_ways"],
                 match_radius_meters=request.osm_lit_match_radius_meters
             )
 
             osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
                 route_coordinates=route.geometry,
-                shared_street_lamp_elements=shared_street_lamp_elements,
+                shared_street_lamp_elements=route_data["street_lamps"],
                 coverage_radius_meters=request.osm_lamp_radius_meters
             )
 
@@ -3850,7 +3926,7 @@ def compare_routes(request: RouteComparisonRequest):
 
             raw_places, places_debug = filter_shared_places_for_route(
                 route_coordinates=route.geometry,
-                shared_elements=shared_places_elements,
+                shared_elements=route_data["places"],
                 search_radius_meters=request.activity_search_radius_meters
             )
 
@@ -3920,7 +3996,11 @@ def compare_routes(request: RouteComparisonRequest):
                     "social_context_adjustment_points": social_context_analysis["score_adjustment_points"]
                 },
                 "component_details": {
-                    "lighting": lighting_analysis,
+                    "lighting": {
+                        key: value
+                        for key, value in lighting_analysis.items()
+                        if key != "sample_results"
+                    },
                     "active_places": active_places_analysis,
                     "social_context": social_context_analysis
                 },
@@ -3947,27 +4027,18 @@ def compare_routes(request: RouteComparisonRequest):
             route_result["route_id"], []
         )
 
-    return {
+    response = {
         "status": "routes_compared_and_scored",
         "route_count": len(route_results),
-        "shared_downloads": {
-            "osm_lighting": {
-                "one_download_used_for_all_routes": True,
-                **shared_osm_lighting_debug
-            },
-            "osm_places": {
-                "one_download_used_for_all_routes": True,
-                **shared_places_debug
-            }
-        },
+        "data_loading": area["debug"],
         "labels": label_assignment,
         "routes": route_results,
         "interpretation": (
-            "All route candidates were analysed together, sharing one "
-            "OpenStreetMap lighting download and one OpenStreetMap places "
-            "download across every route, instead of repeating those "
-            "downloads once per route. Safest, Fastest and Balanced labels "
-            "are assigned only after every route has a complete score, "
-            "never from the order the routes were provided in."
+            "All route candidates were analysed together from cached map "
+            "tiles (memory, then Supabase Storage, then the original source "
+            "only for tiles never seen before). Safest, Fastest and Balanced "
+            "labels are assigned only after every route has a complete score."
         )
     }
+    _comparison_cache_put(cache_key, response)
+    return response
