@@ -254,10 +254,23 @@ def _overpass(query: str) -> dict:
                 try:
                     return future.result()
                 except Exception as error:  # noqa: BLE001
-                    errors.append(f"{url}: {error}")
+                    errors.append(f"{url.split('/')[2]}: {_short_error(error)}")
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
     raise RuntimeError("All Overpass servers failed: " + " | ".join(errors))
+
+
+def _short_error(error: Exception) -> str:
+    """'429 Too Many Requests', 'timeout', 'connection refused', ..."""
+    response = getattr(error, "response", None)
+    if response is not None and getattr(response, "status_code", None):
+        return f"HTTP {response.status_code}"
+    text = str(error)
+    for marker, label in (("timed out", "timeout"), ("Read timed out", "timeout"),
+                          ("NewConnectionError", "cannot connect"), ("Name or service", "DNS failure")):
+        if marker in text:
+            return label
+    return type(error).__name__ + ": " + text[:80]
 
 
 def _fetch_osm_group(group: list[TileId]) -> dict[TileId, dict]:
@@ -503,6 +516,52 @@ def corridor_filter(
     return [p for p in points if (math.floor(p[1] / cell), math.floor(p[0] / cell)) in near]
 
 
+# ---------------------------------------------------------------- warm-up
+
+MAX_WARM_TILES = 40
+
+
+def warm_tiles_for_trip(origin: tuple[float, float], destination: tuple[float, float]) -> dict[str, Any]:
+    """Starts downloading the tiles a walk between two points will need.
+
+    Walking routes rarely stray far from the straight line, so we take the
+    box around both points padded by 30% of the distance (at least 300 m).
+    For long trips we keep only a corridor along the straight line so a
+    single warm-up never asks for a whole city.
+    """
+    (lon1, lat1), (lon2, lat2) = origin, destination
+    straight = math.hypot(
+        (lon2 - lon1) * 111_000 * math.cos(math.radians((lat1 + lat2) / 2)),
+        (lat2 - lat1) * 111_000,
+    )
+    padding = max(300.0, 0.3 * straight)
+    tiles = tiles_for_bbox(padded_bbox([origin, destination], padding))
+
+    if len(tiles) > MAX_WARM_TILES:
+        steps = max(2, int(straight / 500))
+        line = [
+            (lon1 + (lon2 - lon1) * i / steps, lat1 + (lat2 - lat1) * i / steps)
+            for i in range(steps + 1)
+        ]
+        corridor: set[TileId] = set()
+        for point in line:
+            corridor.update(tiles_for_bbox(padded_bbox([point], 500)))
+        tiles = sorted(corridor)[: MAX_WARM_TILES * 2]
+
+    valencia = [t for t in tiles if _tile_in_valencia(t)]
+
+    def run() -> None:
+        try:
+            load_layer("osm", tiles)
+            if valencia:
+                load_layer("valencia_lamps", valencia)
+        except Exception:
+            pass  # warm-up is best effort; the real request will retry
+
+    threading.Thread(target=run, daemon=True, name="tile-warm").start()
+    return {"status": "warming", "tiles": len(tiles), "straight_line_meters": round(straight)}
+
+
 # ---------------------------------------------------------------- prefill
 
 _PREFILL_STATUS: dict[str, Any] = {"state": "idle"}
@@ -520,20 +579,38 @@ def start_prefill(bbox: tuple[float, float, float, float]) -> dict[str, Any]:
     _PREFILL_STATUS.update(
         state="running", tiles_total=len(tiles), groups_total=len(groups),
         groups_done=0, errors=[], started_at=time.time(), finished_at=None,
+        tiles_already_cached=0, tiles_downloaded=0, retries=0,
     )
+
+    def fill(layer: str, group: list[TileId]) -> Optional[str]:
+        layer_group = [t for t in group if layer == "osm" or _tile_in_valencia(t)]
+        if not layer_group:
+            return None
+        have = _load_from_storage(layer, layer_group)
+        missing = [t for t in layer_group if t not in have or _is_stale(have[t])]
+        if not missing:
+            _PREFILL_STATUS["tiles_already_cached"] += len(layer_group)
+            return None
+        last_error = None
+        for attempt, pause in enumerate((0, 20, 60, 120)):
+            time.sleep(pause)
+            try:
+                _fetch_and_save(layer, missing)
+                _PREFILL_STATUS["tiles_downloaded"] += len(missing)
+                return None
+            except Exception as error:  # noqa: BLE001
+                last_error = str(error)
+                _PREFILL_STATUS["retries"] += 1
+        return f"{layer} {tile_key(group[0])}: {last_error}"[:400]
 
     def run() -> None:
         for group in groups:
             for layer in ("osm", "valencia_lamps"):
-                layer_group = [t for t in group if layer == "osm" or _tile_in_valencia(t)]
-                if not layer_group:
-                    continue
-                try:
-                    _fetch_and_save(layer, layer_group)
-                except Exception as error:  # noqa: BLE001
-                    _PREFILL_STATUS["errors"].append(f"{layer} {tile_key(group[0])}: {error}"[:300])
+                problem = fill(layer, group)
+                if problem:
+                    _PREFILL_STATUS["errors"].append(problem)
             _PREFILL_STATUS["groups_done"] += 1
-            time.sleep(1.0)  # be polite to the public Overpass servers
+            time.sleep(2.0)  # be polite to the public Overpass servers
         _PREFILL_STATUS.update(state="finished", finished_at=time.time())
 
     threading.Thread(target=run, daemon=True, name="tile-prefill").start()

@@ -3806,6 +3806,23 @@ def prefill_tiles(request: TilePrefillRequest, x_prefill_token: Optional[str] = 
     return tile_cache.start_prefill((request.south, request.west, request.north, request.east))
 
 
+class TileWarmRequest(BaseModel):
+    origin_latitude: float = Field(..., ge=-90, le=90)
+    origin_longitude: float = Field(..., ge=-180, le=180)
+    destination_latitude: float = Field(..., ge=-90, le=90)
+    destination_longitude: float = Field(..., ge=-180, le=180)
+
+
+@app.post("/tiles/warm")
+def warm_tiles(request: TileWarmRequest):
+    """Called by the app as soon as origin and destination are chosen, so map
+    tiles download while Google is still computing the walking routes."""
+    return tile_cache.warm_tiles_for_trip(
+        (request.origin_longitude, request.origin_latitude),
+        (request.destination_longitude, request.destination_latitude),
+    )
+
+
 @app.get("/tiles/prefill/status")
 def prefill_tiles_status():
     return tile_cache.prefill_status()
