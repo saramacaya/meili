@@ -10,6 +10,12 @@ import time
 import unicodedata
 
 from dotenv import load_dotenv
+
+# Render's network cannot always reach IPv6 addresses ("Network is
+# unreachable", Errno 101). Force IPv4 for every outbound request.
+import socket as _socket
+import urllib3.util.connection as _urllib3_connection
+_urllib3_connection.allowed_gai_family = lambda: _socket.AF_INET
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
@@ -508,6 +514,8 @@ def fetch_valencia_streetlights(
 
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
 ]
 
@@ -3860,6 +3868,24 @@ def compare_routes(request: RouteComparisonRequest):
             )
             active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
             active_places_analysis["retrieval_debug"] = places_debug
+            if "active_places" in source_errors:
+                # Places could not be downloaded: treat activity as unknown
+                # (neutral), not as an empty street.
+                active_places_analysis["data_unavailable"] = True
+
+            no_lighting = (
+                lighting_analysis.get("combined_score_statistics", {}).get("mean_score") is None
+            )
+            if no_lighting and "active_places" in source_errors:
+                route_results.append({
+                    "route_id": route.route_id,
+                    "estimated_time_minutes": route.estimated_time_minutes,
+                    "distance_meters": route.distance_meters,
+                    "status": "analysis_failed",
+                    "error": "No safety data sources were reachable for this route.",
+                    "source_errors": source_errors,
+                })
+                continue
 
             social_context_analysis = analyse_social_context(
                 route_geometry=route.geometry,

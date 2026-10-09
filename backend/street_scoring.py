@@ -65,6 +65,8 @@ def _lighting_by_section(lighting_analysis: dict[str, Any]) -> list[float]:
 
 
 def _activity_by_section(active_places_analysis: dict[str, Any]) -> list[float]:
+    if active_places_analysis.get("data_unavailable"):
+        return [50.0] * SECTION_COUNT
     raw_segments = active_places_analysis.get("activity_segments") or []
     scores = [float(segment.get("activity_score", 0.0)) for segment in raw_segments]
     fallback = float(active_places_analysis.get("route_activity_score", 0.0))
