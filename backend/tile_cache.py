@@ -39,7 +39,7 @@ TILE_FORMAT_VERSION = 1
 TILE_MAX_AGE_SECONDS = 30 * 24 * 3600
 MEMORY_TILE_LIMIT = 60
 STORAGE_BUCKET = "meili-tiles"
-OVERPASS_TIMEOUT_SECONDS = 25
+OVERPASS_TIMEOUT_SECONDS = 90  # big dense areas can need over a minute; 25 s made them fail
 MAX_TILES_PER_OVERPASS_QUERY = 9  # a 3 x 3 block, about 3 km x 3 km
 
 OVERPASS_API_URLS = [
@@ -160,6 +160,10 @@ class _TileStore:
         self._lock = threading.Lock()
         self._fetch_locks: dict[str, threading.Lock] = {}
         self._bucket_checked = False
+        # Recently failed tiles: path -> (time, reason). Retries within
+        # FAILURE_MEMORY_SECONDS get the reason at once instead of starting
+        # another download that would also fail.
+        self.failures: dict[str, tuple[float, str]] = {}
 
     # -- memory
     def memory_get(self, path: str) -> Optional[dict]:
@@ -227,11 +231,25 @@ class _TileStore:
 
 
 STORE = _TileStore()
-_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="tiles")
+# Separate pools so a waiting job never blocks the jobs it is waiting for.
+_AREA_POOL = ThreadPoolExecutor(max_workers=16, thread_name_prefix="tiles-area")
+_FETCH_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="tiles-fetch")
+_IO_POOL = ThreadPoolExecutor(max_workers=16, thread_name_prefix="tiles-io")
+_POOL = _IO_POOL  # storage reads/writes
 
 
 def _path(layer: str, tile: TileId) -> str:
     return f"v{TILE_FORMAT_VERSION}/{layer}/{tile_key(tile)}.json.gz"
+
+
+FAILURE_MEMORY_SECONDS = 60.0
+
+
+def _recent_failure(path: str) -> Optional[str]:
+    record = STORE.failures.get(path)
+    if record and time.time() - record[0] < FAILURE_MEMORY_SECONDS:
+        return record[1]
+    return None
 
 
 def _is_stale(tile: dict) -> bool:
@@ -245,34 +263,60 @@ def _is_stale(tile: dict) -> bool:
 _SERVER_SLOTS = {url: threading.BoundedSemaphore(2) for url in OVERPASS_API_URLS}
 
 
+OVERPASS_TOTAL_BUDGET_SECONDS = 30.0
+LAST_SERVER_RESULTS: dict[str, str] = {}   # for /tiles/diagnose
+
+
 def _overpass(query: str) -> dict:
     """Hedged request: asks the first Overpass mirror; if it has not answered
     within a few seconds (or fails), also asks the next one, and so on.
-    The first good answer wins, so one slow server never blocks Meili."""
+    The first good answer wins. Never takes longer than the total budget:
+    after that it fails with the reason from each server."""
     hedge_after_seconds = 4.0
+    started = time.monotonic()
     errors: list[str] = []
 
     def ask(url: str) -> dict:
-        with _SERVER_SLOTS[url]:
+        host = url.split("/")[2]
+        if not _SERVER_SLOTS[url].acquire(timeout=15):
+            raise RuntimeError("busy (no free request slot)")
+        try:
+            remaining = max(5.0, OVERPASS_TOTAL_BUDGET_SECONDS - (time.monotonic() - started))
             response = requests.post(
                 url,
                 data={"data": query},
                 headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
-                timeout=OVERPASS_TIMEOUT_SECONDS + 5,
+                timeout=(8, remaining),
             )
-        response.raise_for_status()
-        return response.json()
+            response.raise_for_status()
+            data = response.json()
+            LAST_SERVER_RESULTS[host] = f"ok at {time.strftime('%H:%M:%S')}"
+            return data
+        except Exception as error:
+            LAST_SERVER_RESULTS[host] = f"{_short_error(error)} at {time.strftime('%H:%M:%S')}"
+            raise
+        finally:
+            _SERVER_SLOTS[url].release()
 
     pool = ThreadPoolExecutor(max_workers=len(OVERPASS_API_URLS))
     waiting = list(OVERPASS_API_URLS)
     running: dict = {}
     try:
         while waiting or running:
+            remaining = OVERPASS_TOTAL_BUDGET_SECONDS - (time.monotonic() - started)
+            if remaining <= 0:
+                for url in running.values():
+                    errors.append(f"{url.split('/')[2]}: no answer")
+                errors.append(f"gave up after {int(OVERPASS_TOTAL_BUDGET_SECONDS)} s")
+                break
             if waiting:
                 url = waiting.pop(0)
                 running[pool.submit(ask, url)] = url
-            done, _ = wait(list(running), timeout=hedge_after_seconds if waiting else None,
-                           return_when=FIRST_COMPLETED)
+            done, _ = wait(
+                list(running),
+                timeout=min(hedge_after_seconds, remaining) if waiting else remaining,
+                return_when=FIRST_COMPLETED,
+            )
             for future in done:
                 url = running.pop(future)
                 try:
@@ -281,7 +325,7 @@ def _overpass(query: str) -> dict:
                     errors.append(f"{url.split('/')[2]}: {_short_error(error)}")
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
-    raise RuntimeError("All Overpass servers failed: " + " | ".join(errors))
+    raise RuntimeError("OpenStreetMap servers failed: " + " | ".join(errors))
 
 
 def _short_error(error: Exception) -> str:
@@ -414,16 +458,32 @@ def _load_from_storage(layer: str, tiles: list[TileId]) -> dict[TileId, dict]:
     return found
 
 
-def _fetch_and_save(layer: str, group: list[TileId]) -> dict[TileId, dict]:
+def _fetch_and_save(layer: str, group: list[TileId], wait_for_others: bool = False) -> dict[TileId, dict]:
     locks = [STORE.fetch_lock(_path(layer, t)) for t in sorted(group)]
+    acquired = []
     for lock in locks:
-        lock.acquire()
+        if lock.acquire(timeout=(120 if wait_for_others else 0)):
+            acquired.append(lock)
+        else:
+            # Another request is already downloading these tiles: don't queue
+            # behind it; this request will pick them up from memory later.
+            for held in acquired:
+                held.release()
+            return {}
+    locks = acquired
     try:
         # Another request may have filled these while we waited.
         already = {t: STORE.memory_get(_path(layer, t)) for t in group}
         if all(v is not None and not _is_stale(v) for v in already.values()):
             return already  # type: ignore[return-value]
-        fetched = FETCHERS[layer](group)
+        try:
+            fetched = FETCHERS[layer](group)
+        except Exception as error:
+            for tile in group:
+                STORE.failures[_path(layer, tile)] = (time.time(), str(error)[:300])
+            raise
+        for tile in group:
+            STORE.failures.pop(_path(layer, tile), None)
         for tile, data in fetched.items():
             STORE.memory_put(_path(layer, tile), data)
             _POOL.submit(STORE.storage_put, _path(layer, tile), data)
@@ -437,14 +497,20 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
     """Returns tile data for a layer, fetching only what is missing."""
     started = time.perf_counter()
     found = _load_from_storage(layer, tiles)
-    missing = [t for t in tiles if t not in found]
+    missing_all = [t for t in tiles if t not in found]
     stale = [t for t in found if _is_stale(found[t])]
     errors: list[str] = []
+
+    # Tiles that failed moments ago: report why, don't start another attempt.
+    recently_failed = {t: _recent_failure(_path(layer, t)) for t in missing_all}
+    missing = [t for t in missing_all if not recently_failed[t]]
+    for reason in {r for r in recently_failed.values() if r}:
+        errors.append(reason)
 
     # Few tiles: small groups answer quickly. Many tiles: fewer, larger
     # requests are faster overall than lots of small queued ones.
     groups = group_tiles(missing, max_group=4 if len(missing) <= 8 else 16)
-    futures = [_POOL.submit(_fetch_and_save, layer, g) for g in groups]
+    futures = [_FETCH_POOL.submit(_fetch_and_save, layer, g) for g in groups]
     for future in as_completed(futures):
         try:
             found.update(future.result())
@@ -452,16 +518,16 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
             errors.append(str(error))
 
     for group in group_tiles(stale):  # refresh in the background
-        _POOL.submit(_fetch_and_save, layer, group)
+        _FETCH_POOL.submit(_fetch_and_save, layer, group)
 
     debug = {
         "tiles_needed": len(tiles),
-        "tiles_from_cache": len(tiles) - len(missing),
-        "tiles_failed": sum(1 for t in missing if t not in found),
+        "tiles_from_cache": len(tiles) - len(missing_all),
+        "tiles_failed": sum(1 for t in missing_all if t not in found),
         "seconds": round(time.perf_counter() - started, 3),
         "persistent_storage": STORE.persistent(),
     }
-    debug["tiles_downloaded"] = sum(1 for t in missing if t in found)
+    debug["tiles_downloaded"] = sum(1 for t in missing_all if t in found)
     return found, {"debug": debug, "errors": errors}
 
 
@@ -487,9 +553,9 @@ def load_area(
     tile_list = sorted(tiles)
     valencia_tiles = [t for t in tile_list if _tile_in_valencia(t)]
 
-    futures = {"osm": _POOL.submit(load_layer, "osm", tile_list)}
+    futures = {"osm": _AREA_POOL.submit(load_layer, "osm", tile_list)}
     if valencia_tiles:
-        futures["valencia_lamps"] = _POOL.submit(load_layer, "valencia_lamps", valencia_tiles)
+        futures["valencia_lamps"] = _AREA_POOL.submit(load_layer, "valencia_lamps", valencia_tiles)
     wait(list(futures.values()), timeout=deadline_seconds)
 
     def collect(layer: str, wanted: list[TileId]) -> tuple[dict, dict]:
@@ -666,7 +732,7 @@ def start_prefill(bbox: tuple[float, float, float, float]) -> dict[str, Any]:
         for attempt, pause in enumerate((0, 20, 60, 120)):
             time.sleep(pause)
             try:
-                _fetch_and_save(layer, missing)
+                _fetch_and_save(layer, missing, wait_for_others=True)
                 _PREFILL_STATUS["tiles_downloaded"] += len(missing)
                 return None
             except Exception as error:  # noqa: BLE001
@@ -686,3 +752,31 @@ def start_prefill(bbox: tuple[float, float, float, float]) -> dict[str, Any]:
 
     threading.Thread(target=run, daemon=True, name="tile-prefill").start()
     return prefill_status()
+
+
+# ---------------------------------------------------------------- diagnostics
+
+def diagnose() -> dict[str, Any]:
+    """Asks every Overpass server a tiny question right now and times it."""
+    tiny = "[out:json][timeout:10];node(1);out;"
+
+    def probe(url: str) -> tuple[str, str]:
+        host = url.split("/")[2]
+        start = time.monotonic()
+        try:
+            response = requests.post(url, data={"data": tiny}, timeout=(8, 15),
+                                     headers={"User-Agent": "Meili safety-routing prototype"})
+            response.raise_for_status()
+            return host, f"ok in {time.monotonic() - start:.1f} s"
+        except Exception as error:  # noqa: BLE001
+            return host, f"{_short_error(error)} after {time.monotonic() - start:.1f} s"
+
+    with ThreadPoolExecutor(max_workers=len(OVERPASS_API_URLS)) as pool:
+        probes = dict(pool.map(probe, OVERPASS_API_URLS))
+    return {
+        "overpass_servers_now": probes,
+        "overpass_servers_last_real_request": dict(LAST_SERVER_RESULTS),
+        "downloads_in_progress": sum(1 for lock in STORE._fetch_locks.values() if lock.locked()),
+        "tiles_in_memory": len(STORE._memory),
+        "persistent_storage": STORE.persistent(),
+    }

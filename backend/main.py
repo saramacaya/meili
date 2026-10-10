@@ -1,3 +1,4 @@
+import asyncio
 from typing import Literal, Optional
 import os
 import requests
@@ -134,6 +135,9 @@ class PlaceAutocompleteRequest(BaseModel):
     session_token: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    # The user's device language (e.g. "es", "it-IT"). Optional: without it
+    # Google infers the language from what was typed.
+    language: Optional[str] = None
 
 
 class PlaceDetailsRequest(BaseModel):
@@ -2929,9 +2933,57 @@ def _parse_place_suggestions(google_data: dict) -> list:
     return suggestions
 
 
+async def _google_text_search_request(payload: dict) -> dict:
+    """Google Places Text Search: tolerant of typos, other languages and
+    descriptive queries ("eiffel tower", "torre eiffel", "sagrada familla")."""
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.types",
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        google_response = await client.post(
+            "https://places.googleapis.com/v1/places:searchText",
+            json=payload,
+            headers=headers,
+        )
+    if google_response.status_code != 200:
+        raise HTTPException(status_code=google_response.status_code, detail=google_response.text)
+    return google_response.json()
+
+
+def _parse_text_search_places(google_data: dict) -> list:
+    suggestions = []
+    for place in google_data.get("places", []):
+        name = (place.get("displayName") or {}).get("text")
+        address = place.get("formattedAddress")
+        suggestions.append({
+            "place_id": place.get("id"),
+            "name": name or address,
+            "address": address,
+            "label": ", ".join(part for part in (name, address) if part),
+            "types": place.get("types", []),
+        })
+    return suggestions
+
+
+def _merge_suggestions(*groups: list, limit: int = 6) -> list:
+    """Keeps order of the groups, drops duplicates by place id."""
+    merged, seen = [], set()
+    for group in groups:
+        for suggestion in group:
+            place_id = suggestion.get("place_id")
+            if not place_id or place_id in seen:
+                continue
+            seen.add(place_id)
+            merged.append(suggestion)
+    return merged[:limit]
+
+
 @app.post("/places/autocomplete")
 async def autocomplete_places(request: PlaceAutocompleteRequest):
-    search_text = request.input.strip()
+    # Collapse stray spaces so "  sagrada   familia " behaves like the clean text.
+    search_text = " ".join(request.input.split())
 
     if len(search_text) < 2:
         return {
@@ -2948,55 +3000,62 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
 
     session_token = request.session_token or str(uuid.uuid4())
 
-    base_payload = {
-        "input": search_text,
-        "languageCode": "en",
-        "regionCode": "es",
-        "sessionToken": session_token
-    }
+    # No fixed language or country: Google matches names in whatever language
+    # was typed, and results come back in the user's own language if known.
+    base_payload = {"input": search_text, "sessionToken": session_token}
+    language = (request.language or "").strip()
+    if language:
+        base_payload["languageCode"] = language
 
     has_bias_point = request.latitude is not None and request.longitude is not None
+    nearby_circle = (
+        {"circle": {"center": {"latitude": request.latitude, "longitude": request.longitude},
+                    "radius": 50000.0}}
+        if has_bias_point else None
+    )
+
+    async def nearby_matches() -> list:
+        if not has_bias_point:
+            return []
+        payload = dict(base_payload, locationRestriction=nearby_circle)
+        return _parse_place_suggestions(await _google_autocomplete_request(payload))
+
+    async def anywhere_matches() -> list:
+        payload = dict(base_payload)
+        if has_bias_point:
+            payload["locationBias"] = nearby_circle
+        return _parse_place_suggestions(await _google_autocomplete_request(payload))
+
+    async def forgiving_matches() -> list:
+        payload = {"textQuery": search_text, "pageSize": 5}
+        if language:
+            payload["languageCode"] = language
+        if has_bias_point:
+            payload["locationBias"] = nearby_circle
+        return _parse_text_search_places(await _google_text_search_request(payload))
 
     try:
-        suggestions = []
+        # Nearby and worldwide matches at the same time: close places come
+        # first, but a famous place far away is no longer hidden by a weak
+        # nearby match.
+        results = await asyncio.gather(nearby_matches(), anywhere_matches(), return_exceptions=True)
+        nearby, anywhere = [r if isinstance(r, list) else [] for r in results]
+        if all(isinstance(r, Exception) for r in results):
+            raise results[1]
 
-        if has_bias_point:
-            # Pass 1: hard-restrict to 50km around the bias point so a strong
-            # nearby match is never crowded out by an unrelated far-away one.
-            restricted_payload = dict(base_payload)
-            restricted_payload["locationRestriction"] = {
-                "circle": {
-                    "center": {
-                        "latitude": request.latitude,
-                        "longitude": request.longitude
-                    },
-                    "radius": 50000.0
-                }
-            }
-            google_data = await _google_autocomplete_request(restricted_payload)
-            suggestions = _parse_place_suggestions(google_data)
+        suggestions = _merge_suggestions(nearby[:3], anywhere, nearby[3:])
 
-        if not suggestions:
-            # Nothing nearby (or no bias point at all) — fall back to a normal
-            # search so genuinely distant places are still findable, softly
-            # nudged toward the bias point when we have one.
-            fallback_payload = dict(base_payload)
-            if has_bias_point:
-                fallback_payload["locationBias"] = {
-                    "circle": {
-                        "center": {
-                            "latitude": request.latitude,
-                            "longitude": request.longitude
-                        },
-                        "radius": 50000.0
-                    }
-                }
-            google_data = await _google_autocomplete_request(fallback_payload)
-            suggestions = _parse_place_suggestions(google_data)
+        # Few or no prefix matches usually means a typo, another language or a
+        # description: ask Google's more forgiving full-text search too.
+        if len(suggestions) < 3 and len(search_text) >= 3:
+            try:
+                suggestions = _merge_suggestions(suggestions, await forgiving_matches())
+            except HTTPException:
+                pass  # keep whatever autocomplete found
 
         return {
             "status": "success",
-            "suggestions": suggestions[:5],
+            "suggestions": suggestions,
             "session_token": session_token
         }
 
@@ -3805,6 +3864,13 @@ def warm_tiles(request: TileWarmRequest):
         (request.origin_longitude, request.origin_latitude),
         (request.destination_longitude, request.destination_latitude),
     )
+
+
+@app.get("/tiles/diagnose")
+def diagnose_tiles():
+    """Open in a browser: tests whether this server can reach each
+    OpenStreetMap (Overpass) server right now."""
+    return tile_cache.diagnose()
 
 
 @app.get("/tiles/prefill/status")
