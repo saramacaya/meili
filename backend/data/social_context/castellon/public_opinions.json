@@ -62,7 +62,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Casco Histórico",
@@ -125,7 +128,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Parque Ribalta - Plaza de Toros",
@@ -189,7 +195,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Parque Ribalta - Plaza de Toros",
@@ -252,7 +261,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Zona Hospital - Plaza del Real",
@@ -314,7 +326,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.7,
+    "audit_note": "aggregated resident ratings on a property site",
+    "coverage": "area"
   },
   {
     "area": "Grapa",
@@ -377,7 +392,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "area": "Grapa",
@@ -439,7 +457,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Grapa",
@@ -500,7 +521,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Raval Universitari",
@@ -564,7 +588,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Raval Universitari",
@@ -626,7 +653,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.3,
+    "audit_note": "unverified claim from a 'dangerous neighbourhoods' style site",
+    "coverage": "area"
   },
   {
     "area": "Rafalafena",
@@ -688,7 +718,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Rafalafena",
@@ -749,7 +782,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "La Guinea",
@@ -810,7 +846,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "El Grau",
@@ -873,7 +912,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "El Grau",
@@ -934,7 +976,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Marjalería",
@@ -996,7 +1041,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Marjalería",
@@ -1058,7 +1106,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Sequiol",
@@ -1119,7 +1170,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-001",
@@ -1185,7 +1239,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-002",
@@ -1251,7 +1308,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-003",
@@ -1317,7 +1377,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-004",
@@ -1383,7 +1446,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-005",
@@ -1449,7 +1515,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-uji-006",
@@ -1515,7 +1584,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "city"
   },
   {
     "record_id": "castellon-local-001",
@@ -1579,7 +1651,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "record_id": "castellon-local-002",
@@ -1641,6 +1716,9 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   }
 ]
