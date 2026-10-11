@@ -64,6 +64,17 @@ EXTRACTION_PROMPT = (
 )
 
 
+# --------------------------------------------------------------------- log
+
+from collections import deque
+
+GATHER_LOG: deque = deque(maxlen=40)   # shown on /diagnose
+
+
+def _log(event: str, **details: Any) -> None:
+    GATHER_LOG.appendleft({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "event": event, **details})
+
+
 # --------------------------------------------------------------------- utils
 
 def _plain(text: str) -> str:
@@ -115,7 +126,8 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
             )
             response.raise_for_status()
             data = response.json()
-        except Exception:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001
+            _log("place lookup failed", error=str(error)[:150])
             return None
     address = data.get("address") or {}
     name = (address.get("neighbourhood") or address.get("suburb") or address.get("quarter")
@@ -168,7 +180,8 @@ def search_news(name: str, city: str) -> list[dict]:
         )
         response.raise_for_status()
         articles = response.json().get("articles", []) if response.text.strip().startswith("{") else []
-    except Exception:  # noqa: BLE001
+    except Exception as error:  # noqa: BLE001
+        _log("news search failed", area=name, error=str(error)[:150])
         return []
     seen, unique = set(), []
     for article in articles:
@@ -268,7 +281,8 @@ def gather_area(area: dict) -> dict:
             continue  # paywalled, empty, or doesn't actually mention the area
         try:
             extracted = extract_records(area, article, text)
-        except Exception:  # noqa: BLE001  (rate limit, bad JSON...)
+        except Exception as error:  # noqa: BLE001  (rate limit, bad JSON...)
+            _log("AI extraction failed", area=area["name"], error=str(error)[:150])
             continue
         for record in extracted:
             rows.append({
@@ -298,7 +312,9 @@ def gather_area(area: dict) -> dict:
         }).execute()
     _area_cache.pop(key, None)
     _records_cache.clear()
-    return {"area": area["name"], "records": len(rows), "articles_found": len(articles)}
+    result = {"area": area["name"], "records": len(rows), "articles_found": len(articles)}
+    _log("area gathered", **result, saved=db is not None)
+    return result
 
 
 _records_cache: dict[tuple, tuple[float, list[dict]]] = {}
@@ -349,9 +365,15 @@ def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
 
 # ------------------------------------------------- background orchestration
 
-_jobs_started: dict[tuple, float] = {}
+_trip_jobs: dict[tuple, dict] = {}
 _worker_lock = threading.Lock()   # one gathering job at a time (polite + free tiers)
 GATHERING: set[str] = set()
+
+
+def _area_record_count(key: str) -> int:
+    cached = _area_cache.get(key)
+    row = cached[1] if cached else None
+    return int((row or {}).get("record_count") or 0)
 
 
 def _area_known(key: str) -> bool:
@@ -363,7 +385,7 @@ def _area_known(key: str) -> bool:
         db = _db()
         if db is not None:
             try:
-                data = db.table(AREAS_TABLE).select("last_gathered_at").eq("area_key", key).limit(1).execute().data
+                data = db.table(AREAS_TABLE).select("last_gathered_at,record_count").eq("area_key", key).limit(1).execute().data
                 row = data[0] if data else None
             except Exception:  # noqa: BLE001
                 row = None
@@ -374,36 +396,101 @@ def _area_known(key: str) -> bool:
     return datetime.now(timezone.utc) - gathered < timedelta(days=REGATHER_AFTER_DAYS)
 
 
-def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> str:
-    """Starts background gathering for this trip's area if needed.
+def _trip_key(route_geometries) -> tuple:
+    points = [p for g in route_geometries for p in g]
+    return (round(min(p[1] for p in points), 2), round(min(p[0] for p in points), 2),
+            round(max(p[1] for p in points), 2), round(max(p[0] for p in points), 2))
 
-    Returns "gathering" while a job for this area runs, else "ready".
-    Never blocks the search.
+
+def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> dict:
+    """Starts background gathering for this trip's area if needed (never blocks).
+
+    Returns {"status": "gathering" | "ready" | "none_found", "areas_checked": [...]}.
+    The app asks again every few seconds while the status is "gathering".
     """
     if not route_geometries or not any(route_geometries):
-        return "ready"
-    points = [p for g in route_geometries for p in g]
-    trip_key = (round(min(p[1] for p in points), 2), round(min(p[0] for p in points), 2),
-                round(max(p[1] for p in points), 2), round(max(p[0] for p in points), 2))
-    started = _jobs_started.get(trip_key)
-    if started and time.time() - started < 3600:
-        return "gathering" if GATHERING else "ready"
-    _jobs_started[trip_key] = time.time()
+        return {"status": "ready", "areas_checked": []}
+    key = _trip_key(route_geometries)
+    job = _trip_jobs.get(key)
+    if job and (job["state"] == "running" or time.time() - job.get("finished_at", 0) < 3600):
+        return {"status": job["state"] if job["state"] == "running" else job["result"],
+                "areas_checked": list(job["areas"])}
+
+    job = {"state": "running", "areas": [], "result": "ready"}
+    _trip_jobs[key] = job
 
     def run() -> None:
         with _worker_lock:
+            found_any = False
             try:
                 for area in neighbourhoods_along(route_geometries):
-                    key = area_key(area["city"], area["name"])
-                    if _area_known(key):
+                    akey = area_key(area["city"], area["name"])
+                    if _area_known(akey):
+                        count = _area_record_count(akey)
+                        job["areas"].append({"area": area["name"], "status": f"checked earlier: {count} notes"})
+                        found_any = found_any or count > 0
                         continue
-                    GATHERING.add(key)
+                    GATHERING.add(akey)
                     try:
-                        gather_area(area)
+                        result = gather_area(area)
+                        found_any = found_any or result["records"] > 0
+                        job["areas"].append({
+                            "area": area["name"],
+                            "status": f"{result['records']} notes from {result['articles_found']} articles",
+                        })
                     finally:
-                        GATHERING.discard(key)
-            except Exception:  # noqa: BLE001
-                pass
+                        GATHERING.discard(akey)
+                if not job["areas"]:
+                    _log("no neighbourhoods found along route")
+            except Exception as error:  # noqa: BLE001
+                _log("gathering crashed", error=str(error)[:200])
+            job["result"] = "ready" if found_any else "none_found"
+            job["finished_at"] = time.time()
+            job["state"] = "done"
 
     threading.Thread(target=run, daemon=True, name="local-context").start()
-    return "gathering"
+    return {"status": "gathering", "areas_checked": []}
+
+
+def diagnose() -> dict:
+    """Checks every outside service local context depends on, right now."""
+    def timed(fn):
+        start = time.monotonic()
+        try:
+            detail = fn()
+            return f"ok in {time.monotonic() - start:.1f} s" + (f" ({detail})" if detail else "")
+        except Exception as error:  # noqa: BLE001
+            return f"FAILED after {time.monotonic() - start:.1f} s: {str(error)[:160]}"
+
+    def nominatim():
+        r = requests.get(NOMINATIM_URL, params={"lat": 46.0511, "lon": 14.5051, "format": "jsonv2", "zoom": 15},
+                         headers={"User-Agent": USER_AGENT}, timeout=10)
+        r.raise_for_status()
+        return (r.json().get("address") or {}).get("suburb") or "answered"
+
+    def gdelt():
+        r = requests.get(GDELT_URL, params={"query": '"Ljubljana"', "mode": "artlist", "format": "json", "maxrecords": 5},
+                         headers={"User-Agent": USER_AGENT}, timeout=20)
+        r.raise_for_status()
+        return f"{len(r.json().get('articles', []))} articles" if r.text.strip().startswith("{") else r.text[:80]
+
+    def ai():
+        if AI_PROVIDER == "github" and not (os.getenv("GITHUB_MODELS_TOKEN") or os.getenv("GITHUB_TOKEN")):
+            raise RuntimeError("GITHUB_MODELS_TOKEN is not set on Render")
+        return _ai_complete("Reply with the single word: ok", "ping").strip()[:20]
+
+    def supabase():
+        db = _db()
+        if db is None:
+            raise RuntimeError("Supabase client not configured (SUPABASE_URL / SUPABASE_SECRET_KEY)")
+        rows = db.table(AREAS_TABLE).select("area_key").limit(1).execute().data
+        records = db.table(RECORDS_TABLE).select("id").limit(1000).execute().data
+        return f"tables exist, {len(records)} notes stored"
+
+    return {
+        "place_names_nominatim": timed(nominatim),
+        "news_gdelt": timed(gdelt),
+        "ai_model": f"{AI_PROVIDER}:{AI_MODEL} -> " + timed(ai),
+        "database_supabase": timed(supabase),
+        "recent_activity": list(GATHER_LOG)[:15],
+    }

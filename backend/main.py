@@ -3874,6 +3874,16 @@ def diagnose_tiles():
     return tile_cache.diagnose()
 
 
+@app.get("/diagnose")
+def diagnose_everything():
+    """Open in a browser: one page that checks every outside service Meili
+    depends on (map data, place names, news, AI model, database)."""
+    return {
+        "map_data": tile_cache.diagnose(),
+        "local_context": local_context_gatherer.diagnose(),
+    }
+
+
 @app.get("/tiles/prefill/status")
 def prefill_tiles_status():
     return tile_cache.prefill_status()
@@ -3984,7 +3994,7 @@ def compare_routes(request: RouteComparisonRequest):
         max(p[1] for p in all_points), max(p[0] for p in all_points),
     )
     auto_records = local_context_gatherer.load_records_near(context_bbox)
-    local_context_status = local_context_gatherer.ensure_context(route_geometries)
+    local_context_job = local_context_gatherer.ensure_context(route_geometries)
 
     shared_source_errors: dict[str, str] = {}
     if area["osm_error"]:
@@ -4134,7 +4144,8 @@ def compare_routes(request: RouteComparisonRequest):
                 city=request.city,
                 extra_records=auto_records,
             )
-            social_context_analysis["local_context_status"] = local_context_status
+            social_context_analysis["local_context_status"] = local_context_job["status"]
+            social_context_analysis["local_context_areas_checked"] = local_context_job["areas_checked"]
 
             valuation = value_route_sections(
                 lighting_analysis=lighting_analysis,

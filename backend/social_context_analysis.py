@@ -711,6 +711,10 @@ def analyse_social_context(
 
             arrival = _arrival_time(closest, len(samples), departure_datetime, route_duration_seconds)
             time_weight = _time_weight(record.get("time_context"), arrival)
+            if time_weight < 0.3:
+                # About a different time of day (e.g. "at night" on a morning
+                # walk): neither shown nor counted.
+                continue
             sentiment = str(record.get("overall_sentiment") or "neutral").lower()
             precision = str(location.get("precision") or "").lower()
             precision_class = location_precision_class(precision)
@@ -782,6 +786,14 @@ def analyse_social_context(
             else "positive" if net > 0.15 and concerns == 0
             else "mixed"
         )
+        if verdict == "concerns":
+            verdict_label = "concerns reported" if concerns > 1 else "a concern reported"
+        elif verdict == "positive":
+            verdict_label = "positive reports" if positives > 1 else "a positive report"
+        else:
+            verdict_label = (
+                f"mixed: {positives} positive, {concerns} concern" + ("s" if concerns != 1 else "")
+            )
         influence = max(r["influence"] for r in records)
         city_id = records[0]["city_id"]
         if city_id not in summaries_by_city:
@@ -791,6 +803,7 @@ def analyse_social_context(
             "area": _display_name(records),
             "area_key": key,
             "verdict": verdict,
+            "verdict_label": verdict_label,
             "concern_count": concerns,
             "positive_count": positives,
             "influence": round(influence, 2),
