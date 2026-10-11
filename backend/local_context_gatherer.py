@@ -31,6 +31,8 @@ from typing import Any, Optional
 
 import requests
 
+import outbound
+
 USER_AGENT = "Meili safety-routing prototype (contact: github.com/saramacaya/meili)"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/reverse"
 GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
@@ -170,14 +172,13 @@ def neighbourhoods_along(route_geometries: list[list[tuple[float, float]]]) -> l
 def search_news(name: str, city: str) -> list[dict]:
     """Recent articles mentioning the neighbourhood and its city (GDELT)."""
     query = f'"{name}" "{city}"'
+    params = {"query": query, "mode": "artlist", "format": "json", "maxrecords": 25, "sort": "datedesc"}
     try:
-        response = requests.get(
-            GDELT_URL,
-            params={"query": query, "mode": "artlist", "format": "json",
-                    "maxrecords": 25, "sort": "datedesc"},
-            headers={"User-Agent": USER_AGENT},
-            timeout=20,
-        )
+        # Render's shared IP is often over GDELT's limit: prefer Meili's proxy.
+        if outbound.proxy_available():
+            response = outbound.via_proxy(GDELT_URL, params=params, timeout=30)
+        else:
+            response = requests.get(GDELT_URL, params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
         response.raise_for_status()
         articles = response.json().get("articles", []) if response.text.strip().startswith("{") else []
     except Exception as error:  # noqa: BLE001
@@ -229,7 +230,11 @@ def _ai_complete(system: str, user: str) -> str:
               "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]},
         timeout=90,
     )
-    response.raise_for_status()
+    if response.status_code != 200 or "json" not in response.headers.get("Content-Type", ""):
+        raise RuntimeError(
+            f"HTTP {response.status_code} from {url.split('/')[2]} "
+            f"({response.headers.get('Content-Type', '?')}): {response.text[:160]!r}"
+        )
     return response.json()["choices"][0]["message"]["content"]
 
 
@@ -469,8 +474,11 @@ def diagnose() -> dict:
         return (r.json().get("address") or {}).get("suburb") or "answered"
 
     def gdelt():
-        r = requests.get(GDELT_URL, params={"query": '"Ljubljana"', "mode": "artlist", "format": "json", "maxrecords": 5},
-                         headers={"User-Agent": USER_AGENT}, timeout=20)
+        params = {"query": '"Ljubljana"', "mode": "artlist", "format": "json", "maxrecords": 5}
+        if outbound.proxy_available():
+            r = outbound.via_proxy(GDELT_URL, params=params, timeout=30)
+        else:
+            r = requests.get(GDELT_URL, params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
         r.raise_for_status()
         return f"{len(r.json().get('articles', []))} articles" if r.text.strip().startswith("{") else r.text[:80]
 
@@ -489,7 +497,7 @@ def diagnose() -> dict:
 
     return {
         "place_names_nominatim": timed(nominatim),
-        "news_gdelt": timed(gdelt),
+        "news_gdelt": ("via proxy -> " if outbound.proxy_available() else "direct -> ") + timed(gdelt),
         "ai_model": f"{AI_PROVIDER}:{AI_MODEL} -> " + timed(ai),
         "database_supabase": timed(supabase),
         "recent_activity": list(GATHER_LOG)[:15],

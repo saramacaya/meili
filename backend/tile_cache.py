@@ -34,6 +34,8 @@ from typing import Any, Callable, Optional
 
 import requests
 
+import outbound
+
 TILE_DEGREES = 0.01
 TILE_FORMAT_VERSION = 1
 TILE_MAX_AGE_SECONDS = 30 * 24 * 3600
@@ -260,7 +262,14 @@ def _is_stale(tile: dict) -> bool:
 
 # Public Overpass servers allow about 2 simultaneous requests per user;
 # more than that gets rejected (HTTP 429), so we queue instead.
-_SERVER_SLOTS = {url: threading.BoundedSemaphore(2) for url in OVERPASS_API_URLS}
+def _server_order() -> list[str]:
+    """Through Meili's proxy first when configured, then direct."""
+    proxied = [f"proxy:{u}" for u in OVERPASS_API_URLS] if outbound.proxy_available() else []
+    return proxied + list(OVERPASS_API_URLS)
+
+
+_SERVER_SLOTS = {url: threading.BoundedSemaphore(2)
+                 for url in [f"proxy:{u}" for u in OVERPASS_API_URLS] + list(OVERPASS_API_URLS)}
 
 
 OVERPASS_TOTAL_BUDGET_SECONDS = 30.0
@@ -277,17 +286,22 @@ def _overpass(query: str) -> dict:
     errors: list[str] = []
 
     def ask(url: str) -> dict:
-        host = url.split("/")[2]
+        proxied = url.startswith("proxy:")
+        real_url = url[len("proxy:"):] if proxied else url
+        host = ("proxy→" if proxied else "") + real_url.split("/")[2]
         if not _SERVER_SLOTS[url].acquire(timeout=15):
             raise RuntimeError("busy (no free request slot)")
         try:
             remaining = max(5.0, OVERPASS_TOTAL_BUDGET_SECONDS - (time.monotonic() - started))
-            response = requests.post(
-                url,
-                data={"data": query},
-                headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
-                timeout=(8, remaining),
-            )
+            if proxied:
+                response = outbound.via_proxy(real_url, form={"data": query}, timeout=remaining + 5)
+            else:
+                response = requests.post(
+                    real_url,
+                    data={"data": query},
+                    headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
+                    timeout=(8, remaining),
+                )
             response.raise_for_status()
             data = response.json()
             LAST_SERVER_RESULTS[host] = f"ok at {time.strftime('%H:%M:%S')}"
@@ -298,15 +312,16 @@ def _overpass(query: str) -> dict:
         finally:
             _SERVER_SLOTS[url].release()
 
-    pool = ThreadPoolExecutor(max_workers=len(OVERPASS_API_URLS))
-    waiting = list(OVERPASS_API_URLS)
+    servers = _server_order()
+    pool = ThreadPoolExecutor(max_workers=len(servers))
+    waiting = list(servers)
     running: dict = {}
     try:
         while waiting or running:
             remaining = OVERPASS_TOTAL_BUDGET_SECONDS - (time.monotonic() - started)
             if remaining <= 0:
                 for url in running.values():
-                    errors.append(f"{url.split('/')[2]}: no answer")
+                    errors.append(f"{url.replace('proxy:', 'proxy→').split('/')[2]}: no answer")
                 errors.append(f"gave up after {int(OVERPASS_TOTAL_BUDGET_SECONDS)} s")
                 break
             if waiting:
@@ -322,7 +337,7 @@ def _overpass(query: str) -> dict:
                 try:
                     return future.result()
                 except Exception as error:  # noqa: BLE001
-                    errors.append(f"{url.split('/')[2]}: {_short_error(error)}")
+                    errors.append(f"{url.replace('proxy:', 'proxy→').split('/')[2]}: {_short_error(error)}")
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
     raise RuntimeError("OpenStreetMap servers failed: " + " | ".join(errors))
@@ -771,8 +786,21 @@ def diagnose() -> dict[str, Any]:
         except Exception as error:  # noqa: BLE001
             return host, f"{_short_error(error)} after {time.monotonic() - start:.1f} s"
 
-    with ThreadPoolExecutor(max_workers=len(OVERPASS_API_URLS)) as pool:
+    def probe_proxy(url: str) -> tuple[str, str]:
+        host = "proxy→" + url.split("/")[2]
+        start = time.monotonic()
+        try:
+            outbound.via_proxy(url, form={"data": tiny}, timeout=25)
+            return host, f"ok in {time.monotonic() - start:.1f} s"
+        except Exception as error:  # noqa: BLE001
+            return host, f"{_short_error(error)} after {time.monotonic() - start:.1f} s"
+
+    with ThreadPoolExecutor(max_workers=2 * len(OVERPASS_API_URLS)) as pool:
         probes = dict(pool.map(probe, OVERPASS_API_URLS))
+        if outbound.proxy_available():
+            probes.update(dict(pool.map(probe_proxy, OVERPASS_API_URLS)))
+        else:
+            probes["proxy"] = "not configured (set MEILI_PROXY_URL and MEILI_PROXY_SECRET on Render)"
     return {
         "overpass_servers_now": probes,
         "overpass_servers_last_real_request": dict(LAST_SERVER_RESULTS),
