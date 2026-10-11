@@ -152,19 +152,22 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
     return result
 
 
+MAX_AREAS_PER_TRIP = 3
+
+
 def neighbourhoods_along(route_geometries: list[list[tuple[float, float]]]) -> list[dict]:
-    """Up to ~4 distinct neighbourhoods per route (start, middle points, end)."""
+    """Up to 3 distinct neighbourhoods for the whole trip (start, middle, end).
+    Alternative routes run through the same area, so one set of lookups is enough."""
+    main = max((g for g in route_geometries if g), key=len, default=[])
+    if not main:
+        return []
     found: dict[str, dict] = {}
-    for geometry in route_geometries:
-        if not geometry:
-            continue
-        picks = sorted({0, len(geometry) // 3, 2 * len(geometry) // 3, len(geometry) - 1})
-        for index in picks:
-            lon, lat = geometry[index]
-            area = reverse_neighbourhood(lon, lat)
-            if area:
-                found.setdefault(area_key(area["city"], area["name"]), area)
-    return list(found.values())
+    for index in sorted({0, len(main) // 2, len(main) - 1}):
+        lon, lat = main[index]
+        area = reverse_neighbourhood(lon, lat)
+        if area:
+            found.setdefault(area_key(area["city"], area["name"]), area)
+    return list(found.values())[:MAX_AREAS_PER_TRIP]
 
 
 # ---------------------------------------------------------- 2. news search
@@ -229,7 +232,7 @@ def search_news_google(name: str, city: str, country_code: str = "") -> list[dic
 def fetch_article_text(url: str, limit: int = 5000) -> str:
     """Readable text of an article page (best effort, first `limit` chars)."""
     try:
-        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=12)
+        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=6)
         response.raise_for_status()
     except Exception:  # noqa: BLE001
         return ""
@@ -261,17 +264,24 @@ def _ai_complete(system: str, user: str) -> str:
         # Required by GitHub's models API (without them it answers "OK").
         headers["Accept"] = "application/vnd.github+json"
         headers["X-GitHub-Api-Version"] = "2022-11-28"
-    response = requests.post(
-        url,
-        headers=headers,
-        json={"model": AI_MODEL, "max_tokens": 500, "temperature": 0.1,
-              "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]},
-        timeout=90,
-    )
+    payload = {"model": AI_MODEL, "max_tokens": 500, "temperature": 0.1,
+               "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+    # Follow redirects ourselves and keep it a POST: the default behaviour
+    # turns a redirected POST into a GET, which never reaches the model.
+    hops = []
+    for _ in range(4):
+        response = requests.post(url, headers=headers, json=payload, timeout=90, allow_redirects=False)
+        location = response.headers.get("Location")
+        if response.status_code in (301, 302, 303, 307, 308) and location:
+            hops.append(f"{response.status_code} -> {location}")
+            url = requests.compat.urljoin(url, location)
+            continue
+        break
     if response.status_code != 200 or "json" not in response.headers.get("Content-Type", ""):
         raise RuntimeError(
-            f"HTTP {response.status_code} from {url.split('/')[2]} "
+            f"HTTP {response.status_code} from {url} "
             f"({response.headers.get('Content-Type', '?')}): {response.text[:160]!r}"
+            + (f" after redirects {hops}" if hops else "")
         )
     return response.json()["choices"][0]["message"]["content"]
 
@@ -311,28 +321,47 @@ def _seen_date(article: dict) -> Optional[str]:
 # ------------------------------------------------------- 4. store and load
 
 def gather_area(area: dict) -> dict:
-    """News -> AI -> records for one neighbourhood; saves to Supabase."""
+    """News -> AI -> records for one neighbourhood; saves to Supabase.
+    Fast path: quick news source first, articles fetched in parallel, two AI
+    calls at a time. Typically 10-30 seconds per area."""
+    from concurrent.futures import ThreadPoolExecutor as _Pool
+
     db = _db()
     key = area_key(area["city"], area["name"])
     rows: list[dict] = []
-    articles = search_news(area["name"], area["city"])
+    name_plain = _plain(area["name"])
+
+    articles = search_news_google(area["name"], area["city"], area.get("country_code") or "")
     if not articles:
-        articles = search_news_google(area["name"], area["city"], area.get("country_code") or "")
-    for article in articles[: MAX_ARTICLES_PER_AREA * 3]:
-        if len({r["source_url"] for r in rows}) >= MAX_ARTICLES_PER_AREA:
-            break
+        articles = search_news(area["name"], area["city"])
+    # Keep only articles whose headline or snippet mentions the area at all.
+    candidates = [
+        a for a in articles
+        if name_plain in _plain(a.get("title") or "") or name_plain in _plain(a.get("snippet") or "")
+    ][:8] or articles[:6]
+
+    def readable(article: dict) -> tuple[dict, str]:
         text = fetch_article_text(article.get("url") or "")
         if len(text) < 300 and article.get("snippet"):
-            # Article page not readable (e.g. a news-aggregator link): use the
-            # headline and snippet only.
             text = f"{article.get('title', '')}. {article['snippet']}"
-        if _plain(area["name"]) not in _plain(text) and _plain(area["name"]) not in _plain(article.get("title") or ""):
-            continue  # doesn't actually mention the area
+        return article, text
+
+    with _Pool(max_workers=6) as pool:
+        texts = [(a, t) for a, t in pool.map(readable, candidates)
+                 if name_plain in _plain(t) or name_plain in _plain(a.get("title") or "")]
+
+    def extract(item: tuple[dict, str]) -> tuple[dict, list[dict]]:
+        article, text = item
         try:
-            extracted = extract_records(area, article, text)
+            return article, extract_records(area, article, text)
         except Exception as error:  # noqa: BLE001  (rate limit, bad JSON...)
             _log("AI extraction failed", area=area["name"], error=str(error)[:150])
-            continue
+            return article, []
+
+    with _Pool(max_workers=2) as pool:   # stay inside free AI rate limits
+        results = list(pool.map(extract, texts[:MAX_ARTICLES_PER_AREA]))
+
+    for article, extracted in results:
         for record in extracted:
             rows.append({
                 "id": str(uuid.uuid4()),
@@ -348,7 +377,6 @@ def gather_area(area: dict) -> dict:
                 "verification_weight": AUTO_VERIFICATION_WEIGHT,
                 "model": f"{AI_PROVIDER}:{AI_MODEL}",
             })
-        time.sleep(2)  # stay inside free AI rate limits
     if db is not None:
         if rows:
             db.table(RECORDS_TABLE).insert(rows).execute()
@@ -462,7 +490,7 @@ def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> dict:
     key = _trip_key(route_geometries)
     job = _trip_jobs.get(key)
     if job and (job["state"] == "running" or time.time() - job.get("finished_at", 0) < 3600):
-        return {"status": job["state"] if job["state"] == "running" else job["result"],
+        return {"status": "gathering" if job["state"] == "running" else job["result"],
                 "areas_checked": list(job["areas"])}
 
     job = {"state": "running", "areas": [], "result": "ready"}
