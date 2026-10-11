@@ -62,7 +62,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Russafa",
@@ -126,7 +129,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Russafa",
@@ -190,7 +196,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -255,7 +264,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -319,7 +331,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "El Carme / Ciutat Vella",
@@ -383,7 +398,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.3,
+    "audit_note": "unverified claim from a 'dangerous neighbourhoods' style site",
+    "coverage": "area"
   },
   {
     "area": "El Cabanyal",
@@ -446,7 +464,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "El Cabanyal",
@@ -509,7 +530,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "El Cabanyal",
@@ -574,7 +598,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "El Cabanyal",
@@ -637,7 +664,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Malvarrosa / Beachfront",
@@ -700,7 +730,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.3,
+    "audit_note": "unverified claim from a 'dangerous neighbourhoods' style site",
+    "coverage": "area"
   },
   {
     "area": "Malvarrosa / Beachfront",
@@ -764,7 +797,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Benimaclet",
@@ -827,7 +863,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Benimaclet",
@@ -890,7 +929,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Benimaclet",
@@ -953,7 +995,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Extramurs",
@@ -1018,7 +1063,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Patraix",
@@ -1082,7 +1130,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Orriols",
@@ -1146,7 +1197,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Orriols",
@@ -1210,7 +1264,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Orriols",
@@ -1272,7 +1329,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Estació del Nord / Bus Station",
@@ -1336,7 +1396,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Estació del Nord / Bus Station",
@@ -1399,7 +1462,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Jardí del Túria",
@@ -1499,7 +1565,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Jardí del Túria",
@@ -1598,7 +1667,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "La Saïdia",
@@ -1663,7 +1735,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.7,
+    "audit_note": "aggregated resident ratings on a property site",
+    "coverage": "area"
   },
   {
     "area": "La Saïdia",
@@ -1729,7 +1804,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Algirós",
@@ -1792,7 +1870,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.7,
+    "audit_note": "aggregated resident ratings on a property site",
+    "coverage": "area"
   },
   {
     "area": "Torrefiel",
@@ -1856,7 +1937,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Torrefiel",
@@ -1918,7 +2002,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Quatre Carreres",
@@ -1982,7 +2069,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.7,
+    "audit_note": "aggregated resident ratings on a property site",
+    "coverage": "area"
   },
   {
     "area": "Nazaret",
@@ -2045,7 +2135,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "Nazaret",
@@ -2109,7 +2202,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Nazaret",
@@ -2171,7 +2267,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "area": "Nazaret",
@@ -2233,7 +2332,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "area": "El Grau",
@@ -2296,7 +2398,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "El Grau",
@@ -2358,7 +2463,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "official data, police or academic survey",
+    "coverage": "area"
   },
   {
     "area": "Mestalla",
@@ -2422,7 +2530,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.6,
+    "audit_note": "travel or opinion site, not residents or official data",
+    "coverage": "area"
   },
   {
     "area": "Marina / Port (America's Cup)",
@@ -2485,7 +2596,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "Ayora",
@@ -2553,7 +2667,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 0.8,
+    "audit_note": "other source",
+    "coverage": "area"
   },
   {
     "area": "La Saïdia",
@@ -2619,7 +2736,10 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   },
   {
     "area": "El Cabanyal",
@@ -2686,6 +2806,9 @@
       "method": "any_circle_contains_route_point",
       "distance_fade": "linear_to_zero_at_radius",
       "boundary_note": "Circle approximates the named place/area; replace with an official polygon or OSM geometry when available."
-    }
+    },
+    "verification_weight": 1.0,
+    "audit_note": "local news",
+    "coverage": "area"
   }
 ]
