@@ -1,8 +1,13 @@
 name: Prefill city map tiles
 
 # Downloads map data for priority cities into Meili's tile cache, so
-# routes there are instant from the first request. Runs on the 1st of
+# routes there are fast from the very first request. Runs on the 1st of
 # every month (tiles refresh after 30 days) and can be run by hand.
+# Cities already filled are skipped tile by tile, so re-runs are cheap.
+#
+# To add a city: add a line "name south west north east" (decimal
+# degrees, each side under 0.3 degrees). Keep to the central area people
+# actually walk in -- every 0.01 x 0.01 degree square is one tile.
 on:
   schedule:
     - cron: "0 3 1 * *"
@@ -11,13 +16,22 @@ on:
 jobs:
   prefill:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     strategy:
       max-parallel: 1          # one city at a time, to be polite to Overpass
+      fail-fast: false         # one city failing must not stop the others
       matrix:
         city:
-          # name, south, west, north, east   (each side under 0.3 degrees)
-          - "valencia 39.42 -0.43 39.51 -0.32"
+          - "valencia   39.42  -0.43   39.51  -0.32"
+          - "castellon  39.96  -0.08   40.01  -0.02"
+          - "madrid     40.38  -3.75   40.48  -3.64"
+          - "barcelona  41.35   2.10   41.43   2.22"
+          - "milan      45.43   9.13   45.51   9.25"
+          - "rome       41.86  12.44   41.93  12.54"
+          - "lisbon     38.70  -9.20   38.76  -9.10"
+          - "paris      48.82   2.25   48.90   2.42"
+          - "london     51.48  -0.20   51.54  -0.05"
+          - "beijing    39.87 116.28   40.01 116.47"
     steps:
       - name: Prefill ${{ matrix.city }}
         env:
@@ -30,6 +44,13 @@ jobs:
           echo "Waking the backend..."
           curl -s --max-time 120 --retry 3 --retry-delay 20 "$api/health" > /dev/null
 
+          # Wait if another prefill is still running on the server.
+          for i in $(seq 1 60); do
+            state=$(curl -s --max-time 60 "$api/tiles/prefill/status")
+            echo "$state" | grep -q '"state":"running"' || break
+            echo "Another prefill is running, waiting..."; sleep 60
+          done
+
           echo "Starting prefill for $name"
           curl -s --max-time 60 -X POST "$api/tiles/prefill" \
             -H "Content-Type: application/json" \
@@ -37,17 +58,21 @@ jobs:
             -d "{\"south\":$south,\"west\":$west,\"north\":$north,\"east\":$east}"
           echo
 
-          for i in $(seq 1 110); do
+          for i in $(seq 1 140); do
             sleep 60
             status=$(curl -s --max-time 60 "$api/tiles/prefill/status")
             echo "$status"
             if echo "$status" | grep -q '"state":"finished"'; then
               if echo "$status" | grep -q '"errors":\[\]'; then
                 echo "Done: $name"
-                exit 0
+              else
+                echo "::warning::$name finished with some errors (see above). Re-running the workflow retries only the missing tiles."
               fi
-              echo "::warning::$name finished with some errors (see above)."
               exit 0
+            fi
+            if echo "$status" | grep -q '"state":"idle"'; then
+              echo "::error::The backend restarted during the prefill of $name. Run the workflow again; finished tiles are kept."
+              exit 1
             fi
           done
           echo "::error::Prefill for $name did not finish in time."
