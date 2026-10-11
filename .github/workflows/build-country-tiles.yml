@@ -1,0 +1,57 @@
+name: Build country map tiles
+
+# Builds Meili's map data for whole countries from OpenStreetMap extracts
+# (Geofabrik), so searches never depend on the public Overpass servers.
+# Runs on the 2nd of each month (OpenStreetMap changes), or by hand.
+#
+# To add a country, add its Geofabrik path (see download.geofabrik.de),
+# e.g. "europe/italy". Watch the size line in each run's log: the Supabase
+# free plan has 1000 MB of storage in total.
+on:
+  schedule:
+    - cron: "0 2 2 * *"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      max-parallel: 1      # border blocks are merged, so one country at a time
+      fail-fast: false
+      matrix:
+        region:
+          - europe/spain
+          - europe/portugal
+          - europe/slovenia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q osmium-tool
+          pip install requests
+      - name: Download and filter ${{ matrix.region }}
+        run: |
+          set -e
+          name=$(basename "${{ matrix.region }}")
+          curl -L --fail --retry 3 -o country.osm.pbf \
+            "https://download.geofabrik.de/${{ matrix.region }}-latest.osm.pbf"
+          ls -lh country.osm.pbf
+          osmium tags-filter country.osm.pbf \
+            w/lit n/highway=street_lamp \
+            nwr/amenity=cafe,restaurant,fast_food,pharmacy,hospital,clinic,doctors,police,fire_station,bar,pub,nightclub \
+            nwr/shop=convenience,supermarket nwr/tourism=hotel,hostel,guest_house \
+            -o filtered.osm.pbf -O
+          rm country.osm.pbf
+          osmium export filtered.osm.pbf -f geojsonseq -a type,id -o filtered.geojsonseq -O
+          ls -lh filtered.geojsonseq
+          echo "COUNTRY=$name" >> "$GITHUB_ENV"
+      - name: Build tiles and upload to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY"
