@@ -255,6 +255,8 @@ def _recent_failure(path: str) -> Optional[str]:
 
 
 def _is_stale(tile: dict) -> bool:
+    if tile.get("source") == "extract":
+        return False   # rebuilt monthly by the country workflow, never via Overpass
     return time.time() - float(tile.get("fetched_at", 0)) > TILE_MAX_AGE_SECONDS
 
 
@@ -452,6 +454,48 @@ FETCHERS: dict[str, Callable[[list[TileId]], dict[TileId, dict]]] = {
 
 # ---------------------------------------------------------------- loading
 
+BLOCK_TILES = 5                  # must match tools/build_country_tiles.py
+_block_cache: "OrderedDict[str, Optional[dict]]" = OrderedDict()
+_block_lock = threading.Lock()
+EMPTY_BLOCK_MARKER: dict = {}
+
+
+def _block_key(tile: TileId) -> str:
+    return f"{tile[0] // BLOCK_TILES}_{tile[1] // BLOCK_TILES}"
+
+
+def _load_block(key: str) -> Optional[dict]:
+    """Country-extract block (0.1 degree) from Supabase, cached in memory.
+    None means no block exists for that area (not built from an extract)."""
+    with _block_lock:
+        if key in _block_cache:
+            _block_cache.move_to_end(key)
+            return _block_cache[key]
+    data = STORE.storage_get(f"v1/blocks/{key}.json.gz")
+    with _block_lock:
+        _block_cache[key] = data
+        while len(_block_cache) > 6:      # blocks can be large; keep few
+            _block_cache.popitem(last=False)
+    return data
+
+
+def _tiles_from_blocks(tiles: list[TileId]) -> dict[TileId, dict]:
+    """Tiles answered by country extracts. A tile inside an existing block but
+    not listed in it has no mapped features: returned as empty, not missing."""
+    found: dict[TileId, dict] = {}
+    for key in sorted({_block_key(t) for t in tiles}):
+        block = _load_block(key)
+        if not block:
+            continue
+        stored = block.get("tiles") or {}
+        for tile in tiles:
+            if _block_key(tile) != key:
+                continue
+            data = stored.get(tile_key(tile)) or {"lit_ways": [], "street_lamps": [], "places": []}
+            found[tile] = {**data, "fetched_at": block.get("fetched_at", time.time()), "source": "extract"}
+    return found
+
+
 def _load_from_storage(layer: str, tiles: list[TileId]) -> dict[TileId, dict]:
     found: dict[TileId, dict] = {}
     pending = []
@@ -470,6 +514,14 @@ def _load_from_storage(layer: str, tiles: list[TileId]) -> dict[TileId, dict]:
         if data is not None:
             STORE.memory_put(_path(layer, tile), data)
             found[tile] = data
+
+    # Not stored as single tiles: try Meili's own country-extract blocks.
+    if layer == "osm":
+        still_missing = [t for t in tiles if t not in found]
+        if still_missing:
+            for tile, data in _tiles_from_blocks(still_missing).items():
+                STORE.memory_put(_path(layer, tile), data)
+                found[tile] = data
     return found
 
 

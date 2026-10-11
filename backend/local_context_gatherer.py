@@ -193,6 +193,39 @@ def search_news(name: str, city: str) -> list[dict]:
     return unique
 
 
+GOOGLE_NEWS_RSS = "https://news.google.com/rss/search"
+
+
+def search_news_google(name: str, city: str, country_code: str = "") -> list[dict]:
+    """Backup news search (Google News RSS): titles, sources and dates."""
+    import xml.etree.ElementTree as ET
+    params = {"q": f'"{name}" "{city}" when:1y', "hl": "en", "gl": (country_code or "US").upper(),
+              "ceid": f"{(country_code or 'US').upper()}:en"}
+    try:
+        response = requests.get(GOOGLE_NEWS_RSS, params=params, headers={"User-Agent": USER_AGENT}, timeout=15)
+        response.raise_for_status()
+        root = ET.fromstring(response.content)
+    except Exception as error:  # noqa: BLE001
+        _log("backup news search failed", area=name, error=str(error)[:150])
+        return []
+    articles = []
+    for item in root.iter("item"):
+        title = (item.findtext("title") or "").strip()
+        description = re.sub(r"<[^>]+>", " ", item.findtext("description") or "")
+        source = item.find("source")
+        pub = item.findtext("pubDate") or ""
+        try:
+            seen = datetime.strptime(pub[:16], "%a, %d %b %Y").strftime("%Y%m%dT000000Z")
+        except ValueError:
+            seen = ""
+        articles.append({
+            "title": title, "url": item.findtext("link"), "seendate": seen,
+            "domain": (source.text if source is not None else "news"),
+            "snippet": " ".join(html.unescape(description).split()),
+        })
+    return articles[:25]
+
+
 def fetch_article_text(url: str, limit: int = 5000) -> str:
     """Readable text of an article page (best effort, first `limit` chars)."""
     try:
@@ -223,9 +256,14 @@ def _ai_complete(system: str, user: str) -> str:
     url = ("https://models.github.ai/inference/chat/completions" if AI_PROVIDER == "github"
            else os.getenv("OLLAMA_URL", "http://localhost:11434") + "/v1/chat/completions")
     token = os.getenv("GITHUB_MODELS_TOKEN") or os.getenv("GITHUB_TOKEN") or "local"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    if AI_PROVIDER == "github":
+        # Required by GitHub's models API (without them it answers "OK").
+        headers["Accept"] = "application/vnd.github+json"
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
     response = requests.post(
         url,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        headers=headers,
         json={"model": AI_MODEL, "max_tokens": 500, "temperature": 0.1,
               "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]},
         timeout=90,
@@ -278,12 +316,18 @@ def gather_area(area: dict) -> dict:
     key = area_key(area["city"], area["name"])
     rows: list[dict] = []
     articles = search_news(area["name"], area["city"])
+    if not articles:
+        articles = search_news_google(area["name"], area["city"], area.get("country_code") or "")
     for article in articles[: MAX_ARTICLES_PER_AREA * 3]:
         if len({r["source_url"] for r in rows}) >= MAX_ARTICLES_PER_AREA:
             break
         text = fetch_article_text(article.get("url") or "")
-        if len(text) < 300 or _plain(area["name"]) not in _plain(text):
-            continue  # paywalled, empty, or doesn't actually mention the area
+        if len(text) < 300 and article.get("snippet"):
+            # Article page not readable (e.g. a news-aggregator link): use the
+            # headline and snippet only.
+            text = f"{article.get('title', '')}. {article['snippet']}"
+        if _plain(area["name"]) not in _plain(text) and _plain(area["name"]) not in _plain(article.get("title") or ""):
+            continue  # doesn't actually mention the area
         try:
             extracted = extract_records(area, article, text)
         except Exception as error:  # noqa: BLE001  (rate limit, bad JSON...)
@@ -498,6 +542,7 @@ def diagnose() -> dict:
     return {
         "place_names_nominatim": timed(nominatim),
         "news_gdelt": ("via proxy -> " if outbound.proxy_available() else "direct -> ") + timed(gdelt),
+        "news_backup_google": timed(lambda: f"{len(search_news_google('Center', 'Ljubljana', 'SI'))} articles"),
         "ai_model": f"{AI_PROVIDER}:{AI_MODEL} -> " + timed(ai),
         "database_supabase": timed(supabase),
         "recent_activity": list(GATHER_LOG)[:15],
