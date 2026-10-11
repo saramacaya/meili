@@ -45,6 +45,7 @@ import hashlib
 import json as _json
 from collections import OrderedDict
 import tile_cache
+import local_context_gatherer
 from fast_geo import RouteIndex
 
 from social_context_analysis import (
@@ -3975,6 +3976,16 @@ def compare_routes(request: RouteComparisonRequest):
     ) + 25
     area = tile_cache.load_area(route_geometries, data_padding_meters)
 
+    # Local context: stored records near these routes (reviewed + automatic),
+    # and background gathering for areas Meili knows nothing about yet.
+    all_points = [p for g in route_geometries for p in g]
+    context_bbox = (
+        min(p[1] for p in all_points), min(p[0] for p in all_points),
+        max(p[1] for p in all_points), max(p[0] for p in all_points),
+    )
+    auto_records = local_context_gatherer.load_records_near(context_bbox)
+    local_context_status = local_context_gatherer.ensure_context(route_geometries)
+
     shared_source_errors: dict[str, str] = {}
     if area["osm_error"]:
         shared_source_errors["osm_lit"] = area["osm_error"]
@@ -4120,8 +4131,10 @@ def compare_routes(request: RouteComparisonRequest):
                 route_geometry=route.geometry,
                 departure_datetime=request.departure_datetime,
                 route_duration_seconds=route_duration_seconds,
-                city=request.city
+                city=request.city,
+                extra_records=auto_records,
             )
+            social_context_analysis["local_context_status"] = local_context_status
 
             valuation = value_route_sections(
                 lighting_analysis=lighting_analysis,

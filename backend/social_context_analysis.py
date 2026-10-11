@@ -535,91 +535,194 @@ def relevant_city_ids_for_route(
     return sorted(set(relevant))
 
 
+# ---------------------------------------------------------------------------
+# Area influence model (v2)
+#
+# Each record describes an area as a circle (centre + radius). Influence is
+# full in the core of the circle and fades smoothly to zero at its edge, and
+# it is measured per route section, so a route that only grazes an area is
+# barely affected and a route through its centre is affected most.
+# ---------------------------------------------------------------------------
+
+SECTION_COUNT = 10
+CORE_FRACTION = 0.5            # inner half of the radius = full influence
+MIN_ROUTE_INFLUENCE = 0.25     # below this the area is not shown at all
+CITY_WIDE_RADIUS_METERS = 3000 # larger circles are city background, not areas
+SECTION_CAP_NEGATIVE = -8.0
+SECTION_CAP_POSITIVE = 4.0
+MAX_POINTS_SPECIFIC = 10.0     # point / street evidence
+MAX_POINTS_AREA = 5.0          # neighbourhood-level evidence
+RECENCY_HALF_LIFE_MONTHS = 18.0
+MAX_AREAS_SHOWN = 3
+
+EVIDENCE_STRENGTH = {
+    "confirmed_incident": 1.0,
+    "municipal_data": 1.0,
+    "resident_complaint": 0.7,
+    "perception_only": 0.4,
+}
+SENTIMENT_SIGN = {"negative": -1.0, "positive": 1.0, "mixed": -0.3, "neutral": 0.0}
+
+
+def area_weight(distance: float, radius: float) -> float:
+    """1 in the core, smooth fade to 0 at the edge, 0 outside."""
+    core = radius * CORE_FRACTION
+    if distance <= core:
+        return 1.0
+    if distance >= radius:
+        return 0.0
+    return 0.5 * (1.0 + math.cos(math.pi * (distance - core) / (radius - core)))
+
+
+def _densify(route: list[tuple[float, float]], step_m: float = 25.0) -> list[tuple[float, float]]:
+    out: list[tuple[float, float]] = []
+    for a, b in zip(route, route[1:]):
+        d = _distance_meters(a, b)
+        n = max(1, int(d / step_m))
+        for i in range(n):
+            out.append((a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n))
+    out.append(route[-1])
+    return out
+
+
+def _recency_weight(post_date: str | None, now: datetime) -> float:
+    if not post_date:
+        return 0.6
+    try:
+        posted = datetime.fromisoformat(str(post_date)[:10])
+    except ValueError:
+        return 0.6
+    months = max(0.0, (now.replace(tzinfo=None) - posted).days / 30.4)
+    return 0.5 ** (months / RECENCY_HALF_LIFE_MONTHS)
+
+
+def _record_strength(record: dict[str, Any], now: datetime) -> float:
+    tier = EVIDENCE_STRENGTH.get(str(record.get("evidence_tier") or ""), 0.3)
+    try:
+        confidence = max(1.0, min(3.0, float(record.get("confidence") or 2))) / 3.0
+    except (TypeError, ValueError):
+        confidence = 2 / 3
+    # Automatically gathered records count less until reviewed or confirmed
+    # by user ratings (verification_weight 0.7 -> up to 1.0).
+    try:
+        verification = max(0.0, min(1.0, float(record.get("verification_weight", 1.0))))
+    except (TypeError, ValueError):
+        verification = 1.0
+    return tier * confidence * _recency_weight(record.get("post_date"), now) * verification
+
+
+def _section_influence(record, samples) -> tuple[list[float], dict[str, Any] | None, int]:
+    """Per-section influence of the record's best circle, plus that circle and
+    the index of the route sample closest to its centre."""
+    best = None
+    for location in record.get("locations") or []:
+        if location.get("type") != "circle":
+            continue
+        try:
+            centre = (float(location["longitude"]), float(location["latitude"]))
+            radius = float(location["radius_meters"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if radius <= 0:
+            continue
+        weights = [area_weight(_distance_meters(p, centre), radius) for p in samples]
+        n = len(samples)
+        sections = []
+        for k in range(SECTION_COUNT):
+            chunk = weights[k * n // SECTION_COUNT:max(k * n // SECTION_COUNT + 1, (k + 1) * n // SECTION_COUNT)]
+            sections.append(sum(chunk) / len(chunk) if chunk else 0.0)
+        if best is None or max(sections) > max(best[0]):
+            closest = max(range(n), key=lambda i: weights[i])
+            best = (sections, location, closest)
+    if best is None:
+        return [0.0] * SECTION_COUNT, None, 0
+    return best
+
+
+def _area_key(record: dict[str, Any]) -> str:
+    name = str(record.get("neighbourhood") or record.get("area") or "this area")
+    import re
+    first = re.split(r"\s*(?:/|\(|,|\s-\s|–)\s*", name)[0].strip()
+    import unicodedata
+    plain = "".join(c for c in unicodedata.normalize("NFD", first) if unicodedata.category(c) != "Mn")
+    return plain.lower()
+
+
+def _display_name(records: list[dict[str, Any]]) -> str:
+    names = [str(r.get("area") or r.get("neighbourhood") or "this area").split("/")[0].strip() for r in records]
+    return min(names, key=len) if names else "this area"
+
+
+def load_area_summaries(city_id: str) -> dict[str, Any]:
+    """AI-written one-line summaries per area (generated offline, optional)."""
+    path = DATA_ROOT / city_id / "area_summaries.json"
+    try:
+        return _read_json(path) if path.exists() else {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def analyse_social_context(
     *,
     route_geometry: list[tuple[float, float]],
     departure_datetime: datetime,
     route_duration_seconds: int,
     city: str | None = None,
+    extra_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Return the opinion component for one route.
+    """Opinion / incident component for one route (area influence model v2).
 
-    Evidence is selected purely from the route's own coordinates: every
-    registered municipality's opinion records are checked geometrically, and
-    whichever ones actually intersect the route contribute. ``city`` is
-    accepted for backward compatibility with older callers but is ignored --
-    it is exactly the frontend-supplied value that caused Parque Ribalta
-    evidence to be missed when a route was mis-tagged as the wrong city.
-
-    Neighbourhood-level and unrecognised ("unknown") precision evidence is
-    matched the same way (still gated by its own authored radius, still
-    time-weighted) but its numeric ``effect_points`` is forced to zero: it
-    can never move a route's score or turn a section red, and it never
-    appears in ``matched_records_display_eligible``. It is still returned,
-    both in ``matched_records`` (audit trail) and grouped by area in
-    ``neighbourhood_context_records``, so the frontend can show it as plain
-    background text in "Why this route?" -- never as if it were evidence
-    about one specific street.
-
-    The supplied route must be sampled closely enough for area matching; Meili's
-    existing route geometries meet that requirement.
+    * Influence is centre-weighted and per section (see ``area_weight``).
+    * Records are grouped per area; at most ``MAX_AREAS_SHOWN`` areas are
+      returned in ``area_context`` (most influential first), plus at most one
+      city-wide background line in ``city_context``.
+    * Every record can move the score of the sections it actually covers, in
+      proportion to evidence strength, confidence, recency, time of day and
+      influence. Per-section totals are capped at -8 / +4 points.
     """
     if not route_geometry:
         raise ValueError("route_geometry cannot be empty")
     if route_duration_seconds <= 0:
         raise ValueError("route_duration_seconds must be positive")
 
+    samples = _densify(route_geometry) if len(route_geometry) > 1 else list(route_geometry)
+    now = departure_datetime
     matched: list[dict[str, Any]] = []
+    city_background: list[dict[str, Any]] = []
     eligible_count = 0
     checked_city_ids: list[str] = []
+    section_totals = [0.0] * SECTION_COUNT
+    section_ids: list[list[str]] = [[] for _ in range(SECTION_COUNT)]
+    summaries_by_city: dict[str, dict[str, Any]] = {}
 
-    for city_id, opinions in load_all_opinions().items():
+    sources = dict(load_all_opinions())
+    if extra_records:
+        sources["auto"] = extra_records   # automatically gathered (Supabase)
+    for city_id, opinions in sources.items():
         checked_city_ids.append(city_id)
-
         for record in opinions:
             if not record.get("rating_eligible", False):
                 continue
             eligible_count += 1
-            location_match = _best_location_match(record, route_geometry)
-            if location_match is None:
+            sections, location, closest = _section_influence(record, samples)
+            influence = max(sections)
+            if location is None or influence < MIN_ROUTE_INFLUENCE:
                 continue
 
-            arrival = _arrival_time(
-                location_match["route_point_index"],
-                len(route_geometry),
-                departure_datetime,
-                route_duration_seconds,
-            )
+            arrival = _arrival_time(closest, len(samples), departure_datetime, route_duration_seconds)
             time_weight = _time_weight(record.get("time_context"), arrival)
-            base_effect = float(record.get("maximum_exact_time_effect_points") or 0.0)
-            raw_effect = base_effect * location_match["distance_weight"] * time_weight
-
-            precision = str(location_match["location"].get("precision") or "").lower()
+            sentiment = str(record.get("overall_sentiment") or "neutral").lower()
+            precision = str(location.get("precision") or "").lower()
             precision_class = location_precision_class(precision)
-            is_mappable = precision_class in MAPPABLE_PRECISION_CLASSES
+            radius = float(location.get("radius_meters") or 0)
 
-            # Neighbourhood-level and unrecognised evidence never receives a
-            # direct numerical effect -- it can still be audited/shown as
-            # text context below, but it must never move a score or a
-            # section colour on its own.
-            effect = raw_effect if is_mappable else 0.0
-
-            # A neutral or malformed record can remain auditable without
-            # changing score -- but only skip it entirely (don't even keep
-            # it for text context) if it had no effect to begin with *and*
-            # isn't mappable either, i.e. there's nothing useful to show.
-            if effect == 0 and raw_effect == 0:
-                continue
-
-            match_strength = "specific" if is_mappable else "broad_context"
-
-            matched.append({
+            entry = {
                 "city_id": city_id,
                 "record_id": record.get("record_id"),
                 "area": record.get("area"),
                 "neighbourhood": record.get("neighbourhood"),
                 "place": record.get("street_or_place"),
-                "sentiment": record.get("overall_sentiment"),
+                "sentiment": sentiment,
                 "evidence_tier": record.get("evidence_tier"),
                 "summary": record.get("opinion_summary"),
                 "source_platform": record.get("source_platform"),
@@ -627,75 +730,111 @@ def analyse_social_context(
                 "post_date": record.get("post_date"),
                 "confidence": record.get("confidence"),
                 "arrival_time": arrival.isoformat(),
-                "nearest_distance_meters": round(location_match["distance_meters"], 1),
-                "distance_weight": round(location_match["distance_weight"], 3),
+                "influence": round(influence, 3),
                 "time_weight": round(time_weight, 3),
-                "effect_points": round(effect, 3),
-                "uncapped_raw_effect_points": round(raw_effect, 3),
                 "precision": precision or None,
                 "precision_class": precision_class,
-                "match_strength": match_strength,
-            })
+                "origin": record.get("origin") or "reviewed",
+            }
 
-    uncapped = sum(item["effect_points"] for item in matched)
-    capped = max(-3.0, min(2.0, uncapped))
-    display_eligible = sorted(
-        (item for item in matched if item["match_strength"] == "specific"),
-        key=lambda item: abs(item["effect_points"]),
-        reverse=True,
-    )
-    negative = sorted(
-        (item for item in matched if item["effect_points"] < 0),
-        key=lambda item: item["effect_points"],
-    )
-    positive = sorted(
-        (item for item in matched if item["effect_points"] > 0),
-        key=lambda item: item["effect_points"],
-        reverse=True,
-    )
+            # Whole-city records (e.g. a city-wide survey) are background only.
+            # Decided by what the record covers, not by circle size alone: a big
+            # district like Marjaleria is still an area.
+            if record.get("coverage") == "city" or radius >= 5000:
+                entry["effect_points"] = 0.0
+                entry["match_strength"] = "city_background"
+                city_background.append(entry)
+                continue
 
-    # Neighbourhood-level context, grouped by area, for the "Why this
-    # route?" panel. "unknown"-precision records are intentionally excluded
-    # here (not just from the map): we can't honestly label context by
-    # neighbourhood name for evidence whose own geography is ambiguous.
-    neighbourhood_groups: dict[str, dict[str, Any]] = {}
+            specific = precision_class in MAPPABLE_PRECISION_CLASSES
+            max_points = MAX_POINTS_SPECIFIC if specific else MAX_POINTS_AREA
+            strength = _record_strength(record, now) * time_weight
+            sign = SENTIMENT_SIGN.get(sentiment, 0.0)
+            per_section = [sign * max_points * strength * w for w in sections]
+            for k, effect in enumerate(per_section):
+                if abs(effect) >= 0.05:
+                    section_totals[k] += effect
+                    if entry["record_id"]:
+                        section_ids[k].append(str(entry["record_id"]))
+
+            entry["section_effects"] = [round(e, 2) for e in per_section]
+            entry["effect_points"] = round(sum(per_section) / SECTION_COUNT, 3)
+            entry["match_strength"] = "specific" if specific else "area"
+            matched.append(entry)
+
+    section_adjustments = [
+        round(max(SECTION_CAP_NEGATIVE, min(SECTION_CAP_POSITIVE, t)), 2) for t in section_totals
+    ]
+
+    # ---- one entry per area -------------------------------------------------
+    groups: dict[str, list[dict[str, Any]]] = {}
     for item in matched:
-        if item["precision_class"] != "neighbourhood":
-            continue
-        key = item.get("neighbourhood") or item.get("area") or "this area"
-        group = neighbourhood_groups.setdefault(key, {
-            "area": key,
-            "records": [],
+        groups.setdefault(_area_key(item), []).append(item)
+
+    area_context = []
+    for key, records in groups.items():
+        records.sort(key=lambda r: (r["influence"], abs(r["effect_points"])), reverse=True)
+        concerns = sum(1 for r in records if r["sentiment"] in ("negative", "mixed"))
+        positives = sum(1 for r in records if r["sentiment"] == "positive")
+        net = sum(SENTIMENT_SIGN.get(r["sentiment"], 0.0) * r["influence"] for r in records)
+        verdict = (
+            "concerns" if net < -0.15 and positives == 0
+            else "positive" if net > 0.15 and concerns == 0
+            else "mixed"
+        )
+        influence = max(r["influence"] for r in records)
+        city_id = records[0]["city_id"]
+        if city_id not in summaries_by_city:
+            summaries_by_city[city_id] = load_area_summaries(city_id)
+        ai = summaries_by_city[city_id].get(key) or {}
+        area_context.append({
+            "area": _display_name(records),
+            "area_key": key,
+            "verdict": verdict,
+            "concern_count": concerns,
+            "positive_count": positives,
+            "influence": round(influence, 2),
+            "influence_label": "strong" if influence >= 0.7 else "some" if influence >= 0.45 else "slight",
+            "score_effect_points": round(sum(r["effect_points"] for r in records), 2),
+            "summary": ai.get("summary") or records[0]["summary"],
+            "summary_source": "ai_from_records" if ai.get("summary") else "top_record",
+            "auto_gathered": all(r.get("origin") == "auto" for r in records),
+            "sources": [
+                {k: r.get(k) for k in ("record_id", "summary", "source_platform", "source_url", "post_date", "sentiment", "evidence_tier", "origin")}
+                for r in records
+            ],
         })
-        group["records"].append(item)
+    area_context.sort(key=lambda g: (g["influence"], abs(g["score_effect_points"])), reverse=True)
 
-    neighbourhood_context_records = sorted(
-        neighbourhood_groups.values(),
-        key=lambda group: len(group["records"]),
-        reverse=True,
-    )
+    city_context = None
+    if city_background:
+        top = max(city_background, key=lambda r: (r.get("confidence") or 0))
+        city_context = {k: top.get(k) for k in ("area", "summary", "sentiment", "source_platform", "source_url", "post_date")}
 
+    total = sum(section_adjustments) / SECTION_COUNT
     return {
+        "model_version": "area_influence_v2",
         "city_ids_checked": sorted(checked_city_ids),
         "requested_city": city,
-        "score_adjustment_points": round(capped, 3),
-        "uncapped_adjustment_points": round(uncapped, 3),
-        "component_limits": {"minimum": -3.0, "maximum": 2.0},
+        "score_adjustment_points": round(total, 3),
+        "section_adjustments": section_adjustments,
+        "section_record_ids": section_ids,
+        "component_limits": {"section_minimum": SECTION_CAP_NEGATIVE, "section_maximum": SECTION_CAP_POSITIVE},
         "rating_eligible_records_checked": eligible_count,
         "matched_record_count": len(matched),
-        "matched_records_display_eligible": display_eligible,
-        "strongest_negative_factors": negative[:3],
-        "strongest_positive_factors": positive[:3],
         "matched_records": matched,
-        "neighbourhood_context_records": neighbourhood_context_records,
+        "area_context": area_context[:MAX_AREAS_SHOWN],
+        "more_areas_count": max(0, len(area_context) - MAX_AREAS_SHOWN),
+        "city_context": city_context,
+        # Backward compatibility for older app versions:
+        "matched_records_display_eligible": [m for m in matched if m["match_strength"] == "specific"],
+        "neighbourhood_context_records": [
+            {"area": g["area"], "records": g["sources"]} for g in area_context[:MAX_AREAS_SHOWN]
+        ],
         "method_note": (
-            "Every geographically matching, rating-eligible opinion from every "
-            "registered municipality contributes -- evidence selection is driven "
-            "entirely by the route's own coordinates, never by a declared city. "
-            "Its pre-audited maximum effect is reduced by distance and time "
-            "mismatch. Neighbourhood-level and unclassified evidence is matched "
-            "and audited the same way but never receives a direct numerical "
-            "effect and is never drawn on the map -- it can only appear as "
-            "plain-text neighbourhood context."
+            "Areas count fully in their core and fade to nothing at their edge, "
+            "measured per route section; routes that only graze an area are not "
+            "affected. Each record's effect depends on evidence type, confidence, "
+            "recency and time of day, and is capped at -8/+4 points per section."
         ),
     }

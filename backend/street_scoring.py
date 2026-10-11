@@ -99,6 +99,14 @@ def _social_effects_by_section(
     effects = [0.0] * SECTION_COUNT
     record_ids: list[list[str]] = [[] for _ in range(SECTION_COUNT)]
 
+    # Area influence model v2 already computes capped per-section effects.
+    if social_context_analysis.get("section_adjustments") is not None:
+        adjustments = list(social_context_analysis["section_adjustments"])[:SECTION_COUNT]
+        adjustments += [0.0] * (SECTION_COUNT - len(adjustments))
+        ids = list(social_context_analysis.get("section_record_ids") or [])[:SECTION_COUNT]
+        ids += [[] for _ in range(SECTION_COUNT - len(ids))]
+        return [float(a) for a in adjustments], ids
+
     for record in social_context_analysis.get("matched_records") or []:
         try:
             arrival = datetime.fromisoformat(record["arrival_time"])
@@ -168,7 +176,7 @@ def value_route_sections(
         "component_weights": {
             "lighting": LIGHTING_WEIGHT,
             "active_places": ACTIVITY_WEIGHT,
-            "social_context": "local adjustment capped at -3/+2 points per section",
+            "social_context": "area evidence, centre-weighted, capped at -8/+4 points per section",
         },
         "sections": sections,
         "method_note": (
