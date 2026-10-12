@@ -44,9 +44,36 @@ MIN_RADIUS_M, MAX_RADIUS_M = 300.0, 1500.0
 RECORDS_TABLE = "area_context_records"
 AREAS_TABLE = "area_context_areas"
 
-AI_PROVIDER = os.getenv("MEILI_AI_PROVIDER", "github").lower()
-AI_MODELS = {"github": "openai/gpt-4o-mini", "ollama": "llama3.1:8b", "anthropic": "claude-haiku-5-5"}
+# AI provider. All except "anthropic" use the same OpenAI-style chat format.
+#   gemini  Google AI Studio free tier  (key: GEMINI_API_KEY)
+#   groq    Groq free tier              (key: GROQ_API_KEY)
+#   github  GitHub Models               (key: GITHUB_MODELS_TOKEN)
+#   ollama  a model on your own computer
+#   anthropic  Claude (paid)            (key: ANTHROPIC_API_KEY)
+# Default: the first provider whose key is set on the server.
+def _default_provider() -> str:
+    for name, env in (("gemini", "GEMINI_API_KEY"), ("groq", "GROQ_API_KEY"),
+                      ("anthropic", "ANTHROPIC_API_KEY"), ("github", "GITHUB_MODELS_TOKEN")):
+        if os.getenv(env):
+            return name
+    return "github"
+
+
+AI_PROVIDER = os.getenv("MEILI_AI_PROVIDER", _default_provider()).lower()
+AI_MODELS = {
+    "gemini": "gemini-3.8-flash",
+    "groq": "llama-3.3-70b-versatile",
+    "github": "openai/gpt-4o-mini",
+    "ollama": "llama3.1:8b",
+    "anthropic": "claude-haiku-5-5",
+}
 AI_MODEL = os.getenv("MEILI_CONTEXT_MODEL", AI_MODELS.get(AI_PROVIDER, ""))
+AI_URLS = {
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    "groq": "https://api.groq.com/openai/v1/chat/completions",
+    "github": "https://models.github.ai/inference/chat/completions",
+}
+AI_KEYS = {"gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY", "github": "GITHUB_MODELS_TOKEN"}
 
 ALLOWED_SENTIMENTS = {"negative", "positive", "mixed"}
 ALLOWED_TIERS = {"confirmed_incident", "resident_complaint", "perception_only", "municipal_data"}
@@ -295,21 +322,20 @@ def _ai_complete(system: str, user: str) -> str:
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": os.getenv("ANTHROPIC_API_KEY", ""), "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": AI_MODEL, "max_tokens": 500, "system": system,
+            json={"model": AI_MODEL, "max_tokens": 2048, "system": system,
                   "messages": [{"role": "user", "content": user}]},
             timeout=60,
         )
         response.raise_for_status()
         return "".join(b.get("text", "") for b in response.json().get("content", []) if b.get("type") == "text")
-    url = ("https://models.github.ai/inference/chat/completions" if AI_PROVIDER == "github"
-           else os.getenv("OLLAMA_URL", "http://localhost:11434") + "/v1/chat/completions")
-    token = os.getenv("GITHUB_MODELS_TOKEN") or os.getenv("GITHUB_TOKEN") or "local"
+    url = AI_URLS.get(AI_PROVIDER) or (os.getenv("OLLAMA_URL", "http://localhost:11434") + "/v1/chat/completions")
+    token = os.getenv(AI_KEYS.get(AI_PROVIDER, ""), "") or os.getenv("GITHUB_TOKEN") or "local"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     if AI_PROVIDER == "github":
         # Required by GitHub's models API (without them it answers "OK").
         headers["Accept"] = "application/vnd.github+json"
         headers["X-GitHub-Api-Version"] = "2022-11-28"
-    payload = {"model": AI_MODEL, "max_tokens": 500, "temperature": 0.1,
+    payload = {"model": AI_MODEL, "max_tokens": 2048, "temperature": 0.1,
                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
     # Follow redirects ourselves and keep it a POST: the default behaviour
     # turns a redirected POST into a GET, which never reaches the model.
@@ -638,8 +664,9 @@ def diagnose() -> dict:
         return f"{len(r.json().get('articles', []))} articles" if r.text.strip().startswith("{") else r.text[:80]
 
     def ai():
-        if AI_PROVIDER == "github" and not (os.getenv("GITHUB_MODELS_TOKEN") or os.getenv("GITHUB_TOKEN")):
-            raise RuntimeError("GITHUB_MODELS_TOKEN is not set on Render")
+        key_name = AI_KEYS.get(AI_PROVIDER)
+        if key_name and not os.getenv(key_name):
+            raise RuntimeError(f"{key_name} is not set on Render")
         return _ai_complete("Reply with the single word: ok", "ping").strip()[:20]
 
     def supabase():
