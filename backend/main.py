@@ -3296,8 +3296,14 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
         if kept and seconds > MAX_DETOUR_RATIO * fastest_seconds:
             continue
         geometry = _decode_polyline(route.get("polyline", {}).get("encodedPolyline") or "")
-        if any(_route_overlap(geometry, other) > 0.9 and _route_overlap(other, geometry) > 0.9
-               for _, other in kept):
+        def same_walk(other_route: dict, other_geometry: list) -> bool:
+            a, b = _route_overlap(geometry, other_geometry), _route_overlap(other_geometry, geometry)
+            other_seconds = max(1, google_duration_to_seconds(other_route.get("duration", "")))
+            similar_time = abs(seconds - other_seconds) / other_seconds <= 0.05
+            # Mostly the same streets, or largely the same streets and the same time.
+            return (a > 0.8 and b > 0.8) or (a > 0.65 and b > 0.65 and similar_time)
+
+        if any(same_walk(other_route, other) for other_route, other in kept):
             continue
         kept.append((route, geometry))
         if len(kept) >= MAX_ROUTE_CANDIDATES:
@@ -4342,7 +4348,7 @@ def compare_routes(request: RouteComparisonRequest):
             raw_scores_to_record.append(raw_route_score)
             for section in valuation["sections"]:
                 section["raw_street_value_score"] = section["street_value_score"]
-                shown = score_calibration.calibrate(section["street_value_score"], calibration_samples, factor)
+                shown = score_calibration.calibrate_section(section["street_value_score"], calibration_samples, factor)
                 section["street_value_score"] = shown
                 section["classification"] = _score_class(shown)
                 section["map_colour"] = _score_colour(shown)

@@ -116,6 +116,18 @@ def calibrate(raw: float, samples: list[float], factor: float = 1.0) -> float:
     return round(max(5.0, min(95.0, score)), 1)
 
 
+SECTION_SCALE = 14.0   # sections vary much more than whole routes: stretch them less
+
+
+def calibrate_section(raw: float, samples: list[float], factor: float = 1.0) -> float:
+    """Same centre as routes, but a gentler curve and a 15-95 range: one quiet
+    tenth of a walk is the weakest stretch, not 'dangerous'."""
+    center = _median(samples) if len(samples) >= 10 else DEFAULT_CENTER
+    score = 100.0 / (1.0 + math.exp(-(raw - center) / SECTION_SCALE))
+    score = 50.0 + (score - 50.0) * factor
+    return round(max(15.0, min(95.0, score)), 1)
+
+
 def describe(samples: list[float]) -> dict[str, Any]:
     n = len(samples)
     if n >= FULL_SAMPLES:
