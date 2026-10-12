@@ -3900,6 +3900,7 @@ class RouteComparisonRequest(BaseModel):
 
 ROUTE_RESULT_CACHE: "OrderedDict[str, tuple[float, dict, dict]]" = OrderedDict()
 ROUTE_RESULT_TTL_SECONDS = 1800
+HEAVY_ROUTE_CACHE: "OrderedDict[str, tuple[float, tuple]]" = OrderedDict()
 
 
 def _route_cache_key(route, request) -> str:
@@ -4220,133 +4221,144 @@ def compare_routes(request: RouteComparisonRequest):
             continue
         try:
             route_duration_seconds = route.estimated_time_minutes * 60
-            route_samples = densify_route(
-                route.geometry,
-                interval_meters=request.sample_interval_meters
-            )
-            source_errors = dict(shared_source_errors)
+            # Heavy part (lighting, lamps, places, satellite data) cached per walk;
+            # refresh checks while local context is gathered only redo the light part.
+            heavy = HEAVY_ROUTE_CACHE.get(route_key)
+            if heavy and time.time() - heavy[0] < ROUTE_RESULT_TTL_SECONDS:
+                (active_places_analysis, lighting_analysis, official_debug, osm_lamp_debug, osm_lit_debug, source_errors) = copy.deepcopy(heavy[1])
+            else:
+                route_samples = densify_route(
+                    route.geometry,
+                    interval_meters=request.sample_interval_meters
+                )
+                source_errors = dict(shared_source_errors)
 
-            route_data = tile_cache.route_slice(area, route.geometry, data_padding_meters)
+                route_data = tile_cache.route_slice(area, route.geometry, data_padding_meters)
 
-            official_streetlights = tile_cache.corridor_filter(
-                route_data["official_lamps"],
-                route_samples,
-                request.official_lamp_radius_meters * 2 + 10,
-            ) or route_data["official_lamps"]
-            official_debug = (
-                {"source": "tile_cache", "streetlights_near_route": len(official_streetlights)}
-                if area["valencia_covered"]
-                else {"skipped_reason": "route_outside_valencia_official_coverage_area"}
-            )
+                official_streetlights = tile_cache.corridor_filter(
+                    route_data["official_lamps"],
+                    route_samples,
+                    request.official_lamp_radius_meters * 2 + 10,
+                ) or route_data["official_lamps"]
+                official_debug = (
+                    {"source": "tile_cache", "streetlights_near_route": len(official_streetlights)}
+                    if area["valencia_covered"]
+                    else {"skipped_reason": "route_outside_valencia_official_coverage_area"}
+                )
 
-            osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
-                route_coordinates=route.geometry,
-                shared_lit_way_elements=route_data["lit_ways"],
-                match_radius_meters=request.osm_lit_match_radius_meters
-            )
+                osm_lit_ways, osm_lit_debug = filter_shared_osm_lit_ways_for_route(
+                    route_coordinates=route.geometry,
+                    shared_lit_way_elements=route_data["lit_ways"],
+                    match_radius_meters=request.osm_lit_match_radius_meters
+                )
 
-            osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
-                route_coordinates=route.geometry,
-                shared_street_lamp_elements=route_data["street_lamps"],
-                coverage_radius_meters=request.osm_lamp_radius_meters
-            )
+                osm_street_lamps, osm_lamp_debug = filter_shared_osm_street_lamps_for_route(
+                    route_coordinates=route.geometry,
+                    shared_street_lamp_elements=route_data["street_lamps"],
+                    coverage_radius_meters=request.osm_lamp_radius_meters
+                )
 
-            nasa_analysis = None
+                nasa_analysis = None
 
-            try:
-                nasa_analysis = analyse_nasa_route_samples(
+                try:
+                    nasa_analysis = analyse_nasa_route_samples(
+                        route_samples=route_samples,
+                        requested_month=request.month
+                    )
+                except HTTPException as error:
+                    source_errors["nasa_background"] = error.detail
+
+                lighting_analysis = combine_lighting_sources(
                     route_samples=route_samples,
-                    requested_month=request.month
+                    official_streetlights=official_streetlights,
+                    osm_lit_ways=osm_lit_ways,
+                    osm_street_lamps=osm_street_lamps,
+                    nasa_analysis=nasa_analysis,
+                    official_coverage_radius_meters=request.official_lamp_radius_meters,
+                    osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
+                    osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters
                 )
-            except HTTPException as error:
-                source_errors["nasa_background"] = error.detail
 
-            lighting_analysis = combine_lighting_sources(
-                route_samples=route_samples,
-                official_streetlights=official_streetlights,
-                osm_lit_ways=osm_lit_ways,
-                osm_street_lamps=osm_street_lamps,
-                nasa_analysis=nasa_analysis,
-                official_coverage_radius_meters=request.official_lamp_radius_meters,
-                osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
-                osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters
-            )
-
-            raw_places, places_debug = filter_shared_places_for_route(
-                route_coordinates=route.geometry,
-                shared_elements=route_data["places"],
-                search_radius_meters=request.activity_search_radius_meters
-            )
-
-            scored_places = score_places_for_route(
-                places=raw_places,
-                route_geometry=route.geometry,
-                evaluation_datetime=request.departure_datetime,
-                route_duration_seconds=route_duration_seconds,
-                search_radius_meters=request.activity_search_radius_meters
-            )
-
-            active_places_analysis = build_active_places_response(
-                places=scored_places,
-                evaluation_datetime=request.departure_datetime
-            )
-            active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
-            active_places_analysis["retrieval_debug"] = places_debug
-            if "active_places" in source_errors:
-                # Some map tiles are missing. Only the sections that run through
-                # missing tiles are treated as unknown (neutral); the rest keep
-                # their real activity score.
-                unavailable_sections = _sections_without_map_data(
-                    route_samples, area, request.activity_search_radius_meters
+                raw_places, places_debug = filter_shared_places_for_route(
+                    route_coordinates=route.geometry,
+                    shared_elements=route_data["places"],
+                    search_radius_meters=request.activity_search_radius_meters
                 )
-                if len(unavailable_sections) == 10:
-                    active_places_analysis["data_unavailable"] = True
-                else:
-                    active_places_analysis["unavailable_sections"] = unavailable_sections
 
-            no_lighting = (
-                lighting_analysis.get("combined_score_statistics", {}).get("mean_score") is None
-            )
-            if no_lighting and active_places_analysis.get("data_unavailable"):
-                route_results.append({
-                    "route_id": route.route_id,
-                    "estimated_time_minutes": route.estimated_time_minutes,
-                    "distance_meters": route.distance_meters,
-                    "status": "analysis_failed",
-                    "error": "No safety data sources were reachable for this route.",
-                    "source_errors": source_errors,
-                })
-                continue
+                scored_places = score_places_for_route(
+                    places=raw_places,
+                    route_geometry=route.geometry,
+                    evaluation_datetime=request.departure_datetime,
+                    route_duration_seconds=route_duration_seconds,
+                    search_radius_meters=request.activity_search_radius_meters
+                )
 
-            # What the app's explanation screen needs: which lighting sources
-            # had data, and how much.
-            some_map_data = not active_places_analysis.get("data_unavailable")
-            osm_state = (
-                "available" if "osm_lit" not in source_errors
-                else "partial" if some_map_data
-                else "unavailable"
-            )
-            lighting_analysis["source_availability"] = {
-                "osm_lit": osm_state,
-                "osm_individual_lamps": osm_state,
-                "official_valencia_lamps": (
-                    "not_covered" if not area["valencia_covered"]
-                    else "unavailable" if "official_valencia_lamps" in source_errors
-                    else "available"
-                ),
-                "nasa_background": (
-                    "available"
-                    if nasa_analysis and nasa_analysis.get("valid_brightness_sample_count")
-                    else "not_covered"
-                ),
-            }
-            lighting_analysis["source_counts"] = {
-                "osm_lit_ways_near_route": osm_lit_debug.get("lit_ways_near_route", 0),
-                "osm_individual_lamps_near_route": osm_lamp_debug.get("street_lamps_near_route", 0),
-                "official_streetlights_near_route": len(official_streetlights) if area["valencia_covered"] else 0,
-                "nasa_unique_cells": (nasa_analysis or {}).get("unique_nasa_cell_count", 0),
-            }
+                active_places_analysis = build_active_places_response(
+                    places=scored_places,
+                    evaluation_datetime=request.departure_datetime
+                )
+                active_places_analysis["search_radius_meters"] = request.activity_search_radius_meters
+                active_places_analysis["retrieval_debug"] = places_debug
+                if "active_places" in source_errors:
+                    # Some map tiles are missing. Only the sections that run through
+                    # missing tiles are treated as unknown (neutral); the rest keep
+                    # their real activity score.
+                    unavailable_sections = _sections_without_map_data(
+                        route_samples, area, request.activity_search_radius_meters
+                    )
+                    if len(unavailable_sections) == 10:
+                        active_places_analysis["data_unavailable"] = True
+                    else:
+                        active_places_analysis["unavailable_sections"] = unavailable_sections
 
+                no_lighting = (
+                    lighting_analysis.get("combined_score_statistics", {}).get("mean_score") is None
+                )
+                if no_lighting and active_places_analysis.get("data_unavailable"):
+                    route_results.append({
+                        "route_id": route.route_id,
+                        "estimated_time_minutes": route.estimated_time_minutes,
+                        "distance_meters": route.distance_meters,
+                        "status": "analysis_failed",
+                        "error": "No safety data sources were reachable for this route.",
+                        "source_errors": source_errors,
+                    })
+                    continue
+
+                # What the app's explanation screen needs: which lighting sources
+                # had data, and how much.
+                some_map_data = not active_places_analysis.get("data_unavailable")
+                osm_state = (
+                    "available" if "osm_lit" not in source_errors
+                    else "partial" if some_map_data
+                    else "unavailable"
+                )
+                lighting_analysis["source_availability"] = {
+                    "osm_lit": osm_state,
+                    "osm_individual_lamps": osm_state,
+                    "official_valencia_lamps": (
+                        "not_covered" if not area["valencia_covered"]
+                        else "unavailable" if "official_valencia_lamps" in source_errors
+                        else "available"
+                    ),
+                    "nasa_background": (
+                        "available"
+                        if nasa_analysis and nasa_analysis.get("valid_brightness_sample_count")
+                        else "not_covered"
+                    ),
+                }
+                lighting_analysis["source_counts"] = {
+                    "osm_lit_ways_near_route": osm_lit_debug.get("lit_ways_near_route", 0),
+                    "osm_individual_lamps_near_route": osm_lamp_debug.get("street_lamps_near_route", 0),
+                    "official_streetlights_near_route": len(official_streetlights) if area["valencia_covered"] else 0,
+                    "nasa_unique_cells": (nasa_analysis or {}).get("unique_nasa_cell_count", 0),
+                }
+
+                if not ({"osm_lit", "osm_individual_lamps", "active_places", "official_valencia_lamps"}
+                        & set(source_errors)):
+                    HEAVY_ROUTE_CACHE[route_key] = (time.time(), copy.deepcopy((active_places_analysis, lighting_analysis, official_debug, osm_lamp_debug, osm_lit_debug, source_errors)))
+                    while len(HEAVY_ROUTE_CACHE) > 300:
+                        HEAVY_ROUTE_CACHE.popitem(last=False)
             social_context_analysis = analyse_social_context(
                 route_geometry=route.geometry,
                 departure_datetime=request.departure_datetime,

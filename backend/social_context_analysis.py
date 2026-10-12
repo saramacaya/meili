@@ -545,13 +545,22 @@ def relevant_city_ids_for_route(
 # ---------------------------------------------------------------------------
 
 SECTION_COUNT = 10
+# How local reports enter the score (applied in street_scoring):
+# a section is pulled towards POOR_TARGET by concerns and towards GOOD_TARGET by
+# praise. With strong evidence, local reports carry LOCAL_MAX_WEIGHT of the
+# section -- more than lighting (60% of the remaining base). Praise counts half.
+LOCAL_MAX_WEIGHT = 0.55
+POSITIVE_FACTOR = 0.5
+EVIDENCE_FOR_FULL_WEIGHT = 0.5   # combined evidence at which the full weight applies
+POOR_TARGET = 10.0               # where local concerns point
+GOOD_TARGET = 95.0               # where local praise points
 CORE_FRACTION = 0.5            # inner half of the radius = full influence
 MIN_ROUTE_INFLUENCE = 0.25     # below this the area is not shown at all
 CITY_WIDE_RADIUS_METERS = 3000 # larger circles are city background, not areas
-SECTION_CAP_NEGATIVE = -8.0
-SECTION_CAP_POSITIVE = 4.0
-MAX_POINTS_SPECIFIC = 10.0     # point / street evidence
-MAX_POINTS_AREA = 5.0          # neighbourhood-level evidence
+SECTION_CAP_NEGATIVE = -15.0
+SECTION_CAP_POSITIVE = 6.0
+MAX_POINTS_SPECIFIC = 18.0     # point / street evidence
+MAX_POINTS_AREA = 12.0         # neighbourhood-level evidence
 RECENCY_HALF_LIFE_MONTHS = 18.0
 MAX_AREAS_SHOWN = 3
 
@@ -678,7 +687,7 @@ def analyse_social_context(
       city-wide background line in ``city_context``.
     * Every record can move the score of the sections it actually covers, in
       proportion to evidence strength, confidence, recency, time of day and
-      influence. Per-section totals are capped at -8 / +4 points.
+      influence. Per-section totals are capped at -15 / +6 points.
     """
     if not route_geometry:
         raise ValueError("route_geometry cannot be empty")
@@ -692,6 +701,8 @@ def analyse_social_context(
     eligible_count = 0
     checked_city_ids: list[str] = []
     section_totals = [0.0] * SECTION_COUNT
+    negative_remaining = [1.0] * SECTION_COUNT   # product of (1 - evidence) per section
+    positive_remaining = [1.0] * SECTION_COUNT
     section_ids: list[list[str]] = [[] for _ in range(SECTION_COUNT)]
     summaries_by_city: dict[str, dict[str, Any]] = {}
 
@@ -755,12 +766,26 @@ def analyse_social_context(
             strength = _record_strength(record, now) * time_weight
             sign = SENTIMENT_SIGN.get(sentiment, 0.0)
             per_section = [sign * max_points * strength * w for w in sections]
+            # Evidence amounts for the score: incidents and street-specific
+            # reports count more; a "mixed" report is half concern, half praise.
+            amount_scale = strength * (1.3 if specific else 1.0)
+            negative_share = {"negative": 1.0, "mixed": 0.5}.get(sentiment, 0.0)
+            positive_share = {"positive": 1.0, "mixed": 0.5}.get(sentiment, 0.0)
+            for k, w in enumerate(sections):
+                amount = min(0.95, amount_scale * w)
+                if negative_share:
+                    negative_remaining[k] *= 1.0 - amount * negative_share
+                if positive_share:
+                    positive_remaining[k] *= 1.0 - amount * positive_share
             for k, effect in enumerate(per_section):
                 if abs(effect) >= 0.05:
                     section_totals[k] += effect
                     if entry["record_id"]:
                         section_ids[k].append(str(entry["record_id"]))
 
+            entry["evidence_amount"] = round(amount_scale, 4)
+            entry["negative_share"] = negative_share
+            entry["positive_share"] = positive_share
             entry["section_effects"] = [round(e, 2) for e in per_section]
             entry["section_influence"] = [round(w, 3) for w in sections]
             entry["effect_points"] = round(sum(per_section) / SECTION_COUNT, 3)
@@ -770,6 +795,21 @@ def analyse_social_context(
     section_adjustments = [
         round(max(SECTION_CAP_NEGATIVE, min(SECTION_CAP_POSITIVE, t)), 2) for t in section_totals
     ]
+    # Weights with which each section is pulled towards poor / good.
+    # Per section: how much local reports count (weight) and where they point
+    # (target). Concerns and praise are weighed against each other, praise at
+    # half strength, so mixed areas land in a cautious middle.
+    section_local = []
+    for k in range(SECTION_COUNT):
+        negative_evidence = 1.0 - negative_remaining[k]
+        positive_evidence = POSITIVE_FACTOR * (1.0 - positive_remaining[k])
+        total = negative_evidence + positive_evidence
+        if total < 0.01:
+            section_local.append({"weight": 0.0, "target": 50.0})
+            continue
+        target = (negative_evidence * POOR_TARGET + positive_evidence * GOOD_TARGET) / total
+        weight = LOCAL_MAX_WEIGHT * min(1.0, total / EVIDENCE_FOR_FULL_WEIGHT)
+        section_local.append({"weight": round(weight, 3), "target": round(target, 1)})
 
     # ---- one entry per area -------------------------------------------------
     groups: dict[str, list[dict[str, Any]]] = {}
@@ -802,8 +842,23 @@ def analyse_social_context(
             for k in range(SECTION_COUNT)
         ]
         affected_sections = [k + 1 for k, w in enumerate(section_weight) if w >= 0.3]
-        section_effect = [round(sum((r.get("section_effects") or [0.0] * SECTION_COUNT)[k] for r in records), 2)
-                          for k in range(SECTION_COUNT)]
+        # This area's own effect per section, with the same rule the score uses,
+        # measured against a typical section (60).
+        section_effect = []
+        for k in range(SECTION_COUNT):
+            neg_rem, pos_rem = 1.0, 1.0
+            for r in records:
+                w = (r.get("section_influence") or [0.0] * SECTION_COUNT)[k]
+                amount = min(0.95, r.get("evidence_amount", 0.0) * w)
+                neg_rem *= 1.0 - amount * r.get("negative_share", 0.0)
+                pos_rem *= 1.0 - amount * r.get("positive_share", 0.0)
+            neg, pos = 1.0 - neg_rem, POSITIVE_FACTOR * (1.0 - pos_rem)
+            if neg + pos < 0.01:
+                section_effect.append(0.0)
+                continue
+            target = (neg * POOR_TARGET + pos * GOOD_TARGET) / (neg + pos)
+            weight = LOCAL_MAX_WEIGHT * min(1.0, (neg + pos) / EVIDENCE_FOR_FULL_WEIGHT)
+            section_effect.append(round(weight * (target - 60.0), 2))
         city_id = records[0]["city_id"]
         if city_id not in summaries_by_city:
             summaries_by_city[city_id] = load_area_summaries(city_id)
@@ -817,7 +872,7 @@ def analyse_social_context(
             "positive_count": positives,
             "influence": round(influence, 2),
             "influence_label": "strong" if influence >= 0.7 else "some" if influence >= 0.45 else "slight",
-            "score_effect_points": round(sum(r["effect_points"] for r in records), 2),
+            "score_effect_points": round(sum(section_effect) / SECTION_COUNT, 2),
             "affected_sections": affected_sections,
             "section_effect_points": section_effect,
             "summary": ai.get("summary") or records[0]["summary"],
@@ -842,6 +897,7 @@ def analyse_social_context(
         "requested_city": city,
         "score_adjustment_points": round(total, 3),
         "section_adjustments": section_adjustments,
+        "section_local": section_local,
         "section_record_ids": section_ids,
         "component_limits": {"section_minimum": SECTION_CAP_NEGATIVE, "section_maximum": SECTION_CAP_POSITIVE},
         "rating_eligible_records_checked": eligible_count,
@@ -857,8 +913,9 @@ def analyse_social_context(
         ],
         "method_note": (
             "Areas count fully in their core and fade to nothing at their edge, "
-            "measured per route section; routes that only graze an area are not "
-            "affected. Each record's effect depends on evidence type, confidence, "
-            "recency and time of day, and is capped at -8/+4 points per section."
+            "measured per route section. Where local reports exist they carry up to "
+            "55% of a section's score (more than lighting); concerns pull the section "
+            "towards poor, praise towards good at half the strength. Evidence type, "
+            "confidence, recency and time of day set how strong each report is."
         ),
     }

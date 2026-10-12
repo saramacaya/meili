@@ -144,13 +144,23 @@ def value_route_sections(
         route_duration_seconds,
     )
 
+    local = social_context_analysis.get("section_local")
+
     sections = []
     for index in range(SECTION_COUNT):
         base_score = (
             LIGHTING_WEIGHT * lighting_scores[index]
             + ACTIVITY_WEIGHT * activity_scores[index]
         )
-        final_score = _clamp(base_score + social_effects[index])
+        if local and index < len(local):
+            # Local reports as a real component of the section score: up to 55%
+            # where reports exist, pointing to where the reports point.
+            weight = float(local[index].get("weight", 0.0))
+            target = float(local[index].get("target", 50.0))
+            final_score = _clamp(base_score + weight * (target - base_score))
+            social_effects[index] = final_score - base_score
+        else:
+            final_score = _clamp(base_score + social_effects[index])
         sections.append({
             "section_index": index,
             "start_progress_percentage": index * 10,
@@ -176,7 +186,7 @@ def value_route_sections(
         "component_weights": {
             "lighting": LIGHTING_WEIGHT,
             "active_places": ACTIVITY_WEIGHT,
-            "social_context": "area evidence, centre-weighted, capped at -8/+4 points per section",
+            "social_context": "local reports: up to 55% of a section where present; concerns count double",
         },
         "sections": sections,
         "method_note": (
