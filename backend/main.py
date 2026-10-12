@@ -3406,6 +3406,9 @@ def get_social_context_overlays(
 
 @app.post("/routes/generate")
 def generate_routes(request: RouteRequest):
+    # Retired: the app no longer uses this endpoint, and it used demo data for
+    # unknown trips. Kept as a clear error instead of silently wrong answers.
+    raise HTTPException(status_code=410, detail="This endpoint is retired: route generation.")
     if None in (
         request.origin_latitude,
         request.origin_longitude,
@@ -3606,6 +3609,9 @@ def analyse_street_score(request: StreetScoringRequest):
 
 @app.post("/routes/select")
 def select_route(request: RouteSelectionRequest):
+    # Retired: the app no longer uses this endpoint, and it used demo data for
+    # unknown trips. Kept as a clear error instead of silently wrong answers.
+    raise HTTPException(status_code=410, detail="This endpoint is retired: route selection.")
     origin_key = normalise_text(request.origin)
     destination_key = normalise_text(request.destination)
 
@@ -3710,6 +3716,9 @@ def select_route(request: RouteSelectionRequest):
 
 @app.post("/feedback")
 def submit_feedback(request: FeedbackRequest):
+    # Retired: the app no longer uses this endpoint, and it used demo data for
+    # unknown trips. Kept as a clear error instead of silently wrong answers.
+    raise HTTPException(status_code=410, detail="This endpoint is retired: feedback (now saved by the app in its own database).")
     origin_key = normalise_text(request.origin)
     destination_key = normalise_text(request.destination)
 
@@ -3922,7 +3931,18 @@ def _comparison_cache_put(key: str, response: dict) -> None:
     # Do not cache answers where map data failed to load: try again next time.
     # (NASA is optional and regional, so its absence does not block caching.)
     blocking = {"osm_lit", "osm_individual_lamps", "active_places", "official_valencia_lamps"}
-    if any(blocking & set(route.get("source_errors") or {}) for route in response.get("routes", [])):
+    routes = response.get("routes", [])
+    if any(blocking & set(route.get("source_errors") or {}) for route in routes):
+        return
+    # Never cache incomplete answers: failed routes, partial map data, or local
+    # context still being gathered (otherwise every refresh would get the same
+    # unfinished answer back for 30 minutes).
+    if not response.get("data_complete", True) or response.get("result") != "complete":
+        return
+    if any(route.get("status") == "analysis_failed" for route in routes):
+        return
+    if any(((route.get("component_details") or {}).get("social_context") or {}).get("local_context_status") == "gathering"
+           for route in routes):
         return
     with COMPARISON_CACHE_LOCK:
         COMPARISON_CACHE[key] = (time.time(), response)
@@ -4385,8 +4405,18 @@ def compare_routes(request: RouteComparisonRequest):
 
     display_route_ids = _pick_display_routes(label_inputs, label_assignment)
 
+    scored_count = sum(1 for r in route_results if r.get("status") != "analysis_failed")
+    if scored_count == len(route_results) and scored_count > 0:
+        overall = "complete"
+    elif scored_count > 0:
+        overall = "partial"
+    else:
+        overall = "failed"
     response = {
         "status": "routes_compared_and_scored",
+        # complete = every route scored; partial = some failed; failed = none scored.
+        "result": overall,
+        "scored_route_count": scored_count,
         "route_count": len(route_results),
         "data_complete": area["complete"],
         # True when some map data was still downloading: the app should ask
