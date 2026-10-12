@@ -27,8 +27,8 @@ from typing import Any, Optional
 import tile_cache
 
 CELL_DEGREES = 0.2
-DEFAULT_CENTER = 57.0     # typical raw score
-DEFAULT_SCALE = 5.0       # how strongly the curve stretches
+DEFAULT_CENTER = 62.0     # typical raw score across cities
+DEFAULT_SCALE = 9.0       # how strongly the curve stretches (gentle: keeps top scores distinguishable)
 MIN_SAMPLES = 30          # walks needed before the city's own ranking counts
 FULL_SAMPLES = 100        # walks at which the city's ranking fully takes over
 MAX_SAMPLES = 500
@@ -108,11 +108,12 @@ def calibrate(raw: float, samples: list[float], factor: float = 1.0) -> float:
         below = bisect_left(samples, raw)
         equal = bisect_right(samples, raw) - below
         percentile = (below + 0.5 * equal) / n
-        city_score = 3.0 + 94.0 * percentile
+        city_score = 5.0 + 90.0 * percentile
         weight = min(1.0, (n - MIN_SAMPLES) / (FULL_SAMPLES - MIN_SAMPLES))
         score = (1 - weight) * score + weight * city_score
     score = 50.0 + (score - 50.0) * factor
-    return round(max(1.0, min(99.0, score)), 1)
+    # Never claim perfection or total danger: the evidence can't support it.
+    return round(max(5.0, min(95.0, score)), 1)
 
 
 def describe(samples: list[float]) -> dict[str, Any]:

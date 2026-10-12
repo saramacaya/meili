@@ -2899,7 +2899,8 @@ async def _google_autocomplete_request(payload: dict) -> dict:
             "suggestions.placePrediction.text.text,"
             "suggestions.placePrediction.structuredFormat.mainText.text,"
             "suggestions.placePrediction.structuredFormat.secondaryText.text,"
-            "suggestions.placePrediction.types"
+            "suggestions.placePrediction.types,"
+            "suggestions.placePrediction.distanceMeters"
         )
     }
     async with httpx.AsyncClient(timeout=10.0) as client:
