@@ -27,6 +27,7 @@ import gzip
 import json
 import math
 import os
+import random
 import re
 import sys
 import time
@@ -157,8 +158,27 @@ class Storage:
         requests.post(f"{self.base}/bucket", headers=self.headers,
                       json={"id": BUCKET, "name": BUCKET, "public": False}, timeout=30)
 
+    BUSY = (429, 500, 502, 503, 504)
+
+    @staticmethod
+    def _pause(attempt: int) -> None:
+        # Supabase answers 429 "SlowDown" when too many requests arrive at once.
+        time.sleep(min(60, 2 ** attempt) + random.uniform(0, 1))
+
     def get(self, path: str) -> dict | None:
-        r = requests.get(f"{self.base}/object/authenticated/{BUCKET}/{path}", headers=self.headers, timeout=60)
+        for attempt in range(8):
+            try:
+                r = requests.get(f"{self.base}/object/authenticated/{BUCKET}/{path}",
+                                 headers=self.headers, timeout=60)
+            except requests.RequestException:
+                self._pause(attempt)
+                continue
+            if r.status_code in self.BUSY:
+                self._pause(attempt)
+                continue
+            break
+        else:
+            raise RuntimeError(f"could not read {path}: storage kept saying busy")
         if r.status_code != 200:
             return None
         try:
@@ -178,14 +198,21 @@ class Storage:
     def put(self, path: str, data: dict) -> None:
         body = gzip.compress(json.dumps(data, separators=(",", ":")).encode())
         Storage.uploaded_bytes += len(body)
-        for attempt in range(4):
-            r = requests.post(f"{self.base}/object/{BUCKET}/{path}",
-                              headers={**self.headers, "x-upsert": "true", "Content-Type": "application/gzip"},
-                              data=body, timeout=120)
-            if r.status_code in (200, 201):
+        status, text = None, ""
+        for attempt in range(8):
+            try:
+                r = requests.post(f"{self.base}/object/{BUCKET}/{path}",
+                                  headers={**self.headers, "x-upsert": "true", "Content-Type": "application/gzip"},
+                                  data=body, timeout=120)
+                status, text = r.status_code, r.text
+            except requests.RequestException as error:
+                status, text = None, str(error)
+            if status in (200, 201):
                 return
-            time.sleep(2 * (attempt + 1))
-        raise RuntimeError(f"upload failed for {path}: HTTP {r.status_code} {r.text[:200]}")
+            if status is not None and status not in self.BUSY:
+                break   # a real error (e.g. permissions): retrying won't help
+            self._pause(attempt)
+        raise RuntimeError(f"upload failed for {path}: HTTP {status} {text[:200]}")
 
 
 def main() -> int:
@@ -245,12 +272,35 @@ def main() -> int:
         storage.put(path, {"fetched_at": now, "source": "extract", "countries": countries, "tiles": merged_tiles})
         return len(block_tiles)
 
-    done = 0
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        for n in pool.map(upload, blocks.items()):
+    def safe_upload(item):
+        try:
+            upload(item)
+            return None
+        except Exception as error:  # noqa: BLE001
+            return item, str(error)[:200]
+
+    done, failed = 0, []
+    # 3 at a time: the Supabase free plan limits simultaneous connections.
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for result in pool.map(safe_upload, blocks.items()):
             done += 1
-            if done % 100 == 0:
-                print(f"  uploaded {done}/{len(blocks)} blocks")
+            if result is not None:
+                failed.append(result)
+            if done % 200 == 0:
+                print(f"  uploaded {done}/{len(blocks)} blocks ({len(failed)} to retry)")
+    if failed:
+        print(f"Retrying {len(failed)} blocks one at a time...")
+        still_failed = []
+        for item, _ in failed:
+            time.sleep(1)
+            outcome = safe_upload(item)
+            if outcome is not None:
+                still_failed.append(outcome)
+        if still_failed:
+            print(f"::warning::{len(still_failed)} of {len(blocks)} blocks could not be uploaded "
+                  f"(first error: {still_failed[0][1]}). Re-run the workflow to fill them in.")
+            if len(still_failed) > max(10, len(blocks) // 100):
+                return 1
     storage.put(f"v1/coverage/{args.country}.json.gz",
                 {"country": args.country, "built_at": now, "blocks": [f"{r}_{c}" for r, c in blocks],
                  "uploaded_mb": round(Storage.uploaded_bytes / 1e6, 2)})
