@@ -32,14 +32,18 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import social_context_analysis as sc  # noqa: E402
 
-PROVIDER = os.getenv("MEILI_AI_PROVIDER", "github").lower()
+PROVIDER = os.getenv("MEILI_AI_PROVIDER", "gemini" if os.getenv("GEMINI_API_KEY") else "github").lower()
 DEFAULT_MODELS = {
+    "gemini": "gemini-3.8-flash",
+    "groq": "llama-3.3-70b-versatile",
     "github": "openai/gpt-4o-mini",   # see github.com/marketplace/models
     "ollama": "llama3.1:8b",
     "anthropic": "claude-haiku-5-5",
 }
 MODEL = os.getenv("MEILI_SUMMARY_MODEL", DEFAULT_MODELS.get(PROVIDER, ""))
 OPENAI_STYLE_URLS = {
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    "groq": "https://api.groq.com/openai/v1/chat/completions",
     "github": "https://models.github.ai/inference/chat/completions",
     "ollama": os.getenv("OLLAMA_URL", "http://localhost:11434") + "/v1/chat/completions",
 }
@@ -72,6 +76,10 @@ def fingerprint(records: list[dict]) -> str:
 def _credentials() -> str:
     if PROVIDER == "github":
         return os.getenv("GITHUB_TOKEN", "")
+    if PROVIDER == "gemini":
+        return os.getenv("GEMINI_API_KEY", "")
+    if PROVIDER == "groq":
+        return os.getenv("GROQ_API_KEY", "")
     if PROVIDER == "anthropic":
         return os.getenv("ANTHROPIC_API_KEY", "")
     return "ollama"  # local, no key
@@ -82,7 +90,7 @@ def _complete(user_text: str, key: str) -> str:
         response = requests.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": MODEL, "max_tokens": 200, "system": SYSTEM,
+            json={"model": MODEL, "max_tokens": 1024, "system": SYSTEM,
                   "messages": [{"role": "user", "content": user_text}]},
             timeout=60,
         )
@@ -92,7 +100,7 @@ def _complete(user_text: str, key: str) -> str:
     response = requests.post(
         OPENAI_STYLE_URLS[PROVIDER],
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": MODEL, "max_tokens": 200, "temperature": 0.2,
+        json={"model": MODEL, "max_tokens": 1024, "temperature": 0.2,
               "messages": [{"role": "system", "content": SYSTEM},
                            {"role": "user", "content": user_text}]},
         timeout=120,
