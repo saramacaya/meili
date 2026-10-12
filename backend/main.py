@@ -46,6 +46,8 @@ import json as _json
 from collections import OrderedDict
 import tile_cache
 import local_context_gatherer
+import score_calibration
+from street_scoring import _classification as _score_class, _colour as _score_colour
 from fast_geo import RouteIndex
 
 from social_context_analysis import (
@@ -2929,7 +2931,9 @@ def _parse_place_suggestions(google_data: dict) -> list:
             "name": main_text or full_text,
             "address": secondary_text,
             "label": full_text,
-            "types": prediction.get("types", [])
+            "types": prediction.get("types", []),
+            # Present when the request included an origin point.
+            "distance_meters": prediction.get("distanceMeters"),
         })
     return suggestions
 
@@ -2940,7 +2944,7 @@ async def _google_text_search_request(payload: dict) -> dict:
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.types",
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.types,places.location",
     }
     async with httpx.AsyncClient(timeout=10.0) as client:
         google_response = await client.post(
@@ -2958,12 +2962,15 @@ def _parse_text_search_places(google_data: dict) -> list:
     for place in google_data.get("places", []):
         name = (place.get("displayName") or {}).get("text")
         address = place.get("formattedAddress")
+        location = place.get("location") or {}
         suggestions.append({
             "place_id": place.get("id"),
             "name": name or address,
             "address": address,
             "label": ", ".join(part for part in (name, address) if part),
             "types": place.get("types", []),
+            "latitude": location.get("latitude"),
+            "longitude": location.get("longitude"),
         })
     return suggestions
 
@@ -3004,6 +3011,9 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
     # No fixed language or country: Google matches names in whatever language
     # was typed, and results come back in the user's own language if known.
     base_payload = {"input": search_text, "sessionToken": session_token}
+    if request.latitude is not None and request.longitude is not None:
+        # Google then returns each suggestion's distance from this point.
+        base_payload["origin"] = {"latitude": request.latitude, "longitude": request.longitude}
     language = (request.language or "").strip()
     if language:
         base_payload["languageCode"] = language
@@ -3054,10 +3064,19 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
             except HTTPException:
                 pass  # keep whatever autocomplete found
 
+        if has_bias_point:
+            for suggestion in suggestions:
+                if suggestion.get("distance_meters") is None and suggestion.get("latitude") is not None:
+                    suggestion["distance_meters"] = round(distance_meters(
+                        (request.longitude, request.latitude),
+                        (suggestion["longitude"], suggestion["latitude"]),
+                    ))
+
         return {
             "status": "success",
             "suggestions": suggestions,
-            "session_token": session_token
+            "session_token": session_token,
+            "distance_from": "origin" if has_bias_point else None,
         }
 
     except httpx.RequestError as error:
@@ -3136,6 +3155,66 @@ async def get_place_details(request: PlaceDetailsRequest):
             detail=f"Could not retrieve place details: {str(error)}"
         )
 
+def _decode_polyline(encoded: str) -> list[tuple[float, float]]:
+    """Google encoded polyline -> [(lon, lat), ...]"""
+    points, index, lat, lng = [], 0, 0, 0
+    while encoded and index < len(encoded):
+        for is_lng in (False, True):
+            shift, result = 0, 0
+            while True:
+                b = ord(encoded[index]) - 63
+                index += 1
+                result |= (b & 0x1F) << shift
+                shift += 5
+                if b < 0x20:
+                    break
+            delta = ~(result >> 1) if result & 1 else result >> 1
+            if is_lng:
+                lng += delta
+            else:
+                lat += delta
+        points.append((lng / 1e5, lat / 1e5))
+    return points
+
+
+def _route_overlap(a: list[tuple[float, float]], b: list[tuple[float, float]], near_m: float = 30.0) -> float:
+    """Share of route a's points that lie within near_m of route b."""
+    if not a or not b:
+        return 0.0
+    a_s = a[:: max(1, len(a) // 120)]
+    b_s = b[:: max(1, len(b) // 300)]
+    close = sum(1 for p in a_s if min(distance_meters(p, q) for q in b_s) <= near_m)
+    return close / len(a_s)
+
+
+def _via_points(origin: tuple[float, float], destination: tuple[float, float]) -> list[tuple[float, float]]:
+    """Two points beside the middle of the direct line (left and right), to make
+    Google suggest genuinely different streets."""
+    (lon1, lat1), (lon2, lat2) = origin, destination
+    straight = distance_meters(origin, destination)
+    if straight < 300:
+        return []
+    offset_m = max(150.0, min(1500.0, 0.3 * straight))
+    mid_lat, mid_lon = (lat1 + lat2) / 2, (lon1 + lon2) / 2
+    metres_per_deg_lat = 110_540.0
+    metres_per_deg_lon = 111_320.0 * math.cos(math.radians(mid_lat))
+    dx, dy = (lon2 - lon1) * metres_per_deg_lon, (lat2 - lat1) * metres_per_deg_lat
+    length = math.hypot(dx, dy) or 1.0
+    px, py = -dy / length, dx / length          # unit vector perpendicular to the line
+    return [
+        (mid_lon + side * px * offset_m / metres_per_deg_lon, mid_lat + side * py * offset_m / metres_per_deg_lat)
+        for side in (1, -1)
+    ]
+
+
+MAX_ROUTE_CANDIDATES = 5
+MAX_DETOUR_RATIO = 1.5
+
+
+def _metres_between(a: tuple[float, float], b: tuple[float, float]) -> float:
+    return distance_meters(a, b)
+
+
 @app.post("/routes/preview-real")
 async def preview_real_routes(request: RealRoutePreviewRequest):
     if not GOOGLE_ROUTES_API_KEY:
@@ -3144,29 +3223,16 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             detail="Google Routes API is not configured."
         )
 
-    payload = {
-        "origin": {
-            "location": {
-                "latLng": {
-                    "latitude": request.origin.latitude,
-                    "longitude": request.origin.longitude
-                }
-            }
-        },
-        "destination": {
-            "location": {
-                "latLng": {
-                    "latitude": request.destination.latitude,
-                    "longitude": request.destination.longitude
-                }
-            }
-        },
-        "travelMode": "WALK",
-        "computeAlternativeRoutes": True,
-        "languageCode": "en",
-        "units": "METRIC"
-    }
+    def point(lat: float, lon: float) -> dict:
+        return {"location": {"latLng": {"latitude": lat, "longitude": lon}}}
 
+    base_payload = {
+        "origin": point(request.origin.latitude, request.origin.longitude),
+        "destination": point(request.destination.latitude, request.destination.longitude),
+        "travelMode": "WALK",
+        "languageCode": "en",
+        "units": "METRIC",
+    }
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_ROUTES_API_KEY,
@@ -3178,34 +3244,64 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
         )
     }
 
+    # Google's normal alternatives (up to 3), plus two routes forced through a
+    # point left and right of the direct line, all requested at the same time.
+    origin_xy = (request.origin.longitude, request.origin.latitude)
+    destination_xy = (request.destination.longitude, request.destination.latitude)
+    payloads = [dict(base_payload, computeAlternativeRoutes=True)]
+    if _metres_between(origin_xy, destination_xy) <= MAX_WALK_DISTANCE_METERS:
+        for lon, lat in _via_points(origin_xy, destination_xy):
+            payloads.append(dict(base_payload, computeAlternativeRoutes=False,
+                                 intermediates=[{**point(lat, lon), "via": True}]))
+
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            google_response = await client.post(
-                GOOGLE_ROUTES_URL,
-                json=payload,
-                headers=headers
+            responses = await asyncio.gather(
+                *(client.post(GOOGLE_ROUTES_URL, json=p, headers=headers) for p in payloads),
+                return_exceptions=True,
             )
-
     except httpx.RequestError as error:
         raise HTTPException(
             status_code=502,
             detail=f"Could not contact Google Routes: {str(error)}"
         )
 
-    if google_response.status_code != 200:
+    main_response = responses[0]
+    if isinstance(main_response, Exception):
+        raise HTTPException(status_code=502, detail=f"Could not contact Google Routes: {main_response}")
+    if main_response.status_code != 200:
         raise HTTPException(
-            status_code=google_response.status_code,
-            detail=google_response.text
+            status_code=main_response.status_code,
+            detail=main_response.text
         )
 
-    google_data = google_response.json()
-    google_routes = google_data.get("routes", [])
+    google_routes = list(main_response.json().get("routes", []))
+    for extra in responses[1:]:
+        if not isinstance(extra, Exception) and extra.status_code == 200:
+            google_routes.extend(extra.json().get("routes", []))
 
     if not google_routes:
         raise HTTPException(
             status_code=404,
             detail="No walking route was found between these locations."
         )
+
+    # Remove near-duplicates and big detours; keep at most 5, fastest first.
+    google_routes.sort(key=lambda r: google_duration_to_seconds(r.get("duration", "")))
+    fastest_seconds = max(1, google_duration_to_seconds(google_routes[0].get("duration", "")))
+    kept: list[tuple[dict, list]] = []
+    for route in google_routes:
+        seconds = google_duration_to_seconds(route.get("duration", ""))
+        if kept and seconds > MAX_DETOUR_RATIO * fastest_seconds:
+            continue
+        geometry = _decode_polyline(route.get("polyline", {}).get("encodedPolyline") or "")
+        if any(_route_overlap(geometry, other) > 0.9 and _route_overlap(other, geometry) > 0.9
+               for _, other in kept):
+            continue
+        kept.append((route, geometry))
+        if len(kept) >= MAX_ROUTE_CANDIDATES:
+            break
+    google_routes = [route for route, _ in kept]
 
     candidates = []
 
@@ -3782,6 +3878,8 @@ class RouteComparisonRequest(BaseModel):
 
 # ---- Fast-path caches -------------------------------------------------------
 
+MAX_WALK_DISTANCE_METERS = 25_000   # about 5 hours on foot
+
 tile_cache.VALENCIA_LAMP_FETCHER = lambda corners: fetch_valencia_streetlights(corners)
 
 COMPARISON_CACHE: "OrderedDict[str, tuple[float, dict]]" = OrderedDict()
@@ -3861,6 +3959,12 @@ class TileWarmRequest(BaseModel):
 def warm_tiles(request: TileWarmRequest):
     """Called by the app as soon as origin and destination are chosen, so map
     tiles download while Google is still computing the walking routes."""
+    straight = distance_meters(
+        (request.origin_longitude, request.origin_latitude),
+        (request.destination_longitude, request.destination_latitude),
+    )
+    if straight > MAX_WALK_DISTANCE_METERS:
+        return {"status": "too_far_to_walk", "straight_line_meters": round(straight)}
     return tile_cache.warm_tiles_for_trip(
         (request.origin_longitude, request.origin_latitude),
         (request.destination_longitude, request.destination_latitude),
@@ -3948,6 +4052,29 @@ def _route_data_confidence(lighting_analysis: dict, active_places_analysis: dict
     }
 
 
+
+def _pick_display_routes(label_inputs: list[dict], label_assignment: dict, count: int = 3) -> list[str]:
+    """Fastest, safest and best balance first; then the best remaining routes."""
+    chosen: list[str] = []
+    for key in ("fastest_route_id", "safest_route_id", "balanced_route_id"):
+        route_id = label_assignment.get(key)
+        if route_id and route_id not in chosen:
+            chosen.append(route_id)
+    if not label_inputs:
+        return chosen
+    fastest = min(r["estimated_time_minutes"] for r in label_inputs) or 1
+    remaining = sorted(
+        (r for r in label_inputs if r["route_id"] not in chosen),
+        key=lambda r: r["route_value_score"] - 2.0 * (r["estimated_time_minutes"] / fastest - 1) * 100 / 10,
+        reverse=True,
+    )
+    for route in remaining:
+        if len(chosen) >= count:
+            break
+        chosen.append(route["route_id"])
+    return chosen[:count]
+
+
 @app.post("/safety/routes/compare")
 def compare_routes(request: RouteComparisonRequest):
     # A single route (Google often returns only one for long walks) is scored
@@ -3957,6 +4084,31 @@ def compare_routes(request: RouteComparisonRequest):
             status_code=400,
             detail="At least one route is required."
         )
+
+    # Meili is for walking: trips longer than about 5 hours on foot are not
+    # analysed (they would need hundreds of map tiles and are not walks).
+    walkable = [r for r in request.routes if (r.distance_meters or 0) <= MAX_WALK_DISTANCE_METERS]
+    if not walkable:
+        shortest = min(request.routes, key=lambda r: r.distance_meters or 0)
+        return {
+            "status": "too_far_to_walk",
+            "route_count": len(request.routes),
+            "max_walk_distance_meters": MAX_WALK_DISTANCE_METERS,
+            "shortest_route_meters": shortest.distance_meters,
+            "shortest_route_minutes": shortest.estimated_time_minutes,
+            "data_complete": True,
+            "refresh_recommended": False,
+            "labels": {"labels_by_route_id": {}, "safest_route_id": None, "fastest_route_id": None,
+                       "balanced_route_id": None, "default_route_id": None},
+            "routes": [
+                {"route_id": r.route_id, "estimated_time_minutes": r.estimated_time_minutes,
+                 "distance_meters": r.distance_meters, "status": "too_far_to_walk",
+                 "error": "This trip is too long to walk.", "labels": []}
+                for r in request.routes
+            ],
+        }
+    if len(walkable) < len(request.routes):
+        request = request.model_copy(update={"routes": walkable})
 
     if len(request.routes) > 5:
         raise HTTPException(
@@ -3994,6 +4146,11 @@ def compare_routes(request: RouteComparisonRequest):
         max(p[1] for p in all_points), max(p[0] for p in all_points),
     )
     auto_records = local_context_gatherer.load_records_near(context_bbox)
+    first_route = request.routes[0].geometry
+    middle_point = first_route[len(first_route) // 2]
+    calibration_cell = score_calibration.cell_for(middle_point[0], middle_point[1])
+    calibration_samples = score_calibration.load_samples(calibration_cell)
+    raw_scores_to_record: list[float] = []
     local_context_job = local_context_gatherer.ensure_context(route_geometries)
 
     shared_source_errors: dict[str, str] = {}
@@ -4155,13 +4312,31 @@ def compare_routes(request: RouteComparisonRequest):
                 route_duration_seconds=route_duration_seconds
             )
 
+            data_confidence = _route_data_confidence(lighting_analysis, active_places_analysis)
+
+            # Spread scores over 0-100: rank among walks in this city, with
+            # little-data routes kept near the middle (see score_calibration).
+            factor = score_calibration.confidence_factor(data_confidence)
+            raw_route_score = valuation["route_value_score"]
+            raw_scores_to_record.append(raw_route_score)
+            for section in valuation["sections"]:
+                section["raw_street_value_score"] = section["street_value_score"]
+                shown = score_calibration.calibrate(section["street_value_score"], calibration_samples, factor)
+                section["street_value_score"] = shown
+                section["classification"] = _score_class(shown)
+                section["map_colour"] = _score_colour(shown)
+            shown_route = score_calibration.calibrate(raw_route_score, calibration_samples, factor)
+            valuation["raw_route_value_score"] = raw_route_score
+            valuation["route_value_score"] = shown_route
+            valuation["route_classification"] = _score_class(shown_route)
+            valuation["weakest_section_score"] = min(x["street_value_score"] for x in valuation["sections"])
+            valuation["score_scale"] = score_calibration.describe(calibration_samples)
+
             label_inputs.append({
                 "route_id": route.route_id,
                 "route_value_score": valuation["route_value_score"],
                 "estimated_time_minutes": route.estimated_time_minutes
             })
-
-            data_confidence = _route_data_confidence(lighting_analysis, active_places_analysis)
 
             route_results.append({
                 "route_id": route.route_id,
@@ -4201,11 +4376,14 @@ def compare_routes(request: RouteComparisonRequest):
             })
             continue
     label_assignment = assign_route_labels(label_inputs)
+    score_calibration.record(calibration_cell, raw_scores_to_record)
 
     for route_result in route_results:
         route_result["labels"] = label_assignment["labels_by_route_id"].get(
             route_result["route_id"], []
         )
+
+    display_route_ids = _pick_display_routes(label_inputs, label_assignment)
 
     response = {
         "status": "routes_compared_and_scored",
@@ -4216,6 +4394,9 @@ def compare_routes(request: RouteComparisonRequest):
         "refresh_recommended": (not area["complete"]) and area["still_downloading"],
         "data_loading": area["debug"],
         "labels": label_assignment,
+        # Up to 5 routes are scored; the app shows these 3 (fastest, safest,
+        # best balance, then the next best) in this order.
+        "display_route_ids": display_route_ids,
         "routes": route_results,
         "interpretation": (
             "All route candidates were analysed together from cached map "

@@ -112,8 +112,11 @@ def _plain(text: str) -> str:
     ).lower().strip()
 
 
+SEARCH_VERSION = 2   # bump when the news search improves: every area gets re-checked once
+
+
 def area_key(city: str, name: str) -> str:
-    return f"{_plain(city)}|{_plain(name)}"
+    return f"v{SEARCH_VERSION}|{_plain(city)}|{_plain(name)}"
 
 
 def _distance_m(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -226,17 +229,48 @@ def search_news(name: str, city: str) -> list[dict]:
 GOOGLE_NEWS_RSS = "https://news.google.com/rss/search"
 
 
+# Local language per country, and safety words in that language, so the
+# search finds local news about street safety rather than concerts and markets.
+LANGUAGE_BY_COUNTRY = {
+    "ES": "es", "MX": "es", "AR": "es", "CO": "es", "CL": "es", "PE": "es",
+    "PT": "pt", "BR": "pt", "IT": "it", "FR": "fr", "BE": "fr", "DE": "de", "AT": "de",
+    "CH": "de", "NL": "nl", "SI": "sl", "HR": "hr", "PL": "pl", "CZ": "cs", "RO": "ro",
+    "GR": "el", "TR": "tr", "CN": "zh", "JP": "ja", "KR": "ko",
+}
+SAFETY_WORDS = {
+    "es": "robo OR atraco OR agresión OR inseguridad OR policía OR vandalismo OR seguridad",
+    "pt": "assalto OR roubo OR agressão OR insegurança OR polícia OR segurança",
+    "it": "furto OR rapina OR aggressione OR sicurezza OR polizia OR degrado",
+    "fr": "vol OR agression OR insécurité OR police OR sécurité",
+    "de": "Diebstahl OR Überfall OR Polizei OR Sicherheit OR Gewalt",
+    "nl": "diefstal OR overval OR politie OR veiligheid",
+    "sl": "kraja OR rop OR policija OR varnost OR napad",
+    "en": "robbery OR theft OR assault OR police OR safety OR crime",
+}
+
+
+def _name_variants(name: str) -> list[str]:
+    """'La Antigua - Santa Cruz' -> ['La Antigua - Santa Cruz', 'La Antigua', 'Santa Cruz']"""
+    parts = [p.strip() for p in re.split(r"\s+-\s+|/|,|\(|\)", name) if p.strip()]
+    variants = [name] + [p for p in parts if p != name and len(p) > 3]
+    return list(dict.fromkeys(variants))[:3]
+
+
 def search_news_google(name: str, city: str, country_code: str = "") -> list[dict]:
-    """Backup news search (Google News RSS): titles, sources and dates."""
+    """News search (Google News RSS) in the local language, steered to safety topics."""
     import xml.etree.ElementTree as ET
-    params = {"q": f'"{name}" "{city}" when:1y', "hl": "en", "gl": (country_code or "US").upper(),
-              "ceid": f"{(country_code or 'US').upper()}:en"}
+    country = (country_code or "US").upper()
+    language = LANGUAGE_BY_COUNTRY.get(country, "en")
+    words = SAFETY_WORDS.get(language, SAFETY_WORDS["en"])
+    names = " OR ".join(f'"{variant}"' for variant in _name_variants(name))
+    params = {"q": f"({names}) {city} ({words}) when:1y", "hl": language, "gl": country,
+              "ceid": f"{country}:{language}"}
     try:
         response = requests.get(GOOGLE_NEWS_RSS, params=params, headers={"User-Agent": USER_AGENT}, timeout=15)
         response.raise_for_status()
         root = ET.fromstring(response.content)
     except Exception as error:  # noqa: BLE001
-        _log("backup news search failed", area=name, error=str(error)[:150])
+        _log("news search failed", area=name, error=str(error)[:150])
         return []
     articles = []
     for item in root.iter("item"):
@@ -253,6 +287,7 @@ def search_news_google(name: str, city: str, country_code: str = "") -> list[dic
             "domain": (source.text if source is not None else "news"),
             "snippet": " ".join(html.unescape(description).split()),
         })
+    _log("news found", area=name, language=language, articles=len(articles))
     return articles[:25]
 
 
@@ -337,29 +372,52 @@ def _ai_complete(system: str, user: str) -> str:
         headers["X-GitHub-Api-Version"] = "2022-11-28"
     payload = {"model": AI_MODEL, "max_tokens": 2048, "temperature": 0.1,
                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+    if AI_PROVIDER == "gemini":
+        # Thinking models are slow; extracting facts from an article needs little reasoning.
+        payload["reasoning_effort"] = "low"
     # Follow redirects ourselves and keep it a POST: the default behaviour
     # turns a redirected POST into a GET, which never reaches the model.
+    # Busy models answer 429/503: wait a moment and retry, then try the
+    # fallback model (MEILI_CONTEXT_FALLBACK_MODEL) if one is configured.
+    models = [AI_MODEL] + [m for m in [os.getenv("MEILI_CONTEXT_FALLBACK_MODEL", "").strip()] if m]
+    for model_index, model_name in enumerate(models):
+        payload["model"] = model_name
+        for attempt, pause in enumerate((0, 2, 5)):
+            time.sleep(pause)
+            response = _post_following_redirects(url, headers, payload)
+            if response.status_code not in (429, 500, 502, 503, 504):
+                break
+            _log("AI busy, retrying", model=model_name, status=response.status_code, attempt=attempt + 1)
+        if response.status_code not in (429, 500, 502, 503, 504):
+            break
+    if response.status_code != 200 or "json" not in response.headers.get("Content-Type", ""):
+        raise RuntimeError(
+            f"HTTP {response.status_code} from {url} "
+            f"({response.headers.get('Content-Type', '?')}): {response.text[:300]!r}"
+        )
+    return response.json()["choices"][0]["message"]["content"]
+
+
+def _post_following_redirects(url: str, headers: dict, payload: dict):
     hops = []
     for _ in range(4):
-        response = requests.post(url, headers=headers, json=payload, timeout=20, allow_redirects=False)
+        response = requests.post(url, headers=headers, json=payload, timeout=45, allow_redirects=False)
+        if response.status_code == 400 and "reasoning_effort" in payload and "reason" in response.text.lower():
+            payload.pop("reasoning_effort")   # setting not supported by this model: retry without it
+            response = requests.post(url, headers=headers, json=payload, timeout=45, allow_redirects=False)
         location = response.headers.get("Location")
         if response.status_code in (301, 302, 303, 307, 308) and location:
             hops.append(f"{response.status_code} -> {location}")
             url = requests.compat.urljoin(url, location)
             continue
         break
-    if response.status_code != 200 or "json" not in response.headers.get("Content-Type", ""):
-        raise RuntimeError(
-            f"HTTP {response.status_code} from {url} "
-            f"({response.headers.get('Content-Type', '?')}): {response.text[:160]!r}"
-            + (f" after redirects {hops}" if hops else "")
-        )
-    return response.json()["choices"][0]["message"]["content"]
+    return response
 
 
 def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     """Structured, validated records from one article (may be empty)."""
-    user = (f"Neighbourhood: {area['name']}, {area['city']}\n"
+    user = (f"Neighbourhood: {area['name']}, {area['city']} "
+            f"(also written as: {', '.join(_name_variants(area['name']))})\n"
             f"Article title: {article.get('title')}\nPublished: {article.get('seendate')}\n"
             f"Article text: {text}")
     raw = _ai_complete(EXTRACTION_PROMPT, user)
@@ -400,16 +458,17 @@ def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
     db = _db()
     key = area_key(area["city"], area["name"])
     rows: list[dict] = []
-    name_plain = _plain(area["name"])
+    name_variants = [_plain(v) for v in _name_variants(area["name"])]
+
+    def mentions(text: str) -> bool:
+        plain = _plain(text or "")
+        return any(v in plain for v in name_variants)
 
     articles = search_news_google(area["name"], area["city"], area.get("country_code") or "")
     if not articles:
         articles = search_news(area["name"], area["city"])
     # Keep only articles whose headline or snippet mentions the area at all.
-    candidates = [
-        a for a in articles
-        if name_plain in _plain(a.get("title") or "") or name_plain in _plain(a.get("snippet") or "")
-    ][:8] or articles[:6]
+    candidates = [a for a in articles if mentions(a.get("title")) or mentions(a.get("snippet"))][:8] or articles[:6]
 
     def readable(article: dict) -> tuple[dict, str]:
         text = fetch_article_text(article.get("url") or "")
@@ -426,7 +485,7 @@ def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
             article, text = future.result(timeout=max(0.5, deadline - time.monotonic() - 15))
         except Exception:  # noqa: BLE001  (slow page: skip it)
             continue
-        if name_plain in _plain(text) or name_plain in _plain(article.get("title") or ""):
+        if mentions(text) or mentions(article.get("title")):
             texts.append((article, text))
     pool.shutdown(wait=False, cancel_futures=True)
 
@@ -560,7 +619,9 @@ def _area_known(key: str) -> bool:
     if not row or not row.get("last_gathered_at"):
         return False
     gathered = datetime.fromisoformat(str(row["last_gathered_at"]).replace("Z", "+00:00"))
-    return datetime.now(timezone.utc) - gathered < timedelta(days=REGATHER_AFTER_DAYS)
+    # Areas with no news are checked again sooner: news appears all the time.
+    days = REGATHER_AFTER_DAYS if int(row.get("record_count") or 0) > 0 else 14
+    return datetime.now(timezone.utc) - gathered < timedelta(days=days)
 
 
 def _trip_key(route_geometries) -> tuple:

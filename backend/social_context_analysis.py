@@ -762,6 +762,7 @@ def analyse_social_context(
                         section_ids[k].append(str(entry["record_id"]))
 
             entry["section_effects"] = [round(e, 2) for e in per_section]
+            entry["section_influence"] = [round(w, 3) for w in sections]
             entry["effect_points"] = round(sum(per_section) / SECTION_COUNT, 3)
             entry["match_strength"] = "specific" if specific else "area"
             matched.append(entry)
@@ -795,6 +796,14 @@ def analyse_social_context(
                 f"mixed: {positives} positive, {concerns} concern" + ("s" if concerns != 1 else "")
             )
         influence = max(r["influence"] for r in records)
+        # Sections (1-10) this area actually covers: its core or a good part of it.
+        section_weight = [
+            max((r.get("section_influence") or [0.0] * SECTION_COUNT)[k] for r in records)
+            for k in range(SECTION_COUNT)
+        ]
+        affected_sections = [k + 1 for k, w in enumerate(section_weight) if w >= 0.3]
+        section_effect = [round(sum((r.get("section_effects") or [0.0] * SECTION_COUNT)[k] for r in records), 2)
+                          for k in range(SECTION_COUNT)]
         city_id = records[0]["city_id"]
         if city_id not in summaries_by_city:
             summaries_by_city[city_id] = load_area_summaries(city_id)
@@ -809,6 +818,8 @@ def analyse_social_context(
             "influence": round(influence, 2),
             "influence_label": "strong" if influence >= 0.7 else "some" if influence >= 0.45 else "slight",
             "score_effect_points": round(sum(r["effect_points"] for r in records), 2),
+            "affected_sections": affected_sections,
+            "section_effect_points": section_effect,
             "summary": ai.get("summary") or records[0]["summary"],
             "summary_source": "ai_from_records" if ai.get("summary") else "top_record",
             "auto_gathered": all(r.get("origin") == "auto" for r in records),
