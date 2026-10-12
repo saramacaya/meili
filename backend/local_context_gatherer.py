@@ -229,17 +229,62 @@ def search_news_google(name: str, city: str, country_code: str = "") -> list[dic
     return articles[:25]
 
 
+from html.parser import HTMLParser
+
+
+class _ParagraphText(HTMLParser):
+    """Collects text inside <p> tags, skipping scripts and styles.
+    A streaming parser: unlike regular expressions over the whole page it never
+    blocks the server for long, even on huge pages."""
+
+    def __init__(self, limit: int):
+        super().__init__(convert_charrefs=True)
+        self.limit, self.parts, self.size = limit, [], 0
+        self.in_p = 0
+        self.skip = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style", "noscript", "nav", "header", "footer", "aside", "form"):
+            self.skip += 1
+        elif tag == "p":
+            self.in_p += 1
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style", "noscript", "nav", "header", "footer", "aside", "form"):
+            self.skip = max(0, self.skip - 1)
+        elif tag == "p":
+            self.in_p = max(0, self.in_p - 1)
+
+    def handle_data(self, data):
+        if self.in_p and not self.skip and self.size < self.limit:
+            text = " ".join(data.split())
+            if text:
+                self.parts.append(text)
+                self.size += len(text) + 1
+
+
+MAX_PAGE_BYTES = 400_000   # never read more than this of any page
+
+
 def fetch_article_text(url: str, limit: int = 5000) -> str:
     """Readable text of an article page (best effort, first `limit` chars)."""
     try:
-        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=6)
+        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=6, stream=True)
         response.raise_for_status()
+        raw = response.raw.read(MAX_PAGE_BYTES, decode_content=True) or b""
+        response.close()
     except Exception:  # noqa: BLE001
         return ""
-    page = re.sub(r"(?is)<(script|style|nav|header|footer|aside|form)[^>]*>.*?</\1>", " ", response.text)
-    paragraphs = re.findall(r"(?is)<p[^>]*>(.*?)</p>", page)
-    text = " ".join(re.sub(r"<[^>]+>", " ", p) for p in paragraphs) or re.sub(r"<[^>]+>", " ", page)
-    return " ".join(html.unescape(text).split())[:limit]
+    page = raw.decode(response.encoding or "utf-8", errors="replace")
+    parser = _ParagraphText(limit)
+    # Feed in chunks and pause briefly so search requests always get CPU time
+    # on Render's small instance.
+    for start in range(0, len(page), 20_000):
+        parser.feed(page[start:start + 20_000])
+        if parser.size >= limit:
+            break
+        time.sleep(0.005)
+    return " ".join(parser.parts)[:limit]
 
 
 # --------------------------------------------------------- 3. AI extraction
@@ -270,7 +315,7 @@ def _ai_complete(system: str, user: str) -> str:
     # turns a redirected POST into a GET, which never reaches the model.
     hops = []
     for _ in range(4):
-        response = requests.post(url, headers=headers, json=payload, timeout=90, allow_redirects=False)
+        response = requests.post(url, headers=headers, json=payload, timeout=20, allow_redirects=False)
         location = response.headers.get("Location")
         if response.status_code in (301, 302, 303, 307, 308) and location:
             hops.append(f"{response.status_code} -> {location}")
@@ -320,7 +365,7 @@ def _seen_date(article: dict) -> Optional[str]:
 
 # ------------------------------------------------------- 4. store and load
 
-def gather_area(area: dict) -> dict:
+def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
     """News -> AI -> records for one neighbourhood; saves to Supabase.
     Fast path: quick news source first, articles fetched in parallel, two AI
     calls at a time. Typically 10-30 seconds per area."""
@@ -346,9 +391,18 @@ def gather_area(area: dict) -> dict:
             text = f"{article.get('title', '')}. {article['snippet']}"
         return article, text
 
-    with _Pool(max_workers=6) as pool:
-        texts = [(a, t) for a, t in pool.map(readable, candidates)
-                 if name_plain in _plain(t) or name_plain in _plain(a.get("title") or "")]
+    deadline = time.monotonic() + budget_seconds
+    pool = _Pool(max_workers=6)
+    futures = [pool.submit(readable, c) for c in candidates]
+    texts = []
+    for future in futures:
+        try:
+            article, text = future.result(timeout=max(0.5, deadline - time.monotonic() - 15))
+        except Exception:  # noqa: BLE001  (slow page: skip it)
+            continue
+        if name_plain in _plain(text) or name_plain in _plain(article.get("title") or ""):
+            texts.append((article, text))
+    pool.shutdown(wait=False, cancel_futures=True)
 
     def extract(item: tuple[dict, str]) -> tuple[dict, list[dict]]:
         article, text = item
@@ -358,8 +412,15 @@ def gather_area(area: dict) -> dict:
             _log("AI extraction failed", area=area["name"], error=str(error)[:150])
             return article, []
 
-    with _Pool(max_workers=2) as pool:   # stay inside free AI rate limits
-        results = list(pool.map(extract, texts[:MAX_ARTICLES_PER_AREA]))
+    pool = _Pool(max_workers=2)   # stay inside free AI rate limits
+    futures = [pool.submit(extract, item) for item in texts[:MAX_ARTICLES_PER_AREA]]
+    results = []
+    for future in futures:
+        try:
+            results.append(future.result(timeout=max(0.5, deadline - time.monotonic())))
+        except Exception:  # noqa: BLE001  (AI too slow: keep what we have)
+            _log("AI step skipped: time limit", area=area["name"])
+    pool.shutdown(wait=False, cancel_futures=True)
 
     for article, extracted in results:
         for record in extracted:
@@ -443,7 +504,10 @@ def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
 # ------------------------------------------------- background orchestration
 
 _trip_jobs: dict[tuple, dict] = {}
-_worker_lock = threading.Lock()   # one gathering job at a time (polite + free tiers)
+# Up to two trips gather at once, so one slow trip never blocks everyone.
+_worker_slots = threading.BoundedSemaphore(2)
+JOB_BUDGET_SECONDS = 45      # a trip's gathering stops after this
+JOB_WATCHDOG_SECONDS = 70    # never report "gathering" for longer than this
 GATHERING: set[str] = set()
 
 
@@ -489,18 +553,32 @@ def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> dict:
         return {"status": "ready", "areas_checked": []}
     key = _trip_key(route_geometries)
     job = _trip_jobs.get(key)
+    if job and job["state"] == "running" and time.time() - job["started_at"] > JOB_WATCHDOG_SECONDS:
+        # Watchdog: whatever is still running, stop telling the app to wait.
+        _log("gathering watchdog stopped a slow trip", areas=len(job["areas"]))
+        job["state"] = "done"
+        job["finished_at"] = time.time()
+        job["result"] = "ready" if job.get("found_any") else "none_found"
     if job and (job["state"] == "running" or time.time() - job.get("finished_at", 0) < 3600):
         return {"status": "gathering" if job["state"] == "running" else job["result"],
                 "areas_checked": list(job["areas"])}
 
-    job = {"state": "running", "areas": [], "result": "ready"}
+    job = {"state": "running", "areas": [], "result": "ready", "started_at": time.time(), "found_any": False}
     _trip_jobs[key] = job
 
     def run() -> None:
-        with _worker_lock:
+        if not _worker_slots.acquire(timeout=20):
+            job["areas"].append({"area": "-", "status": "skipped: server busy, try again later"})
+            job.update(state="done", finished_at=time.time(), result="none_found")
+            return
+        try:
+            started = time.monotonic()
             found_any = False
             try:
                 for area in neighbourhoods_along(route_geometries):
+                    if time.monotonic() - started > JOB_BUDGET_SECONDS:
+                        job["areas"].append({"area": area["name"], "status": "skipped: time limit"})
+                        continue
                     akey = area_key(area["city"], area["name"])
                     if _area_known(akey):
                         count = _area_record_count(akey)
@@ -509,8 +587,10 @@ def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> dict:
                         continue
                     GATHERING.add(akey)
                     try:
-                        result = gather_area(area)
+                        remaining = max(10.0, JOB_BUDGET_SECONDS - (time.monotonic() - started))
+                        result = gather_area(area, budget_seconds=remaining)
                         found_any = found_any or result["records"] > 0
+                        job["found_any"] = found_any
                         job["areas"].append({
                             "area": area["name"],
                             "status": f"{result['records']} notes from {result['articles_found']} articles",
@@ -521,9 +601,12 @@ def ensure_context(route_geometries: list[list[tuple[float, float]]]) -> dict:
                     _log("no neighbourhoods found along route")
             except Exception as error:  # noqa: BLE001
                 _log("gathering crashed", error=str(error)[:200])
-            job["result"] = "ready" if found_any else "none_found"
-            job["finished_at"] = time.time()
-            job["state"] = "done"
+            if job["state"] == "running":
+                job["result"] = "ready" if found_any else "none_found"
+                job["finished_at"] = time.time()
+                job["state"] = "done"
+        finally:
+            _worker_slots.release()
 
     threading.Thread(target=run, daemon=True, name="local-context").start()
     return {"status": "gathering", "areas_checked": []}
