@@ -2,7 +2,7 @@ name: Summarise area context with AI
 
 # Writes one short, neutral summary per neighbourhood from Meili's stored
 # opinion/incident records (no new facts), and commits the result.
-# Uses GitHub Models: free, rate-limited, no API key needed.
+# Uses Google Gemini's free tier (repository secret GEMINI_API_KEY).
 # Runs automatically when opinion data changes, or by hand.
 on:
   push:
@@ -25,8 +25,8 @@ jobs:
       - run: pip install requests
       - name: Generate summaries
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MEILI_AI_PROVIDER: github
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MEILI_AI_PROVIDER: gemini
         run: python backend/tools/summarise_areas.py
       - name: Commit new summaries
         run: |
