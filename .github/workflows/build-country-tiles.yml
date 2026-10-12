@@ -4,9 +4,10 @@ name: Build country map tiles
 # (Geofabrik), so searches never depend on the public Overpass servers.
 # Runs on the 2nd of each month (OpenStreetMap changes), or by hand.
 #
-# To add a country, add its Geofabrik path (see download.geofabrik.de),
-# e.g. "europe/italy". Watch the size line in each run's log: the Supabase
-# free plan has 1000 MB of storage in total.
+# Countries are built one at a time, most important first. A storage guard
+# skips a NEW country if Meili's map data would exceed MEILI_STORAGE_BUDGET_MB
+# (Supabase free plan: 1000 MB in total). Already-built countries are always
+# refreshed. Each run's log shows the storage used per country.
 on:
   schedule:
     - cron: "0 2 2 * *"
@@ -21,9 +22,48 @@ jobs:
       fail-fast: false
       matrix:
         region:
+          # already built
           - europe/spain
           - europe/portugal
           - europe/slovenia
+          # most visited / most relevant first
+          - europe/italy
+          - europe/france
+          - europe/united-kingdom
+          - europe/germany
+          - europe/netherlands
+          - europe/belgium
+          - europe/switzerland
+          - europe/austria
+          - europe/ireland-and-northern-ireland
+          - europe/greece
+          - europe/czech-republic
+          - europe/denmark
+          - europe/croatia
+          - europe/hungary
+          - europe/poland
+          - europe/sweden
+          - europe/norway
+          - europe/finland
+          - europe/luxembourg
+          - europe/malta
+          - europe/cyprus
+          - europe/iceland
+          - europe/andorra
+          - europe/monaco
+          - europe/liechtenstein
+          - europe/slovakia
+          - europe/estonia
+          - europe/latvia
+          - europe/lithuania
+          - europe/romania
+          - europe/bulgaria
+          - europe/serbia
+          - europe/bosnia-herzegovina
+          - europe/montenegro
+          - europe/albania
+          - europe/macedonia
+          - europe/kosovo
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,6 +81,7 @@ jobs:
           curl -L --fail --retry 3 -o country.osm.pbf \
             "https://download.geofabrik.de/${{ matrix.region }}-latest.osm.pbf"
           ls -lh country.osm.pbf
+          size_mb=$(( $(stat -c %s country.osm.pbf) / 1000000 ))
           osmium tags-filter country.osm.pbf \
             w/lit n/highway=street_lamp \
             nwr/amenity=cafe,restaurant,fast_food,pharmacy,hospital,clinic,doctors,police,fire_station,bar,pub,nightclub \
@@ -50,8 +91,10 @@ jobs:
           osmium export filtered.osm.pbf -f geojsonseq -a type,id -o filtered.geojsonseq -O
           ls -lh filtered.geojsonseq
           echo "COUNTRY=$name" >> "$GITHUB_ENV"
+          echo "SOURCE_MB=$size_mb" >> "$GITHUB_ENV"
       - name: Build tiles and upload to Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY"
+          MEILI_STORAGE_BUDGET_MB: "850"
+        run: python backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY" --source-mb "$SOURCE_MB"
