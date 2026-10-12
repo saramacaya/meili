@@ -168,6 +168,13 @@ class Storage:
 
     uploaded_bytes = 0
 
+    def list_coverage(self) -> list[str]:
+        r = requests.post(f"{self.base}/object/list/{BUCKET}", headers=self.headers,
+                          json={"prefix": "v1/coverage/", "limit": 1000}, timeout=60)
+        if r.status_code != 200:
+            return []
+        return [item["name"] for item in r.json() if item.get("name", "").endswith(".json.gz")]
+
     def put(self, path: str, data: dict) -> None:
         body = gzip.compress(json.dumps(data, separators=(",", ":")).encode())
         Storage.uploaded_bytes += len(body)
@@ -185,6 +192,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("geojsonseq")
     parser.add_argument("--country", required=True)
+    parser.add_argument("--source-mb", type=float, default=0.0,
+                        help="size of the downloaded OpenStreetMap file, to estimate storage use")
     args = parser.parse_args()
 
     with open(args.geojsonseq, encoding="utf-8") as handle:
@@ -200,6 +209,30 @@ def main() -> int:
     storage = Storage(url, key)
     storage.ensure_bucket()
     now = time.time()
+
+    # ---- storage guard ------------------------------------------------------
+    # Meili's own estimate of how much map data is stored, from each country's
+    # coverage file. A country already built is always allowed (monthly refresh).
+    budget_mb = float(os.getenv("MEILI_STORAGE_BUDGET_MB", "850"))
+    used_mb, already_built = 0.0, False
+    for name in storage.list_coverage():
+        country_name = name.removesuffix(".json.gz")
+        info = storage.get(f"v1/coverage/{name}") or {}
+        size = info.get("uploaded_mb")
+        if size is None:   # older coverage files: about 5 kB per block (Spain: 56.9 MB / 11308)
+            size = 0.005 * len(info.get("blocks") or [])
+        if country_name == args.country:
+            already_built = True
+        else:
+            used_mb += float(size)
+    estimate_mb = len(blocks) * 0.005 if blocks else args.source_mb * 0.045
+    print(f"storage: {used_mb:.0f} MB used by other countries, {args.country} needs about "
+          f"{estimate_mb:.0f} MB, budget {budget_mb:.0f} MB")
+    if not already_built and used_mb + estimate_mb > budget_mb:
+        print(f"::warning::Skipping {args.country}: it would bring Meili's map data to about "
+              f"{used_mb + estimate_mb:.0f} MB, over the {budget_mb:.0f} MB budget. "
+              "Move map storage to Cloudflare R2 or raise MEILI_STORAGE_BUDGET_MB to include it.")
+        return 0
 
     def upload(item) -> int:
         (row, col), block_tiles = item
@@ -219,7 +252,8 @@ def main() -> int:
             if done % 100 == 0:
                 print(f"  uploaded {done}/{len(blocks)} blocks")
     storage.put(f"v1/coverage/{args.country}.json.gz",
-                {"country": args.country, "built_at": now, "blocks": [f"{r}_{c}" for r, c in blocks]})
+                {"country": args.country, "built_at": now, "blocks": [f"{r}_{c}" for r, c in blocks],
+                 "uploaded_mb": round(Storage.uploaded_bytes / 1e6, 2)})
     print(f"{args.country}: uploaded {len(blocks)} blocks, {Storage.uploaded_bytes / 1e6:.1f} MB "
           "(Supabase free plan: 1000 MB total storage).")
     return 0
