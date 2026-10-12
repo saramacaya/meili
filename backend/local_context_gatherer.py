@@ -39,7 +39,7 @@ GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 AUTO_VERIFICATION_WEIGHT = 0.7
 REGATHER_AFTER_DAYS = 90
-MAX_ARTICLES_PER_AREA = 4
+MAX_ARTICLES_PER_AREA = 6
 MIN_RADIUS_M, MAX_RADIUS_M = 300.0, 1500.0
 RECORDS_TABLE = "area_context_records"
 AREAS_TABLE = "area_context_areas"
@@ -80,16 +80,23 @@ ALLOWED_TIERS = {"confirmed_incident", "resident_complaint", "perception_only", 
 ALLOWED_TIMES = {"daytime", "evening", "late_night", "weekend", "unspecified"}
 
 EXTRACTION_PROMPT = (
-    "You extract walking-safety evidence for one specific neighbourhood from one news article. "
-    "Use ONLY what the article states. Never add facts, numbers, causes or opinions. "
-    "Ignore anything not clearly about street safety (crime, harassment, lighting, feeling safe or "
-    "unsafe on the street, police presence) IN the named neighbourhood. Do not name private individuals. "
+    "You extract walking-safety evidence about one specific neighbourhood from one web page "
+    "(a news article, forum or Reddit thread, travel guide, review or blog). "
+    "Use ONLY what the page states. Never add facts, numbers, causes or opinions of your own. "
+    "Count: reported incidents (crime, harassment, assaults, robberies), police activity, lighting, "
+    "and clearly stated impressions from residents or visitors about how safe the streets feel "
+    "(e.g. 'fine during the day, I avoid the side streets at night'). "
+    "Ignore anything not about street safety IN the named neighbourhood, generic city-wide claims, "
+    "advertising, and property prices. Do not name private individuals. "
+    "Evidence tiers: confirmed_incident = a specific reported event; municipal_data = official statistics; "
+    "resident_complaint = residents or local groups describing problems they experience; "
+    "perception_only = general impressions or visitor opinions. "
     "Return JSON only, no prose: {\"records\": [ {\"sentiment\": \"negative|positive|mixed\", "
     "\"evidence_tier\": \"confirmed_incident|resident_complaint|perception_only|municipal_data\", "
     "\"time_context\": \"daytime|evening|late_night|weekend|unspecified\", "
-    "\"summary\": \"one neutral English sentence, max 35 words\", "
+    "\"summary\": \"one neutral English sentence, max 35 words, saying who said it (e.g. 'Residents on a forum say…')\", "
     "\"about_this_neighbourhood\": true } ] }. "
-    "Return at most 2 records. Return {\"records\": []} if the article has nothing relevant."
+    "Return at most 2 records. Return {\"records\": []} if the page has nothing relevant."
 )
 
 
@@ -112,7 +119,7 @@ def _plain(text: str) -> str:
     ).lower().strip()
 
 
-SEARCH_VERSION = 2   # bump when the news search improves: every area gets re-checked once
+SEARCH_VERSION = 3   # bump when the search improves: every area gets re-checked once
 
 
 def area_key(city: str, name: str) -> str:
@@ -182,22 +189,35 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
     return result
 
 
-MAX_AREAS_PER_TRIP = 3
+MAX_AREAS_PER_TRIP = 5
+LOOKUP_EVERY_METERS = 600
+MAX_LOOKUPS = 7
 
 
 def neighbourhoods_along(route_geometries: list[list[tuple[float, float]]]) -> list[dict]:
-    """Up to 3 distinct neighbourhoods for the whole trip (start, middle, end).
-    Alternative routes run through the same area, so one set of lookups is enough."""
+    """Distinct neighbourhoods along the trip: a lookup about every 600 m of the
+    longest route (start and end always included), up to 5 areas."""
     main = max((g for g in route_geometries if g), key=len, default=[])
     if not main:
         return []
+    picks, walked, last_pick = [main[0]], 0.0, 0.0
+    for a, b in zip(main, main[1:]):
+        walked += _distance_m(a, b)
+        if walked - last_pick >= LOOKUP_EVERY_METERS:
+            picks.append(b)
+            last_pick = walked
+    picks.append(main[-1])
+    if len(picks) > MAX_LOOKUPS:   # keep them spread evenly
+        step = (len(picks) - 1) / (MAX_LOOKUPS - 1)
+        picks = [picks[round(i * step)] for i in range(MAX_LOOKUPS)]
     found: dict[str, dict] = {}
-    for index in sorted({0, len(main) // 2, len(main) - 1}):
-        lon, lat = main[index]
+    for lon, lat in picks:
         area = reverse_neighbourhood(lon, lat)
         if area:
             found.setdefault(area_key(area["city"], area["name"]), area)
-    return list(found.values())[:MAX_AREAS_PER_TRIP]
+        if len(found) >= MAX_AREAS_PER_TRIP:
+            break
+    return list(found.values())
 
 
 # ---------------------------------------------------------- 2. news search
@@ -289,6 +309,63 @@ def search_news_google(name: str, city: str, country_code: str = "") -> list[dic
         })
     _log("news found", area=name, language=language, articles=len(articles))
     return articles[:25]
+
+
+TAVILY_URL = "https://api.tavily.com/search"
+OPINION_PHRASES = {
+    "es": "{name} {city} es seguro de noche opiniones vivir en el barrio",
+    "pt": "{name} {city} é seguro à noite opiniões viver no bairro",
+    "it": "{name} {city} è sicuro di notte opinioni vivere nel quartiere",
+    "fr": "{name} {city} quartier sûr la nuit avis habitants",
+    "de": "{name} {city} sicher nachts Erfahrungen wohnen im Viertel",
+    "nl": "{name} {city} veilig 's nachts ervaringen wonen in de wijk",
+    "sl": "{name} {city} varno ponoči mnenja življenje v soseski",
+}
+
+
+def search_opinions(name: str, city: str, country_code: str = "") -> list[dict]:
+    """Opinions about walking safety in an area from the whole web (Tavily):
+    resident and visitor discussions, forums, guides, local news. Returns the
+    page text too, so the AI reads the actual discussion, not just a headline."""
+    key = os.getenv("TAVILY_API_KEY", "").strip()
+    if not key:
+        return []
+    language = LANGUAGE_BY_COUNTRY.get((country_code or "").upper(), "en")
+    queries = [f'is {name} in {city} safe to walk at night? residents and visitors opinions']
+    if language in OPINION_PHRASES:
+        queries.append(OPINION_PHRASES[language].format(name=name, city=city))
+    pages: dict[str, dict] = {}
+    for query in queries:
+        try:
+            response = requests.post(
+                TAVILY_URL,
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={"query": query, "search_depth": "basic", "max_results": 8,
+                      "include_raw_content": "text", "time_range": "year"},
+                timeout=20,
+            )
+            response.raise_for_status()
+            results = response.json().get("results", [])
+        except Exception as error:  # noqa: BLE001
+            _log("opinion search failed", area=name, error=str(error)[:150])
+            continue
+        for item in results:
+            url = item.get("url")
+            if not url or url in pages:
+                continue
+            raw = " ".join(str(item.get("raw_content") or "").split())
+            pages[url] = {
+                "title": item.get("title") or "",
+                "url": url,
+                "domain": url.split("/")[2] if "//" in url else "web",
+                "seendate": (str(item.get("published_date") or "")[:10].replace("-", "") + "T000000Z")
+                            if item.get("published_date") else "",
+                "snippet": " ".join(str(item.get("content") or "").split()),
+                "text": raw[:6000],   # already-read page text: no need to fetch it again
+                "kind": "opinion_search",
+            }
+    _log("opinions found", area=name, pages=len(pages), searches=len(queries))
+    return list(pages.values())
 
 
 from html.parser import HTMLParser
@@ -418,8 +495,8 @@ def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     """Structured, validated records from one article (may be empty)."""
     user = (f"Neighbourhood: {area['name']}, {area['city']} "
             f"(also written as: {', '.join(_name_variants(area['name']))})\n"
-            f"Article title: {article.get('title')}\nPublished: {article.get('seendate')}\n"
-            f"Article text: {text}")
+            f"Page title: {article.get('title')}\nSource: {article.get('domain')}\n"
+            f"Published: {article.get('seendate') or 'unknown'}\nPage text: {text}")
     raw = _ai_complete(EXTRACTION_PROMPT, user)
     try:
         data = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
@@ -464,13 +541,19 @@ def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
         plain = _plain(text or "")
         return any(v in plain for v in name_variants)
 
-    articles = search_news_google(area["name"], area["city"], area.get("country_code") or "")
-    if not articles:
-        articles = search_news(area["name"], area["city"])
+    opinions = search_opinions(area["name"], area["city"], area.get("country_code") or "")
+    news = search_news_google(area["name"], area["city"], area.get("country_code") or "")
+    if not news and not opinions:
+        news = search_news(area["name"], area["city"])
+    articles = opinions + news
     # Keep only articles whose headline or snippet mentions the area at all.
-    candidates = [a for a in articles if mentions(a.get("title")) or mentions(a.get("snippet"))][:8] or articles[:6]
+    candidates = [a for a in articles
+                  if mentions(a.get("title")) or mentions(a.get("snippet")) or mentions(a.get("text"))][:10] \
+        or articles[:6]
 
     def readable(article: dict) -> tuple[dict, str]:
+        if len(article.get("text") or "") >= 300:
+            return article, article["text"]          # page text already provided by the search
         text = fetch_article_text(article.get("url") or "")
         if len(text) < 300 and article.get("snippet"):
             text = f"{article.get('title', '')}. {article['snippet']}"
@@ -591,8 +674,8 @@ def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
 _trip_jobs: dict[tuple, dict] = {}
 # Up to two trips gather at once, so one slow trip never blocks everyone.
 _worker_slots = threading.BoundedSemaphore(2)
-JOB_BUDGET_SECONDS = 45      # a trip's gathering stops after this
-JOB_WATCHDOG_SECONDS = 70    # never report "gathering" for longer than this
+JOB_BUDGET_SECONDS = 60      # a trip's gathering stops after this
+JOB_WATCHDOG_SECONDS = 80    # never report "gathering" for longer than this
 GATHERING: set[str] = set()
 
 
@@ -742,6 +825,8 @@ def diagnose() -> dict:
         "place_names_nominatim": timed(nominatim),
         "news_gdelt": ("via proxy -> " if outbound.proxy_available() else "direct -> ") + timed(gdelt),
         "news_backup_google": timed(lambda: f"{len(search_news_google('Center', 'Ljubljana', 'SI'))} articles"),
+        "opinions_tavily": (timed(lambda: f"{len(search_opinions('Gràcia', 'Barcelona', 'ES'))} pages")
+                            if os.getenv("TAVILY_API_KEY") else "not configured (set TAVILY_API_KEY on Render)"),
         "ai_model": f"{AI_PROVIDER}:{AI_MODEL} -> " + timed(ai),
         "database_supabase": timed(supabase),
         "recent_activity": list(GATHER_LOG)[:15],
