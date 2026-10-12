@@ -1,3 +1,4 @@
+import copy
 import asyncio
 from typing import Literal, Optional
 import os
@@ -3276,10 +3277,10 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             detail=main_response.text
         )
 
-    google_routes = list(main_response.json().get("routes", []))
+    google_routes = [dict(r, _meili_source="google") for r in main_response.json().get("routes", [])]
     for extra in responses[1:]:
         if not isinstance(extra, Exception) and extra.status_code == 200:
-            google_routes.extend(extra.json().get("routes", []))
+            google_routes.extend(dict(r, _meili_source="extra") for r in extra.json().get("routes", []))
 
     if not google_routes:
         raise HTTPException(
@@ -3329,6 +3330,9 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             "distance_km": round(distance_meters / 1000, 2),
             "encoded_polyline": route.get("polyline", {}).get("encodedPolyline"),
             "provider_labels": route.get("routeLabels", []),
+            # "google" = Google's own alternatives (score these first);
+            # "extra" = routes forced left/right of the direct line (score after).
+            "source": route.get("_meili_source", "google"),
             "safety_score": None,
             "safety_status": "not_scored"
         })
@@ -3894,6 +3898,18 @@ class RouteComparisonRequest(BaseModel):
 
 # ---- Fast-path caches -------------------------------------------------------
 
+ROUTE_RESULT_CACHE: "OrderedDict[str, tuple[float, dict, dict]]" = OrderedDict()
+ROUTE_RESULT_TTL_SECONDS = 1800
+
+
+def _route_cache_key(route, request) -> str:
+    """Same walk, same 15-minute departure window -> same analysis."""
+    slot = request.departure_datetime.replace(minute=(request.departure_datetime.minute // 15) * 15,
+                                              second=0, microsecond=0)
+    geometry = ";".join(f"{lon:.5f},{lat:.5f}" for lon, lat in route.geometry)
+    raw = f"{geometry}|{route.estimated_time_minutes}|{slot.isoformat()}|{request.sample_interval_meters}"
+    return hashlib.sha256(raw.encode()).hexdigest()
+
 MAX_WALK_DISTANCE_METERS = 25_000   # about 5 hours on foot
 
 tile_cache.VALENCIA_LAMP_FETCHER = lambda corners: fetch_valencia_streetlights(corners)
@@ -4192,6 +4208,16 @@ def compare_routes(request: RouteComparisonRequest):
     label_inputs = []
 
     for route in request.routes:
+        # Already scored in the last 30 minutes (e.g. the app's first, faster
+        # request with fewer routes): reuse it instead of scoring again.
+        route_key = _route_cache_key(route, request)
+        cached_route = ROUTE_RESULT_CACHE.get(route_key)
+        if cached_route and time.time() - cached_route[0] < ROUTE_RESULT_TTL_SECONDS:
+            result_copy = copy.deepcopy(cached_route[1])
+            result_copy["route_id"] = route.route_id
+            route_results.append(result_copy)
+            label_inputs.append(dict(cached_route[2], route_id=route.route_id))
+            continue
         try:
             route_duration_seconds = route.estimated_time_minutes * 60
             route_samples = densify_route(
@@ -4392,6 +4418,14 @@ def compare_routes(request: RouteComparisonRequest):
                     "osm_individual_lamps": osm_lamp_debug
                 }
             })
+            # Remember finished, complete analyses only.
+            blocking_errors = {"osm_lit", "osm_individual_lamps", "active_places", "official_valencia_lamps"}
+            if (not (blocking_errors & set(source_errors))
+                    and social_context_analysis.get("local_context_status") != "gathering"):
+                ROUTE_RESULT_CACHE[route_key] = (time.time(), copy.deepcopy(route_results[-1]),
+                                                 dict(label_inputs[-1]))
+                while len(ROUTE_RESULT_CACHE) > 300:
+                    ROUTE_RESULT_CACHE.popitem(last=False)
 
         except Exception as error:
             route_results.append({
