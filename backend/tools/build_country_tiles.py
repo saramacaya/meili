@@ -217,11 +217,29 @@ class Storage:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("geojsonseq")
+    parser.add_argument("geojsonseq", nargs="?", default="")
     parser.add_argument("--country", required=True)
+    parser.add_argument("--check-only", action="store_true",
+                        help="only decide whether this country needs building; prints SKIP or BUILD")
     parser.add_argument("--source-mb", type=float, default=0.0,
                         help="size of the downloaded OpenStreetMap file, to estimate storage use")
     args = parser.parse_args()
+
+    if args.check_only:
+        url, key = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
+        if not (url and key):
+            print("BUILD")
+            return 0
+        storage = Storage(url, key)
+        days = float(os.getenv("MEILI_REFRESH_AFTER_DAYS", "20"))
+        info = storage.get(f"v1/coverage/{args.country}.json.gz") or {}
+        built_at = float(info.get("built_at") or 0)
+        if built_at and (time.time() - built_at) / 86400 < days:
+            print(f"{args.country} was built {(time.time() - built_at) / 86400:.1f} days ago: up to date.")
+            print("SKIP")
+        else:
+            print("BUILD")
+        return 0
 
     with open(args.geojsonseq, encoding="utf-8") as handle:
         tiles = sort_into_tiles(handle)
@@ -241,7 +259,9 @@ def main() -> int:
     # Meili's own estimate of how much map data is stored, from each country's
     # coverage file. A country already built is always allowed (monthly refresh).
     budget_mb = float(os.getenv("MEILI_STORAGE_BUDGET_MB", "850"))
-    used_mb, already_built = 0.0, False
+    refresh_after_days = float(os.getenv("MEILI_REFRESH_AFTER_DAYS", "20"))
+    used_mb, already_built, built_at = 0.0, False, 0.0
+    shared_blocks: set[str] = set()      # blocks other countries already filled (borders)
     for name in storage.list_coverage():
         country_name = name.removesuffix(".json.gz")
         info = storage.get(f"v1/coverage/{name}") or {}
@@ -250,8 +270,15 @@ def main() -> int:
             size = 0.005 * len(info.get("blocks") or [])
         if country_name == args.country:
             already_built = True
+            built_at = float(info.get("built_at") or 0)
         else:
             used_mb += float(size)
+            shared_blocks.update(info.get("blocks") or [])
+    age_days = (time.time() - built_at) / 86400 if built_at else None
+    if already_built and age_days is not None and age_days < refresh_after_days:
+        print(f"{args.country} was built {age_days:.1f} days ago: up to date, skipping "
+              f"(refreshes after {refresh_after_days:.0f} days).")
+        return 0
     estimate_mb = len(blocks) * 0.005 if blocks else args.source_mb * 0.045
     print(f"storage: {used_mb:.0f} MB used by other countries, {args.country} needs about "
           f"{estimate_mb:.0f} MB, budget {budget_mb:.0f} MB")
@@ -264,7 +291,9 @@ def main() -> int:
     def upload(item) -> int:
         (row, col), block_tiles = item
         path = f"{BLOCK_PREFIX}/{row}_{col}.json.gz"
-        existing = storage.get(path) or {}
+        # Only border blocks (also filled by another country) need merging;
+        # every other block is simply replaced, saving one request per block.
+        existing = (storage.get(path) or {}) if f"{row}_{col}" in shared_blocks else {}
         merged_tiles = dict(existing.get("tiles") or {})
         for key_, data in block_tiles.items():
             merged_tiles[key_] = _merge(merged_tiles.get(key_, {}), data)

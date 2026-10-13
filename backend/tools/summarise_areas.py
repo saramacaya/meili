@@ -101,6 +101,7 @@ def _complete(user_text: str, key: str) -> str:
         OPENAI_STYLE_URLS[PROVIDER],
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         json={"model": MODEL, "max_tokens": 1024, "temperature": 0.2,
+              **({"reasoning_effort": "low"} if PROVIDER == "gemini" else {}),
               "messages": [{"role": "system", "content": SYSTEM},
                            {"role": "user", "content": user_text}]},
         timeout=120,
