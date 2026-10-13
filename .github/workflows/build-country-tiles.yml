@@ -74,7 +74,16 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q osmium-tool
           pip install requests
+      - name: Check whether ${{ matrix.region }} needs building
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          name=$(basename "${{ matrix.region }}")
+          decision=$(python -u backend/tools/build_country_tiles.py --check-only --country "$name" | tee /dev/stderr | tail -1)
+          echo "DECISION=$decision" >> "$GITHUB_ENV"
       - name: Download and filter ${{ matrix.region }}
+        if: env.DECISION != 'SKIP'
         run: |
           set -e
           name=$(basename "${{ matrix.region }}")
@@ -93,8 +102,10 @@ jobs:
           echo "COUNTRY=$name" >> "$GITHUB_ENV"
           echo "SOURCE_MB=$size_mb" >> "$GITHUB_ENV"
       - name: Build tiles and upload to Supabase
+        if: env.DECISION != 'SKIP'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           MEILI_STORAGE_BUDGET_MB: "850"
-        run: python backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY" --source-mb "$SOURCE_MB"
+          PYTHONUNBUFFERED: "1"   # show progress live in the log
+        run: python -u backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY" --source-mb "$SOURCE_MB"
