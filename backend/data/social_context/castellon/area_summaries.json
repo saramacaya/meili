@@ -1,0 +1,153 @@
+{
+  "castello de la plana": {
+    "summary": "A UJI resident survey shows that 57.5% rated Castelló de la Plana as safe or completely safe, while 10.3% considered it unsafe.",
+    "verdict": "positive",
+    "area": "Castelló de la Plana",
+    "record_ids": [
+      "castellon-uji-006"
+    ],
+    "fingerprint": "da378d874dbf78d8",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "el grau": {
+    "summary": "El Grau records highlight community concerns regarding repeated nighttime break-ins and illegal squatting attempts, though police have made arrests, reinforced patrols, and intervened following resident tip-offs.",
+    "verdict": "concerns",
+    "area": "El Grau",
+    "record_ids": [
+      "castellon-local-001",
+      "castellon-op-014"
+    ],
+    "fingerprint": "50ab4d6c563ca049",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "grapa": {
+    "summary": "Grapa features a poorly equipped skatepark and has experienced reported robberies, leaving residents feeling insecure due to insufficient police presence.",
+    "verdict": "concerns",
+    "area": "Grapa",
+    "record_ids": [
+      "castellon-op-006",
+      "castellon-op-007"
+    ],
+    "fingerprint": "32621b7152da3268",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "grupo san agustin": {
+    "summary": "In a UJI resident survey, 3.9% of responses identifying unsafe places named Grupo San Agustín.",
+    "verdict": "concerns",
+    "area": "Grupo San Agustín",
+    "record_ids": [
+      "castellon-uji-005"
+    ],
+    "fingerprint": "63f29a19718bb5c8",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "la guinea": {
+    "summary": "A resident survey showed 20.4% of responses identified Barrio de La Guinea as an unsafe place, alongside a reported civic grievance regarding a meeting venue.",
+    "verdict": "concerns",
+    "area": "La Guinea",
+    "record_ids": [
+      "castellon-op-013",
+      "castellon-uji-003"
+    ],
+    "fingerprint": "9976176730a0b0ee",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "marjaleria": {
+    "summary": "While paths are described as tranquil despite navigation challenges, residents report attempted home intrusions and broader insecurity concerns.",
+    "verdict": "mixed",
+    "area": "Marjalería",
+    "record_ids": [
+      "castellon-local-002",
+      "castellon-op-016"
+    ],
+    "fingerprint": "151918e53a84f605",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "parque del oeste": {
+    "summary": "In a UJI resident survey, 5.8% of responses identifying an unsafe place named Parque del Oeste.",
+    "verdict": "concerns",
+    "area": "Parque del Oeste",
+    "record_ids": [
+      "castellon-uji-004"
+    ],
+    "fingerprint": "bbd65fead601b418",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "parque ribalta": {
+    "summary": "Travelers call Parque Ribalta an ideal, calm green space for walking, but a resident survey identified it as an unsafe place by 36.9% of responses.",
+    "verdict": "mixed",
+    "area": "Parque Ribalta",
+    "record_ids": [
+      "castellon-op-003",
+      "castellon-uji-001"
+    ],
+    "fingerprint": "2766f21fa4df3b1e",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "plaza mayor": {
+    "summary": "Casco Histórico is viewed as a clean and charming area with a good atmosphere and no mentioned safety caveats, despite a noticeable change between day and night.",
+    "verdict": "positive",
+    "area": "Casco Histórico",
+    "record_ids": [
+      "castellon-op-001",
+      "castellon-op-002"
+    ],
+    "fingerprint": "374d9882c232135a",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "rafalafena": {
+    "summary": "Residents opposed removing park fencing due to fears of night insecurity and street-drinking, though this reflects a planning dispute rather than confirmed crime.",
+    "verdict": "mixed",
+    "area": "Rafalafena",
+    "record_ids": [
+      "castellon-op-011"
+    ],
+    "fingerprint": "a76fd41bb8b087c7",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "raval universitari": {
+    "summary": "Raval Universitari faces resident complaints regarding drug dealing, assaults, and squatting, and is cited as requiring extra caution at night.",
+    "verdict": "concerns",
+    "area": "Raval Universitari",
+    "record_ids": [
+      "castellon-op-009",
+      "castellon-op-010"
+    ],
+    "fingerprint": "1d28b4c14ec04dd7",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "san lorenzo": {
+    "summary": "A 2025 resident survey showed that 27.2% of responses identifying an unsafe place named Barrio de San Lorenzo.",
+    "verdict": "concerns",
+    "area": "San Lorenzo",
+    "record_ids": [
+      "castellon-uji-002"
+    ],
+    "fingerprint": "03ec59c40fcc91af",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  }
+}

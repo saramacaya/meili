@@ -1,0 +1,285 @@
+{
+  "aiora": {
+    "summary": "Reviews describe Aiora as a convenient, mixed residential barrio with local shops, metro stops, and beach access, and a former resident explicitly calls it very safe.",
+    "verdict": "positive",
+    "area": "Ayora",
+    "record_ids": [
+      "valencia-op-039"
+    ],
+    "fingerprint": "2fbe63fc1f8df3a8",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "algiros": {
+    "summary": "Algirós is a student area near universities where twelve user ratings score safety at 4.40 out of 5 and street lighting at 4.10 out of 5.",
+    "verdict": "positive",
+    "area": "Algirós",
+    "record_ids": [
+      "valencia-op-027"
+    ],
+    "fingerprint": "166fdaacdae4d841",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "benimaclet": {
+    "summary": "Benimaclet is generally considered safe with constant foot traffic, though its alternative student vibe can feel noisy and a bit rough at the edges.",
+    "verdict": "mixed",
+    "area": "Benimaclet",
+    "record_ids": [
+      "valencia-op-013",
+      "valencia-op-014",
+      "valencia-op-015"
+    ],
+    "fingerprint": "b4e41cada519e8b6",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "citywide corridor": {
+    "summary": "Jardí del Túria is widely considered completely safe, though a blogger noted littering, lack of civic care, and crowds.",
+    "verdict": "mixed",
+    "area": "Jardí del Túria",
+    "record_ids": [
+      "valencia-op-023",
+      "valencia-op-024"
+    ],
+    "fingerprint": "ccae4b2d76b3e074",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "ciutat vella": {
+    "summary": "The area is quiet and narrow-laned by day, but transforms into a popular nightlife spot by evening.",
+    "verdict": "positive",
+    "area": "El Carme",
+    "record_ids": [
+      "valencia-op-005"
+    ],
+    "fingerprint": "9cbe097c8019e266",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "ciutat vella edge": {
+    "summary": "The train station can feel uneasy at night, while the bus station presents cleanliness and maintenance issues rather than safety concerns.",
+    "verdict": "mixed",
+    "area": "Estació del Nord",
+    "record_ids": [
+      "valencia-op-021",
+      "valencia-op-022"
+    ],
+    "fingerprint": "492fe6eed1f6d475",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "el cabanyal": {
+    "summary": "El Cabanyal is considered safe overall by some, but others report robberies, assaults, and feeling unsafe walking alone at night.",
+    "verdict": "mixed",
+    "area": "El Cabanyal",
+    "record_ids": [
+      "valencia-op-007",
+      "valencia-op-008",
+      "valencia-op-009",
+      "valencia-op-010"
+    ],
+    "fingerprint": "ee8bf06deadd8e9e",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "el cabanyal-canyamelar": {
+    "summary": "Residents report Carrer de l’Arquitecte Alfaro in El Cabanyal is a hotspot for tourism-related noise, public urination, and conflicts near a large tourist-apartment building.",
+    "verdict": "concerns",
+    "area": "El Cabanyal",
+    "record_ids": [
+      "valencia-op-041"
+    ],
+    "fingerprint": "e5e16c37147d0e96",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "el carme": {
+    "summary": "El Carmen is generally calm by day, but nights bring occasional sketchiness and pickpocketing in leisure areas, though serious crime is infrequent.",
+    "verdict": "mixed",
+    "area": "El Carme",
+    "record_ids": [
+      "valencia-op-004",
+      "valencia-op-006"
+    ],
+    "fingerprint": "447c4c1caa7c5230",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "el grau": {
+    "summary": "Visitor perceptions of walks near the port are positive, but municipal data highlights a socioeconomic split between a better-resourced north and a precarious southern half.",
+    "verdict": "mixed",
+    "area": "El Grau",
+    "record_ids": [
+      "valencia-op-035",
+      "valencia-op-036"
+    ],
+    "fingerprint": "34475549488ad7f2",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "extramurs": {
+    "summary": "A long-term resident describes Extramurs, specifically El Botànic, as the best place to live in Valencia due to its calm environment and central location.",
+    "verdict": "positive",
+    "area": "Extramurs",
+    "record_ids": [
+      "valencia-op-016"
+    ],
+    "fingerprint": "74775ee1df9b8608",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "la malva-rosa": {
+    "summary": "Malvarrosa faces unverified claims of drug activity at a specific spot, but is also perceived as staying lively and populated after dark.",
+    "verdict": "mixed",
+    "area": "Malvarrosa",
+    "record_ids": [
+      "valencia-op-011",
+      "valencia-op-012"
+    ],
+    "fingerprint": "c54783c32c6ac2de",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "la saidia": {
+    "summary": "While users rate the district highly for safety and tranquility, the neighbourhood association reports a recent rise in thefts and a daytime fight prompting calls for police.",
+    "verdict": "mixed",
+    "area": "La Saïdia",
+    "record_ids": [
+      "valencia-op-025",
+      "valencia-op-040"
+    ],
+    "fingerprint": "444c429b42e285a8",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "marina real juan carlos i": {
+    "summary": "A visitor reported that the marina felt empty with few people around, contrasting with its touristic image.",
+    "verdict": "concerns",
+    "area": "Marina",
+    "record_ids": [
+      "valencia-op-038"
+    ],
+    "fingerprint": "410d9a0e5842db0f",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "mestalla": {
+    "summary": "Although busy near the stadium on match days, Mestalla's residential streets are generally calm and regarded as a favorable central-adjacent barrio.",
+    "verdict": "positive",
+    "area": "Mestalla",
+    "record_ids": [
+      "valencia-op-037"
+    ],
+    "fingerprint": "a35281c7ad033110",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "morvedre": {
+    "summary": "While La Saïdia generally has positive ratings, the Morvedre sub-neighbourhood faces concerns regarding dirt, squatted buildings, and weekend nighttime noise.",
+    "verdict": "mixed",
+    "area": "La Saïdia",
+    "record_ids": [
+      "valencia-op-026"
+    ],
+    "fingerprint": "75925c7690a1c460",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "nazaret": {
+    "summary": "Residents report mixed views, noting recent safety improvements alongside ongoing infrastructure and service deficits, flood vulnerability, and past drug-related arrests.",
+    "verdict": "mixed",
+    "area": "Nazaret",
+    "record_ids": [
+      "valencia-op-031",
+      "valencia-op-032",
+      "valencia-op-033",
+      "valencia-op-034"
+    ],
+    "fingerprint": "66e92c1e8d5bcafb",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "orriols": {
+    "summary": "Orriols is described as improving and energetic, though records also note drug-related stabbings, resident protests, and multiple large-scale police raids.",
+    "verdict": "mixed",
+    "area": "Orriols",
+    "record_ids": [
+      "valencia-op-018",
+      "valencia-op-019",
+      "valencia-op-020"
+    ],
+    "fingerprint": "6bcbd5e31713561a",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "patraix": {
+    "summary": "Patraix is described as a quiet, safe, flat, and family-friendly area with excellent schools and minimal nightlife where some expats may feel isolated.",
+    "verdict": "positive",
+    "area": "Patraix",
+    "record_ids": [
+      "valencia-op-017"
+    ],
+    "fingerprint": "4a8e2306a564f142",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "quatre carreres": {
+    "summary": "Quatre Carreres scores 3.65/5 for safety among 27 users, receiving positive ratings for street lighting and dog-walking.",
+    "verdict": "positive",
+    "area": "Quatre Carreres",
+    "record_ids": [
+      "valencia-op-030"
+    ],
+    "fingerprint": "e65cfc104013721a",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "russafa": {
+    "summary": "Russafa is considered safe, walkable, and pleasant at night, though records note risks of petty theft and pickpocketing during weekend crowding.",
+    "verdict": "mixed",
+    "area": "Russafa",
+    "record_ids": [
+      "valencia-op-001",
+      "valencia-op-002",
+      "valencia-op-003"
+    ],
+    "fingerprint": "8a93a30d2ba49991",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  },
+  "torrefiel": {
+    "summary": "Residents describe the area as safe while outsiders view it as troubled, alongside complaints about persistent litter and a lack of green space.",
+    "verdict": "mixed",
+    "area": "Torrefiel",
+    "record_ids": [
+      "valencia-op-028",
+      "valencia-op-029"
+    ],
+    "fingerprint": "7c41d207ded77167",
+    "model": "gemini-3.5-flash-lite",
+    "generated_at": "2026-10-13",
+    "needs_review": true
+  }
+}
