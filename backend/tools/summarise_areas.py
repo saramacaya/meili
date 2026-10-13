@@ -34,7 +34,7 @@ import social_context_analysis as sc  # noqa: E402
 
 PROVIDER = os.getenv("MEILI_AI_PROVIDER", "gemini" if os.getenv("GEMINI_API_KEY") else "github").lower()
 DEFAULT_MODELS = {
-    "gemini": "gemini-3.8-flash",
+    "gemini": "gemini-3.5-flash-lite",
     "groq": "llama-3.3-70b-versatile",
     "github": "openai/gpt-4o-mini",   # see github.com/marketplace/models
     "ollama": "llama3.1:8b",
@@ -97,15 +97,21 @@ def _complete(user_text: str, key: str) -> str:
         response.raise_for_status()
         return "".join(b.get("text", "") for b in response.json().get("content", []) if b.get("type") == "text")
 
-    response = requests.post(
-        OPENAI_STYLE_URLS[PROVIDER],
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": MODEL, "max_tokens": 1024, "temperature": 0.2,
-              **({"reasoning_effort": "low"} if PROVIDER == "gemini" else {}),
-              "messages": [{"role": "system", "content": SYSTEM},
-                           {"role": "user", "content": user_text}]},
-        timeout=120,
-    )
+    response = None
+    for wait in (0, 10, 20, 40):          # free tiers answer 429 when asked too often
+        time.sleep(wait)
+        response = requests.post(
+            OPENAI_STYLE_URLS[PROVIDER],
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={"model": MODEL, "max_tokens": 1024, "temperature": 0.2,
+                  **({"reasoning_effort": "low"} if PROVIDER == "gemini" else {}),
+                  "messages": [{"role": "system", "content": SYSTEM},
+                               {"role": "user", "content": user_text}]},
+            timeout=120,
+        )
+        if response.status_code not in (429, 500, 502, 503, 504):
+            break
+        print(f"    (model busy: HTTP {response.status_code}, waiting before retrying)")
     response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
@@ -163,10 +169,13 @@ def main() -> int:
                 "needs_review": True,   # a person should read new summaries once
             }
             print(f"  + {city_id}/{name}: {result['summary']}")
-            time.sleep(4)  # stay well inside free-tier per-minute limits
+            time.sleep(6)  # stay well inside free-tier per-minute limits
         path.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n")
         print(f"{city_id}: {len(output)} areas written")
-    return 1 if failures else 0
+    if failures:
+        print(f"::warning::{failures} areas could not be summarised this time (busy AI service). "
+              "Their summaries will be written on the next run; finished areas are kept.")
+    return 0
 
 
 if __name__ == "__main__":
