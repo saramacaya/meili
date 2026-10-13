@@ -1,0 +1,33 @@
+name: Pre-gather local context
+
+# Fills in local context (news + resident/visitor opinions) for the centres of
+# the main cities in advance, so even the first user there sees it instantly.
+# Uses the same code and database tables as the app. Already-gathered areas
+# are skipped. Runs on the 5th of every month (areas refresh after ~3 months),
+# or by hand.
+on:
+  schedule:
+    - cron: "0 4 5 * *"
+  workflow_dispatch: {}
+
+jobs:
+  pregather:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests supabase numpy python-dotenv fastapi httpx
+      - name: Gather local context for city centres
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MEILI_AI_PROVIDER: gemini
+          MEILI_CONTEXT_MODEL: gemini-3.5-flash-lite
+          MEILI_PREGATHER_MAX_AREAS: "120"
+          PYTHONUNBUFFERED: "1"
+        run: python -u backend/tools/pregather_areas.py
