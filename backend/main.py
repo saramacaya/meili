@@ -4390,7 +4390,13 @@ def compare_routes(request: RouteComparisonRequest):
                 section["street_value_score"] = shown
                 section["classification"] = _score_class(shown)
                 section["map_colour"] = _score_colour(shown)
-            shown_route = score_calibration.calibrate(raw_route_score, calibration_samples, factor)
+            # Local reports that really touch this route (not just a faint edge).
+            has_local_reports = any(
+                float(item.get("weight", 0.0)) >= 0.15
+                for item in (social_context_analysis.get("section_local") or [])
+            )
+            shown_route = score_calibration.calibrate(raw_route_score, calibration_samples, factor,
+                                                      has_local_reports=has_local_reports)
             valuation["raw_route_value_score"] = raw_route_score
             valuation["route_value_score"] = shown_route
             valuation["route_classification"] = _score_class(shown_route)

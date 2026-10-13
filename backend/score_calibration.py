@@ -28,7 +28,7 @@ import tile_cache
 
 CELL_DEGREES = 0.2
 DEFAULT_CENTER = 62.0     # typical raw score across cities
-DEFAULT_SCALE = 9.0       # how strongly the curve stretches (gentle: keeps top scores distinguishable)
+DEFAULT_SCALE = 12.0      # how strongly the curve stretches (gentle: differences visible, no jumps to extremes)
 MIN_SAMPLES = 30          # walks needed before the city's own ranking counts
 FULL_SAMPLES = 100        # walks at which the city's ranking fully takes over
 MAX_SAMPLES = 500
@@ -100,7 +100,19 @@ def confidence_factor(data_confidence: Optional[dict[str, Any]]) -> float:
     return max(0.25, min(1.0, combined / 60.0))
 
 
-def calibrate(raw: float, samples: list[float], factor: float = 1.0) -> float:
+# Extreme scores need strong evidence: lighting and activity alone can say a walk
+# is quieter or busier than usual, not that it is dangerous or perfectly safe.
+RANGE_WITHOUT_LOCAL_REPORTS = (25.0, 90.0)
+RANGE_WITH_LOCAL_REPORTS = (5.0, 95.0)
+
+
+def _fit_range(score: float, bounds: tuple[float, float]) -> float:
+    low, high = bounds
+    return low + (high - low) * (min(95.0, max(5.0, score)) - 5.0) / 90.0
+
+
+def calibrate(raw: float, samples: list[float], factor: float = 1.0,
+              has_local_reports: bool = False) -> float:
     center = _median(samples) if len(samples) >= 10 else DEFAULT_CENTER
     score = _curve(raw, center)
     n = len(samples)
@@ -112,8 +124,11 @@ def calibrate(raw: float, samples: list[float], factor: float = 1.0) -> float:
         weight = min(1.0, (n - MIN_SAMPLES) / (FULL_SAMPLES - MIN_SAMPLES))
         score = (1 - weight) * score + weight * city_score
     score = 50.0 + (score - 50.0) * factor
-    # Never claim perfection or total danger: the evidence can't support it.
-    return round(max(5.0, min(95.0, score)), 1)
+    # Never claim perfection or total danger; without local reports, stay
+    # further from the extremes (the range is squeezed smoothly, order kept).
+    score = max(5.0, min(95.0, score))
+    bounds = RANGE_WITH_LOCAL_REPORTS if has_local_reports else RANGE_WITHOUT_LOCAL_REPORTS
+    return round(_fit_range(score, bounds), 1)
 
 
 SECTION_SCALE = 14.0   # sections vary much more than whole routes: stretch them less

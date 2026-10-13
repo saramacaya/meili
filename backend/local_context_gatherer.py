@@ -119,7 +119,7 @@ def _plain(text: str) -> str:
     ).lower().strip()
 
 
-SEARCH_VERSION = 3   # bump when the search improves: every area gets re-checked once
+SEARCH_VERSION = 4   # bump when the search improves: every area gets re-checked once
 
 
 def area_key(city: str, name: str) -> str:
@@ -144,6 +144,63 @@ def _db():
 _reverse_cache: dict[tuple[float, float], Optional[dict]] = {}
 _nominatim_lock = threading.Lock()
 _last_nominatim_call = [0.0]
+
+
+_PREFIXES = re.compile(
+    r"^(quartier|barrio|bairro|quartiere|ortsteil|stadtteil|wijk|dzielnica|distrito|district|"
+    r"četrtna skupnost|cetrtna skupnost)\s+(du |de la |de l'|des |de |do |da |dos |das |di |del |)",
+    re.IGNORECASE,
+)
+
+
+def _clean_aliases(names: list, city: str) -> list[str]:
+    """Usable, distinct search names: drops the city itself, adds short forms
+    ('Quartier du Gros-Caillou' -> 'Gros-Caillou', 'Paris 7e Arrondissement' ->
+    '7e arrondissement' / '7th arrondissement')."""
+    out: list[str] = []
+
+    def add(value: str) -> None:
+        value = " ".join(str(value or "").split())
+        if len(value) > 2 and _plain(value) != _plain(city) and _plain(value) not in [_plain(x) for x in out]:
+            out.append(value)
+
+    for raw in names:
+        if not raw:
+            continue
+        add(raw)
+        short = _PREFIXES.sub("", raw).strip()
+        if short != raw:
+            add(short)
+        match = re.search(r"(\d{1,2})(e|er|º|°)?\s*arrondissement", raw, re.IGNORECASE)
+        if match:
+            n = int(match.group(1))
+            add(f"{n}{'er' if n == 1 else 'e'} arrondissement")
+            add(f"{n}{'st' if n == 1 else 'nd' if n == 2 else 'rd' if n == 3 else 'th'} arrondissement")
+    return out[:6]
+
+
+def _nearby_landmark(lat: float, lon: float) -> Optional[str]:
+    """Name of a park, square or sight at this point (e.g. 'Champ de Mars'),
+    which is often how people refer to an area online."""
+    with _nominatim_lock:
+        wait = 1.1 - (time.monotonic() - _last_nominatim_call[0])
+        if wait > 0:
+            time.sleep(wait)
+        _last_nominatim_call[0] = time.monotonic()
+        try:
+            response = requests.get(
+                NOMINATIM_URL,
+                params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 17},
+                headers={"User-Agent": USER_AGENT, "Accept-Language": "en"},
+                timeout=10,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except Exception:  # noqa: BLE001
+            return None
+    if data.get("category") in ("leisure", "tourism", "historic", "place") and data.get("name"):
+        return data["name"]
+    return None
 
 
 def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
@@ -171,6 +228,7 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
     address = data.get("address") or {}
     name = (address.get("neighbourhood") or address.get("suburb") or address.get("quarter")
             or address.get("city_district"))
+    raw_names = [address.get(k) for k in ("neighbourhood", "quarter", "suburb", "city_district", "borough")]
     city = address.get("city") or address.get("town") or address.get("village") or address.get("municipality")
     result = None
     if name and city:
@@ -180,8 +238,11 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
             radius = _distance_m((west, south), (east, north)) / 2
         except Exception:  # noqa: BLE001
             centre, radius = (lon, lat), 600.0
+        landmark = _nearby_landmark(lat, lon)
         result = {
             "name": name, "city": city, "country_code": (address.get("country_code") or "").upper(),
+            # Every name people actually use for this area, most recognisable first.
+            "aliases": _clean_aliases(([landmark] if landmark else []) + raw_names, city),
             "longitude": centre[0], "latitude": centre[1],
             "radius_meters": max(MIN_RADIUS_M, min(MAX_RADIUS_M, radius)),
         }
@@ -269,20 +330,26 @@ SAFETY_WORDS = {
 }
 
 
-def _name_variants(name: str) -> list[str]:
-    """'La Antigua - Santa Cruz' -> ['La Antigua - Santa Cruz', 'La Antigua', 'Santa Cruz']"""
+def _name_variants(name: str, aliases: Optional[list] = None) -> list[str]:
+    """'La Antigua - Santa Cruz' -> ['La Antigua - Santa Cruz', 'La Antigua', 'Santa Cruz'],
+    plus the area's other names (district, landmark)."""
     parts = [p.strip() for p in re.split(r"\s+-\s+|/|,|\(|\)", name) if p.strip()]
-    variants = [name] + [p for p in parts if p != name and len(p) > 3]
-    return list(dict.fromkeys(variants))[:3]
+    variants = [name] + [p for p in parts if p != name and len(p) > 3] + list(aliases or [])
+    seen, out = set(), []
+    for v in variants:
+        if _plain(v) not in seen:
+            seen.add(_plain(v))
+            out.append(v)
+    return out[:6]
 
 
-def search_news_google(name: str, city: str, country_code: str = "") -> list[dict]:
+def search_news_google(name: str, city: str, country_code: str = "", aliases: Optional[list] = None) -> list[dict]:
     """News search (Google News RSS) in the local language, steered to safety topics."""
     import xml.etree.ElementTree as ET
     country = (country_code or "US").upper()
     language = LANGUAGE_BY_COUNTRY.get(country, "en")
     words = SAFETY_WORDS.get(language, SAFETY_WORDS["en"])
-    names = " OR ".join(f'"{variant}"' for variant in _name_variants(name))
+    names = " OR ".join(f'"{variant}"' for variant in _name_variants(name, aliases)[:4])
     params = {"q": f"({names}) {city} ({words}) when:1y", "hl": language, "gl": country,
               "ceid": f"{country}:{language}"}
     try:
@@ -323,7 +390,7 @@ OPINION_PHRASES = {
 }
 
 
-def search_opinions(name: str, city: str, country_code: str = "") -> list[dict]:
+def search_opinions(name: str, city: str, country_code: str = "", aliases: Optional[list] = None) -> list[dict]:
     """Opinions about walking safety in an area from the whole web (Tavily):
     resident and visitor discussions, forums, guides, local news. Returns the
     page text too, so the AI reads the actual discussion, not just a headline."""
@@ -331,9 +398,14 @@ def search_opinions(name: str, city: str, country_code: str = "") -> list[dict]:
     if not key:
         return []
     language = LANGUAGE_BY_COUNTRY.get((country_code or "").upper(), "en")
-    queries = [f'is {name} in {city} safe to walk at night? residents and visitors opinions']
+    names = _name_variants(name, aliases)
+    best = names[0] if not aliases else aliases[0]          # e.g. a landmark people know
+    second = next((n for n in names if _plain(n) != _plain(best)), best)
+    label = best if _plain(second) == _plain(best) else f"{best} ({second})"
+    local_name = best if _plain(second) == _plain(best) else f"{second} {best}"
+    queries = [f'is {label} in {city} safe to walk at night? residents and visitors opinions']
     if language in OPINION_PHRASES:
-        queries.append(OPINION_PHRASES[language].format(name=name, city=city))
+        queries.append(OPINION_PHRASES[language].format(name=local_name, city=city))
     pages: dict[str, dict] = {}
     for query in queries:
         try:
@@ -494,7 +566,8 @@ def _post_following_redirects(url: str, headers: dict, payload: dict):
 def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     """Structured, validated records from one article (may be empty)."""
     user = (f"Neighbourhood: {area['name']}, {area['city']} "
-            f"(also written as: {', '.join(_name_variants(area['name']))})\n"
+            f"(also known as / nearby: {', '.join(_name_variants(area['name'], area.get('aliases')))}; "
+            "reports about these places count as this neighbourhood)\n"
             f"Page title: {article.get('title')}\nSource: {article.get('domain')}\n"
             f"Published: {article.get('seendate') or 'unknown'}\nPage text: {text}")
     raw = _ai_complete(EXTRACTION_PROMPT, user)
@@ -535,14 +608,14 @@ def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
     db = _db()
     key = area_key(area["city"], area["name"])
     rows: list[dict] = []
-    name_variants = [_plain(v) for v in _name_variants(area["name"])]
+    name_variants = [_plain(v) for v in _name_variants(area["name"], area.get("aliases"))]
 
     def mentions(text: str) -> bool:
         plain = _plain(text or "")
         return any(v in plain for v in name_variants)
 
-    opinions = search_opinions(area["name"], area["city"], area.get("country_code") or "")
-    news = search_news_google(area["name"], area["city"], area.get("country_code") or "")
+    opinions = search_opinions(area["name"], area["city"], area.get("country_code") or "", area.get("aliases"))
+    news = search_news_google(area["name"], area["city"], area.get("country_code") or "", area.get("aliases"))
     if not news and not opinions:
         news = search_news(area["name"], area["city"])
     articles = opinions + news
