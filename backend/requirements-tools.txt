@@ -1,0 +1,5 @@
+# Only for the offline NASA scripts (download_nasa_history.py, prepare_nasa_month.py).
+# Not needed on Render.
+-r requirements.txt
+earthaccess
+h5py

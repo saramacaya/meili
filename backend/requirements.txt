@@ -6,6 +6,4 @@ pydantic
 requests
 httpx
 opening-hours-py==2.1.4
-earthaccess
-h5py
 numpy

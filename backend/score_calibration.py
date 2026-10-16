@@ -33,9 +33,14 @@ MIN_SAMPLES = 30          # walks needed before the city's own ranking counts
 FULL_SAMPLES = 100        # walks at which the city's ranking fully takes over
 MAX_SAMPLES = 500
 CACHE_SECONDS = 600
+RECORD_DEDUP_SECONDS = 6 * 3600
 
 _cache: dict[str, tuple[float, list[float]]] = {}
+_recorded: dict[str, float] = {}  # route cache key -> when its score was recorded
 _lock = threading.Lock()
+# Serialises the read-modify-write of calibration files so parallel requests
+# in this process don't overwrite each other's samples.
+_record_lock = threading.Lock()
 
 
 def cell_for(lon: float, lat: float) -> str:
@@ -61,22 +66,48 @@ def load_samples(cell: str) -> list[float]:
     return samples
 
 
-def record(cell: str, raw_scores: list[float]) -> None:
-    """Remember new raw scores for this city cell (background, best effort)."""
-    if not raw_scores:
+def record(cell: str, keyed_scores: list[tuple[str, float]]) -> None:
+    """Remember new raw scores for this city cell (background, best effort).
+
+    Each score comes with its route cache key; a route already recorded in the
+    last RECORD_DEDUP_SECONDS is skipped, so the app re-polling the same trip
+    while data loads does not count that trip again and skew the median.
+    """
+    now = time.time()
+    with _lock:
+        for key, stamp in list(_recorded.items()):
+            if now - stamp > RECORD_DEDUP_SECONDS:
+                del _recorded[key]
+        new_scores = []
+        for key, score in keyed_scores:
+            if key in _recorded:
+                continue
+            _recorded[key] = now
+            new_scores.append(round(float(score), 2))
+    if not new_scores:
         return
 
     def run() -> None:
-        try:
-            data = tile_cache.STORE.storage_get(_path(cell)) or {}
-            recent = list(data.get("recent") or []) + [round(float(s), 2) for s in raw_scores]
-            recent = recent[-MAX_SAMPLES:]
-            tile_cache.STORE.storage_put(_path(cell), {"recent": recent, "samples": recent,
-                                                       "updated_at": time.time()})
-            with _lock:
-                _cache[cell] = (time.time(), sorted(recent))
-        except Exception:  # noqa: BLE001
-            pass
+        with _record_lock:
+            try:
+                data = tile_cache.STORE.storage_get(_path(cell))
+                if data is None:
+                    # storage_get also returns None on a failed read. If this
+                    # cell is known to have history, writing now would replace
+                    # it with only the new scores, so skip this round instead.
+                    with _lock:
+                        cached = _cache.get(cell)
+                    if cached and cached[1]:
+                        return
+                    data = {}
+                recent = list(data.get("recent") or []) + new_scores
+                recent = recent[-MAX_SAMPLES:]
+                tile_cache.STORE.storage_put(_path(cell), {"recent": recent, "samples": recent,
+                                                           "updated_at": time.time()})
+                with _lock:
+                    _cache[cell] = (time.time(), sorted(recent))
+            except Exception:  # noqa: BLE001
+                pass
 
     threading.Thread(target=run, daemon=True, name="score-calibration").start()
 

@@ -9,7 +9,6 @@ import math
 import threading
 import time
 
-import unicodedata
 
 from dotenv import load_dotenv
 
@@ -21,9 +20,7 @@ _urllib3_connection.allowed_gai_family = lambda: _socket.AF_INET
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
-from datetime import datetime, timedelta
-from opening_hours import OpeningHours
-from zoneinfo import ZoneInfo
+from datetime import datetime
 from nasa_route_analysis import analyse_nasa_route_samples, load_nasa_month_data
 
 from combined_lighting_analysis import combine_lighting_sources
@@ -33,7 +30,6 @@ from open_establishments import (
     build_active_places_response,
     densify_route,
     distance_meters,
-    fetch_shared_osm_places,
     filter_shared_places_for_route,
     flatten_geojson_coordinates,
     normalise_text,
@@ -43,6 +39,7 @@ from open_establishments import (
 
 from street_scoring import assign_route_labels, value_route_sections
 import hashlib
+import hmac
 import json as _json
 from collections import OrderedDict
 import tile_cache
@@ -53,11 +50,8 @@ from fast_geo import RouteIndex
 
 from social_context_analysis import (
     analyse_social_context,
-    load_overlays,
     load_all_overlays,
 )
-
-VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
 
 load_dotenv()
 
@@ -84,7 +78,11 @@ app = FastAPI(
 )
 
 from fastapi.middleware.cors import CORSMiddleware
+from meili_auth import SupabaseAuthMiddleware
 
+# Added before CORS so CORS wraps it: a 401 then still carries CORS headers
+# and the app can read it (and refresh the session) instead of a network error.
+app.add_middleware(SupabaseAuthMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,28 +106,6 @@ class RouteRequest(BaseModel):
 
     initial_preference: Literal["fastest", "balanced", "safest"]
     user_type: str
-
-class RouteSelectionRequest(BaseModel):
-    user_id: str
-    origin: str
-    destination: str
-    initial_preference: Literal["fastest", "balanced", "safest"]
-    final_choice_type: Literal["fastest", "balanced", "safest"]
-    user_type: str
-    fastest_route_id: str
-    balanced_route_id: str
-    safest_route_id: str
-
-class FeedbackRequest(BaseModel):
-    user_id: str
-    chosen_route_id: str
-    origin: str
-    destination: str
-    final_choice_type: Literal["fastest", "balanced", "safest"]
-    user_type: str
-    perceived_safety_rating: int = Field(..., ge=1, le=5)
-    would_choose_again: bool
-    comment: Optional[str] = None
 
 class UserCreateRequest(BaseModel):
     user_type: str
@@ -1536,119 +1512,6 @@ def get_real_walking_route(
         "number_of_routes": len(routes),
         "routes": routes
     }
-
-MOCK_JOURNEYS = {
-    ("ruzafa", "placa de la reina"): {
-        "display_origin": "Ruzafa",
-        "display_destination": "Plaça de la Reina",
-        "routes": [
-            {
-                "id": "ruzafa_reina_fastest",
-                "route_type": "fastest",
-                "route_name": "Fastest Route",
-                "estimated_time_minutes": 13,
-                "distance_meters": 1300,
-                "safety_score": 60,
-                "explanation": "Shortest walking path through side streets, but with a lower safety score.",
-                "tradeoff_summary": "Saves time, but has the lowest safety score."
-            },
-            {
-                "id": "ruzafa_reina_balanced",
-                "route_type": "balanced",
-                "route_name": "Balanced Route",
-                "estimated_time_minutes": 16,
-                "distance_meters": 1400,
-                "safety_score": 74,
-                "explanation": "Mixes lit avenues with shorter connectors to balance time and perceived safety.",
-                "tradeoff_summary": "Takes 3 extra minutes for a 14-point safety improvement."
-            },
-            {
-                "id": "ruzafa_reina_safest",
-                "route_type": "safest",
-                "route_name": "Safest Route",
-                "estimated_time_minutes": 19,
-                "distance_meters": 1600,
-                "safety_score": 85,
-                "explanation": "Routes along better-lit main streets and busier public areas.",
-                "tradeoff_summary": "Takes 6 extra minutes for a 25-point safety improvement."
-            }
-        ]
-    },
-
-    ("valencia nord", "mercado central"): {
-        "display_origin": "Valencia Nord",
-        "display_destination": "Mercado Central",
-        "routes": [
-            {
-                "id": "nord_mercado_fastest",
-                "route_type": "fastest",
-                "route_name": "Fastest Route",
-                "estimated_time_minutes": 11,
-                "distance_meters": 950,
-                "safety_score": 65,
-                "explanation": "A direct route through central streets with moderate safety characteristics.",
-                "tradeoff_summary": "Fastest option, but includes a few busier crossings."
-            },
-            {
-                "id": "nord_mercado_balanced",
-                "route_type": "balanced",
-                "route_name": "Balanced Route",
-                "estimated_time_minutes": 14,
-                "distance_meters": 1100,
-                "safety_score": 78,
-                "explanation": "Uses wider streets and avoids some lower-rated segments.",
-                "tradeoff_summary": "Adds 3 minutes for a 13-point safety improvement."
-            },
-            {
-                "id": "nord_mercado_safest",
-                "route_type": "safest",
-                "route_name": "Safest Route",
-                "estimated_time_minutes": 17,
-                "distance_meters": 1300,
-                "safety_score": 87,
-                "explanation": "Prioritises better-lit, more active streets near central public areas.",
-                "tradeoff_summary": "Adds 6 minutes for a 22-point safety improvement."
-            }
-        ]
-    },
-
-    ("turia gardens", "placa de la reina"): {
-        "display_origin": "Turia Gardens",
-        "display_destination": "Plaça de la Reina",
-        "routes": [
-            {
-                "id": "turia_reina_fastest",
-                "route_type": "fastest",
-                "route_name": "Fastest Route",
-                "estimated_time_minutes": 15,
-                "distance_meters": 1250,
-                "safety_score": 67,
-                "explanation": "A shorter route using smaller connecting streets.",
-                "tradeoff_summary": "Saves time, but has more uneven segment scores."
-            },
-            {
-                "id": "turia_reina_balanced",
-                "route_type": "balanced",
-                "route_name": "Balanced Route",
-                "estimated_time_minutes": 18,
-                "distance_meters": 1450,
-                "safety_score": 80,
-                "explanation": "Balances directness with more visible and active streets.",
-                "tradeoff_summary": "Adds 3 minutes for a 13-point safety improvement."
-            },
-            {
-                "id": "turia_reina_safest",
-                "route_type": "safest",
-                "route_name": "Safest Route",
-                "estimated_time_minutes": 22,
-                "distance_meters": 1700,
-                "safety_score": 90,
-                "explanation": "Uses the most active and better-lit route segments.",
-                "tradeoff_summary": "Adds 7 minutes for a 23-point safety improvement."
-            }
-        ]
-    }
-}
 
 def google_duration_to_seconds(duration: str) -> int:
     if not duration or not duration.endswith("s"):
@@ -3416,147 +3279,10 @@ def get_social_context_overlays(
         )
 
 @app.post("/routes/generate")
-def generate_routes(request: RouteRequest):
+def generate_routes():
     # Retired: the app no longer uses this endpoint, and it used demo data for
     # unknown trips. Kept as a clear error instead of silently wrong answers.
     raise HTTPException(status_code=410, detail="This endpoint is retired: route generation.")
-    if None in (
-        request.origin_latitude,
-        request.origin_longitude,
-        request.destination_latitude,
-        request.destination_longitude
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Origin and destination coordinates are required."
-        )
-
-    real_route_result = get_real_walking_route(
-        origin_longitude=request.origin_longitude,
-        origin_latitude=request.origin_latitude,
-        destination_longitude=request.destination_longitude,
-        destination_latitude=request.destination_latitude
-    )
-
-    real_routes = real_route_result["routes"]
-
-    requested_coordinates = {
-        "origin": {
-            "latitude": request.origin_latitude,
-            "longitude": request.origin_longitude
-        },
-        "destination": {
-            "latitude": request.destination_latitude,
-            "longitude": request.destination_longitude
-        }
-    }
-
-    if supabase is None:
-        return {
-            "status": "real_routes_generated_not_saved",
-            "message": (
-                "Real walking alternatives were generated, but Supabase "
-                "is not configured, so they were not saved."
-            ),
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "requested_coordinates": requested_coordinates,
-            "user_type": request.user_type,
-            "initial_preference": request.initial_preference,
-            "recommended_route_type": None,
-            "number_of_routes": len(real_routes),
-            "routes": real_routes,
-            "note": (
-                "These are real walking alternatives. Safety scoring has "
-                "not yet been applied."
-            )
-        }
-
-    try:
-        user_response = (
-            supabase
-            .table("users")
-            .insert({
-                "user_type": request.user_type
-            })
-            .execute()
-        )
-
-        if not user_response.data:
-            return {
-                "status": "error",
-                "message": "The user could not be created."
-            }
-
-        created_user = user_response.data[0]
-        user_id = created_user["id"]
-
-        route_rows = []
-
-        for route in real_routes:
-            route_rows.append({
-                "user_id": user_id,
-                "origin_text": request.origin,
-                "destination_text": request.destination,
-                "initial_preference": request.initial_preference,
-                "route_type": route["route_id"],
-                "estimated_time_minutes": route[
-                    "estimated_time_minutes"
-                ],
-                "distance_meters": route["distance_meters"],
-                "safety_score": None,
-                "route_geometry_json": route["geometry"],
-                "explanation": (
-                    "Real walking alternative. Safety scoring has not "
-                    "yet been applied."
-                )
-            })
-
-        routes_response = (
-            supabase
-            .table("routes")
-            .insert(route_rows)
-            .execute()
-        )
-
-        saved_routes = routes_response.data or []
-
-        database_id_by_route_type = {
-            saved_route["route_type"]: saved_route["id"]
-            for saved_route in saved_routes
-        }
-
-        routes_with_database_ids = []
-
-        for route in real_routes:
-            route_copy = route.copy()
-            route_copy["database_id"] = (
-                database_id_by_route_type.get(route["route_id"])
-            )
-            routes_with_database_ids.append(route_copy)
-
-        return {
-            "status": "real_routes_generated_and_saved",
-            "user_id": user_id,
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "requested_coordinates": requested_coordinates,
-            "user_type": request.user_type,
-            "initial_preference": request.initial_preference,
-            "recommended_route_type": None,
-            "number_of_routes": len(routes_with_database_ids),
-            "routes": routes_with_database_ids,
-            "note": (
-                "These are real walking alternatives saved to Supabase. "
-                "Safety scoring has not yet been applied."
-            )
-        }
-
-    except Exception as error:
-        return {
-            "status": "error",
-            "message": str(error)
-        }
 
 @app.post("/safety/street-score/analyse")
 def analyse_street_score(request: StreetScoringRequest):
@@ -3619,190 +3345,16 @@ def analyse_street_score(request: StreetScoringRequest):
     }
 
 @app.post("/routes/select")
-def select_route(request: RouteSelectionRequest):
+def select_route():
     # Retired: the app no longer uses this endpoint, and it used demo data for
     # unknown trips. Kept as a clear error instead of silently wrong answers.
     raise HTTPException(status_code=410, detail="This endpoint is retired: route selection.")
-    origin_key = normalise_text(request.origin)
-    destination_key = normalise_text(request.destination)
-
-    journey_key = (origin_key, destination_key)
-
-    if journey_key in MOCK_JOURNEYS:
-        journey = MOCK_JOURNEYS[journey_key]
-        matched_demo_route = True
-    else:
-        journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
-        matched_demo_route = False
-
-    routes = journey["routes"]
-
-    fastest_route = next(route for route in routes if route["route_type"] == "fastest")
-    chosen_route = next(
-        route for route in routes
-        if route["route_type"] == request.final_choice_type
-    )
-
-    extra_time_minutes = (
-        chosen_route["estimated_time_minutes"]
-        - fastest_route["estimated_time_minutes"]
-    )
-
-    safety_gain = (
-        chosen_route["safety_score"]
-        - fastest_route["safety_score"]
-    )
-
-    changed_preference = request.initial_preference != request.final_choice_type
-
-    route_id_by_type = {
-        "fastest": request.fastest_route_id,
-        "balanced": request.balanced_route_id,
-        "safest": request.safest_route_id
-    }
-
-    chosen_route_id = route_id_by_type[request.final_choice_type]
-
-    if supabase is None:
-        return {
-            "status": "selection_calculated_not_saved",
-            "message": "Supabase is not configured, so the route choice was calculated but not saved.",
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
-            "user_id": request.user_id,
-            "user_type": request.user_type,
-            "initial_preference": request.initial_preference,
-            "final_choice_type": request.final_choice_type,
-            "changed_preference": changed_preference,
-            "chosen_route": chosen_route,
-            "chosen_route_id": chosen_route_id,
-            "extra_time_minutes": extra_time_minutes,
-            "safety_gain": safety_gain
-        }
-
-    try:
-        choice_response = supabase.table("route_choices").insert({
-            "user_id": request.user_id,
-            "chosen_route_id": chosen_route_id,
-            "fastest_route_id": request.fastest_route_id,
-            "balanced_route_id": request.balanced_route_id,
-            "safest_route_id": request.safest_route_id,
-            "initial_preference": request.initial_preference,
-            "final_choice_type": request.final_choice_type,
-            "extra_time_minutes": extra_time_minutes,
-            "safety_gain": safety_gain,
-            "framing_group": None
-        }).execute()
-
-        saved_choice = choice_response.data[0] if choice_response.data else None
-
-        return {
-            "status": "route_choice_saved",
-            "route_choice": saved_choice,
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
-            "user_id": request.user_id,
-            "user_type": request.user_type,
-            "initial_preference": request.initial_preference,
-            "final_choice_type": request.final_choice_type,
-            "changed_preference": changed_preference,
-            "chosen_route": chosen_route,
-            "chosen_route_id": chosen_route_id,
-            "extra_time_minutes": extra_time_minutes,
-            "safety_gain": safety_gain,
-            "note": "The route choice has been saved to Supabase."
-        }
-
-    except Exception as error:
-        return {
-            "status": "error",
-            "message": str(error)
-        }
 
 @app.post("/feedback")
-def submit_feedback(request: FeedbackRequest):
+def submit_feedback():
     # Retired: the app no longer uses this endpoint, and it used demo data for
     # unknown trips. Kept as a clear error instead of silently wrong answers.
     raise HTTPException(status_code=410, detail="This endpoint is retired: feedback (now saved by the app in its own database).")
-    origin_key = normalise_text(request.origin)
-    destination_key = normalise_text(request.destination)
-
-    journey_key = (origin_key, destination_key)
-
-    if journey_key in MOCK_JOURNEYS:
-        journey = MOCK_JOURNEYS[journey_key]
-        matched_demo_route = True
-    else:
-        journey = MOCK_JOURNEYS[("ruzafa", "placa de la reina")]
-        matched_demo_route = False
-
-    routes = journey["routes"]
-
-    chosen_route = next(
-        route for route in routes
-        if route["route_type"] == request.final_choice_type
-    )
-
-    if supabase is None:
-        return {
-            "status": "feedback_validated_not_saved",
-            "message": "Supabase is not configured, so feedback was validated but not saved.",
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
-            "user_id": request.user_id,
-            "chosen_route_id": request.chosen_route_id,
-            "user_type": request.user_type,
-            "final_choice_type": request.final_choice_type,
-            "chosen_route_name": chosen_route["route_name"],
-            "perceived_safety_rating": request.perceived_safety_rating,
-            "would_choose_again": request.would_choose_again,
-            "comment": request.comment
-        }
-
-    try:
-        feedback_response = supabase.table("feedback").insert({
-            "user_id": request.user_id,
-            "route_id": request.chosen_route_id,
-            "perceived_safety_rating": request.perceived_safety_rating,
-            "would_choose_again": request.would_choose_again,
-            "comment": request.comment
-        }).execute()
-
-        saved_feedback = feedback_response.data[0] if feedback_response.data else None
-
-        return {
-            "status": "feedback_saved",
-            "feedback": saved_feedback,
-            "requested_origin": request.origin,
-            "requested_destination": request.destination,
-            "matched_origin": journey["display_origin"],
-            "matched_destination": journey["display_destination"],
-            "matched_demo_route": matched_demo_route,
-            "user_id": request.user_id,
-            "chosen_route_id": request.chosen_route_id,
-            "user_type": request.user_type,
-            "final_choice_type": request.final_choice_type,
-            "chosen_route_name": chosen_route["route_name"],
-            "perceived_safety_rating": request.perceived_safety_rating,
-            "would_choose_again": request.would_choose_again,
-            "comment": request.comment,
-            "note": "Feedback has been saved to Supabase."
-        }
-
-    except Exception as error:
-        return {
-            "status": "error",
-            "message": str(error)
-        }
 
 @app.get("/database/health")
 def database_health():
@@ -3985,7 +3537,10 @@ class TilePrefillRequest(BaseModel):
 def prefill_tiles(request: TilePrefillRequest, x_prefill_token: Optional[str] = Header(default=None)):
     """Fills the tile cache for an area in the background (e.g. a whole city)."""
     expected = os.getenv("PREFILL_TOKEN")
-    if expected and x_prefill_token != expected:
+    # No token configured means prefill is switched off, not open to everyone.
+    if not expected:
+        raise HTTPException(status_code=503, detail="Prefill is not configured (PREFILL_TOKEN missing).")
+    if not x_prefill_token or not hmac.compare_digest(x_prefill_token, expected):
         raise HTTPException(status_code=401, detail="Invalid prefill token.")
     if request.north - request.south > 0.3 or request.east - request.west > 0.3:
         raise HTTPException(status_code=400, detail="Area too large: keep each side under 0.3 degrees.")
@@ -4194,7 +3749,7 @@ def compare_routes(request: RouteComparisonRequest):
     middle_point = first_route[len(first_route) // 2]
     calibration_cell = score_calibration.cell_for(middle_point[0], middle_point[1])
     calibration_samples = score_calibration.load_samples(calibration_cell)
-    raw_scores_to_record: list[float] = []
+    raw_scores_to_record: list[tuple[str, float]] = []
     local_context_job = local_context_gatherer.ensure_context(route_geometries)
 
     shared_source_errors: dict[str, str] = {}
@@ -4235,13 +3790,17 @@ def compare_routes(request: RouteComparisonRequest):
 
                 route_data = tile_cache.route_slice(area, route.geometry, data_padding_meters)
 
-                official_streetlights = tile_cache.corridor_filter(
+                lamps_near_route = tile_cache.corridor_filter(
                     route_data["official_lamps"],
                     route_samples,
                     request.official_lamp_radius_meters * 2 + 10,
-                ) or route_data["official_lamps"]
+                )
+                # With no lamp near the route, the scorer still gets the area's
+                # lamps so it reads "data available, no lamp close" rather than
+                # "no data". Counts shown to users use lamps_near_route only.
+                official_streetlights = lamps_near_route or route_data["official_lamps"]
                 official_debug = (
-                    {"source": "tile_cache", "streetlights_near_route": len(official_streetlights)}
+                    {"source": "tile_cache", "streetlights_near_route": len(lamps_near_route)}
                     if area["valencia_covered"]
                     else {"skipped_reason": "route_outside_valencia_official_coverage_area"}
                 )
@@ -4350,7 +3909,7 @@ def compare_routes(request: RouteComparisonRequest):
                 lighting_analysis["source_counts"] = {
                     "osm_lit_ways_near_route": osm_lit_debug.get("lit_ways_near_route", 0),
                     "osm_individual_lamps_near_route": osm_lamp_debug.get("street_lamps_near_route", 0),
-                    "official_streetlights_near_route": len(official_streetlights) if area["valencia_covered"] else 0,
+                    "official_streetlights_near_route": len(lamps_near_route) if area["valencia_covered"] else 0,
                     "nasa_unique_cells": (nasa_analysis or {}).get("unique_nasa_cell_count", 0),
                 }
 
@@ -4383,7 +3942,7 @@ def compare_routes(request: RouteComparisonRequest):
             # little-data routes kept near the middle (see score_calibration).
             factor = score_calibration.confidence_factor(data_confidence)
             raw_route_score = valuation["route_value_score"]
-            raw_scores_to_record.append(raw_route_score)
+            raw_scores_to_record.append((route_key, raw_route_score))
             for section in valuation["sections"]:
                 section["raw_street_value_score"] = section["street_value_score"]
                 shown = score_calibration.calibrate_section(section["street_value_score"], calibration_samples, factor)
