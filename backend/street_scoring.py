@@ -20,22 +20,28 @@ def _clamp(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
     return max(minimum, min(maximum, value))
 
 
+# Displayed scores are calibrated so 50 is a typical walk in the city (see
+# score_calibration), so the bands sit around 50: green means better than
+# typical, and red is kept for genuinely weak stretches.
+SCORE_BANDS = (60, 45, 30)
+
+
 def _classification(score: float) -> str:
-    if score >= 70:
+    if score >= SCORE_BANDS[0]:
         return "stronger_evidence"
-    if score >= 55:
+    if score >= SCORE_BANDS[1]:
         return "moderate_evidence"
-    if score >= 40:
+    if score >= SCORE_BANDS[2]:
         return "limited_or_mixed_evidence"
     return "weaker_evidence"
 
 
 def _colour(score: float) -> str:
-    if score >= 70:
+    if score >= SCORE_BANDS[0]:
         return "green"
-    if score >= 55:
+    if score >= SCORE_BANDS[1]:
         return "yellow"
-    if score >= 40:
+    if score >= SCORE_BANDS[2]:
         return "orange"
     return "red"
 
