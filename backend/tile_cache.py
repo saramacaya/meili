@@ -44,6 +44,9 @@ STORAGE_BUCKET = "meili-tiles"
 OVERPASS_TIMEOUT_SECONDS = 90  # big dense areas can need over a minute; 25 s made them fail
 MAX_TILES_PER_OVERPASS_QUERY = 9  # a 3 x 3 block, about 3 km x 3 km
 
+# Overpass rejects requests without a descriptive User-Agent (HTTP 406).
+OVERPASS_USER_AGENT = "Meili safety-routing app (contact: github.com/saramacaya/meili)"
+
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
@@ -301,7 +304,7 @@ def _overpass(query: str) -> dict:
                 response = requests.post(
                     real_url,
                     data={"data": query},
-                    headers={"Accept": "application/json", "User-Agent": "Meili safety-routing prototype"},
+                    headers={"Accept": "application/json", "User-Agent": OVERPASS_USER_AGENT},
                     timeout=(8, remaining),
                 )
             response.raise_for_status()
@@ -848,7 +851,7 @@ def diagnose() -> dict[str, Any]:
         start = time.monotonic()
         try:
             response = requests.post(url, data={"data": tiny}, timeout=(8, 15),
-                                     headers={"User-Agent": "Meili safety-routing prototype"})
+                                     headers={"User-Agent": OVERPASS_USER_AGENT})
             response.raise_for_status()
             return host, f"ok in {time.monotonic() - start:.1f} s"
         except Exception as error:  # noqa: BLE001
