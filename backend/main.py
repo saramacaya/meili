@@ -48,6 +48,7 @@ import score_calibration
 from street_scoring import _classification as _score_class, _colour as _score_colour
 from fast_geo import RouteIndex
 
+import area_search
 from social_context_analysis import (
     analyse_social_context,
     load_all_overlays,
@@ -2851,6 +2852,19 @@ def _merge_suggestions(*groups: list, limit: int = 6) -> list:
             seen.add(place_id)
             merged.append(suggestion)
     return merged[:limit]
+
+
+@app.get("/areas/search")
+def search_avoid_areas(q: str, lat: Optional[float] = None, lng: Optional[float] = None, language: Optional[str] = None):
+    """Neighbourhoods matching q (worldwide), with their outline or a circle."""
+    if len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Type at least 2 characters.")
+    if (lat is None) != (lng is None) or (lat is not None and not (-90 <= lat <= 90 and -180 <= lng <= 180)):
+        raise HTTPException(status_code=400, detail="lat and lng must be given together and be valid.")
+    try:
+        return {"results": area_search.search_areas(q, lat, lng, language)}
+    except requests.RequestException as error:
+        raise HTTPException(status_code=502, detail=f"Neighbourhood search is unavailable: {type(error).__name__}")
 
 
 @app.post("/places/autocomplete")
