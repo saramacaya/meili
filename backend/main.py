@@ -49,6 +49,7 @@ from street_scoring import _classification as _score_class, _colour as _score_co
 from fast_geo import RouteIndex
 
 import area_search
+import avoid_areas
 from social_context_analysis import (
     analyse_social_context,
     load_all_overlays,
@@ -3443,9 +3444,19 @@ class RouteComparisonCandidate(BaseModel):
     distance_meters: float = Field(..., ge=0)
 
 
+class AvoidAreaInput(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=200)
+    time_of_day: Literal["night", "always", "sometimes"] = "always"
+    # 100 m grid cell ids (row:column), as stored in avoid_areas.blocks.
+    blocks: list[str] = Field(default_factory=list, max_length=5000)
+
+
 class RouteComparisonRequest(BaseModel):
     routes: list[RouteComparisonCandidate]
     departure_datetime: datetime
+    # The signed-in person's avoided places. Applied after the shared analysis
+    # and its cache (see avoid_areas.py), so they never affect other people.
+    avoid_areas: list[AvoidAreaInput] = Field(default_factory=list, max_length=50)
 
     sample_interval_meters: float = Field(default=15, ge=5, le=50)
     official_lamp_radius_meters: float = Field(default=25, ge=5, le=100)
@@ -3739,7 +3750,7 @@ def compare_routes(request: RouteComparisonRequest):
     cache_key = _comparison_cache_key(request)
     cached_response = _comparison_cache_get(cache_key)
     if cached_response is not None:
-        return cached_response
+        return _with_avoid_areas(cached_response, request)
 
     route_geometries = [route.geometry for route in request.routes]
     # Load only the map tiles these routes touch (memory -> Supabase -> source).
@@ -4068,4 +4079,14 @@ def compare_routes(request: RouteComparisonRequest):
         )
     }
     _comparison_cache_put(cache_key, response)
-    return response
+    return _with_avoid_areas(response, request)
+
+
+def _with_avoid_areas(response: dict, request: "RouteComparisonRequest") -> dict:
+    """Marks routes through the person's avoided places and re-picks labels."""
+    if not request.avoid_areas:
+        return response
+    return avoid_areas.apply(
+        response, request.routes, [area.model_dump() for area in request.avoid_areas],
+        request.departure_datetime, assign_route_labels, _pick_display_routes,
+    )
