@@ -17,8 +17,7 @@ import threading
 import time
 from typing import Any, Optional
 
-import requests
-
+import outbound
 from local_context_gatherer import USER_AGENT, _last_nominatim_call, _nominatim_lock
 
 SEARCH_URL = "https://nominatim.openstreetmap.org/search"
@@ -119,14 +118,14 @@ def search_areas(query: str, lat: Optional[float] = None, lng: Optional[float] =
     if near:
         # Prefer results around the user, without excluding the rest of the world.
         params["viewbox"] = f"{lng - 0.4},{lat + 0.4},{lng + 0.4},{lat - 0.4}"
-    headers = {"User-Agent": USER_AGENT, "Accept-Language": language or "en"}
+    # As a query parameter (not a header) so it also survives the proxy.
+    params["accept-language"] = language or "en"
     with _nominatim_lock:  # Nominatim policy: at most 1 request per second
         wait = 1.1 - (time.monotonic() - _last_nominatim_call[0])
         if wait > 0:
             time.sleep(wait)
         _last_nominatim_call[0] = time.monotonic()
-        response = requests.get(SEARCH_URL, params=params, headers=headers, timeout=12)
-    response.raise_for_status()
+        response = outbound.nominatim_get(SEARCH_URL, params, USER_AGENT)
 
     results: list[dict] = []
     seen: set[str] = set()
