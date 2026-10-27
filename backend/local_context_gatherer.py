@@ -188,13 +188,10 @@ def _nearby_landmark(lat: float, lon: float) -> Optional[str]:
             time.sleep(wait)
         _last_nominatim_call[0] = time.monotonic()
         try:
-            response = requests.get(
-                NOMINATIM_URL,
-                params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 17},
-                headers={"User-Agent": USER_AGENT, "Accept-Language": "en"},
-                timeout=10,
+            response = outbound.nominatim_get(
+                NOMINATIM_URL, {"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 17, "accept-language": "en"},
+                USER_AGENT, timeout=10,
             )
-            response.raise_for_status()
             data = response.json()
         except Exception:  # noqa: BLE001
             return None
@@ -214,13 +211,11 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
             time.sleep(wait)
         _last_nominatim_call[0] = time.monotonic()
         try:
-            response = requests.get(
+            response = outbound.nominatim_get(
                 NOMINATIM_URL,
-                params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 15, "addressdetails": 1},
-                headers={"User-Agent": USER_AGENT, "Accept-Language": "en"},
-                timeout=10,
+                {"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 15, "addressdetails": 1, "accept-language": "en"},
+                USER_AGENT, timeout=10,
             )
-            response.raise_for_status()
             data = response.json()
         except Exception as error:  # noqa: BLE001
             _log("place lookup failed", error=str(error)[:150])
@@ -866,9 +861,8 @@ def diagnose() -> dict:
             return f"FAILED after {time.monotonic() - start:.1f} s: {str(error)[:160]}"
 
     def nominatim():
-        r = requests.get(NOMINATIM_URL, params={"lat": 46.0511, "lon": 14.5051, "format": "jsonv2", "zoom": 15},
-                         headers={"User-Agent": USER_AGENT}, timeout=10)
-        r.raise_for_status()
+        r = outbound.nominatim_get(NOMINATIM_URL, {"lat": 46.0511, "lon": 14.5051, "format": "jsonv2", "zoom": 15},
+                                   USER_AGENT, timeout=10)
         return (r.json().get("address") or {}).get("suburb") or "answered"
 
     def gdelt():
@@ -895,7 +889,7 @@ def diagnose() -> dict:
         return f"tables exist, {len(records)} notes stored"
 
     return {
-        "place_names_nominatim": timed(nominatim),
+        "place_names_nominatim": ("via proxy -> " if outbound.proxy_available() else "direct -> ") + timed(nominatim),
         "news_gdelt": ("via proxy -> " if outbound.proxy_available() else "direct -> ") + timed(gdelt),
         "news_backup_google": timed(lambda: f"{len(search_news_google('Center', 'Ljubljana', 'SI'))} articles"),
         "opinions_tavily": (timed(lambda: f"{len(search_opinions('Gràcia', 'Barcelona', 'ES'))} pages")

@@ -35,3 +35,17 @@ def via_proxy(url: str, *, form: Optional[dict] = None, params: Optional[dict] =
     )
     response.raise_for_status()
     return response
+
+
+def nominatim_get(url: str, params: dict, user_agent: str, timeout: float = 12) -> requests.Response:
+    """Nominatim GET: through the proxy when configured (Render's shared IPs
+    get HTTP 429), falling back to a direct request if the proxy fails.
+    The caller keeps Nominatim's 1 request/second pacing."""
+    if proxy_available():
+        try:
+            return via_proxy(url, params=params, timeout=timeout + 5)
+        except Exception:  # noqa: BLE001 - fall back to a direct request
+            pass
+    response = requests.get(url, params=params, headers={"User-Agent": user_agent}, timeout=timeout)
+    response.raise_for_status()
+    return response
