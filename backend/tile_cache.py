@@ -525,6 +525,12 @@ def _load_from_storage(layer: str, tiles: list[TileId]) -> dict[TileId, dict]:
     return found
 
 
+class TilesDownloadingElsewhere(Exception):
+    """Another request (usually the /tiles/warm call) is already downloading
+    these tiles. Not a failure: the caller should report "still downloading"
+    so the app polls again, instead of scoring with no map data."""
+
+
 def _fetch_and_save(layer: str, group: list[TileId], wait_for_others: bool = False) -> dict[TileId, dict]:
     locks = [STORE.fetch_lock(_path(layer, t)) for t in sorted(group)]
     acquired = []
@@ -536,7 +542,7 @@ def _fetch_and_save(layer: str, group: list[TileId], wait_for_others: bool = Fal
             # behind it; this request will pick them up from memory later.
             for held in acquired:
                 held.release()
-            return {}
+            raise TilesDownloadingElsewhere()
     locks = acquired
     try:
         # Another request may have filled these while we waited.
@@ -577,10 +583,13 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
     # Few tiles: small groups answer quickly. Many tiles: fewer, larger
     # requests are faster overall than lots of small queued ones.
     groups = group_tiles(missing, max_group=4 if len(missing) <= 8 else 16)
-    futures = [_FETCH_POOL.submit(_fetch_and_save, layer, g) for g in groups]
+    futures = {_FETCH_POOL.submit(_fetch_and_save, layer, g): g for g in groups}
+    in_progress = 0
     for future in as_completed(futures):
         try:
             found.update(future.result())
+        except TilesDownloadingElsewhere:
+            in_progress += len(futures[future])
         except Exception as error:  # noqa: BLE001
             errors.append(str(error))
 
@@ -595,7 +604,10 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
         "persistent_storage": STORE.persistent(),
     }
     debug["tiles_downloaded"] = sum(1 for t in missing_all if t in found)
-    return found, {"debug": debug, "errors": errors}
+    debug["tiles_downloading_elsewhere"] = in_progress
+    if in_progress:
+        errors.append(f"{in_progress} map tiles still downloading")
+    return found, {"debug": debug, "errors": errors, "in_progress": in_progress}
 
 
 # ---------------------------------------------------------------- public API
@@ -653,7 +665,11 @@ def load_area(
 
     osm_complete = len(osm_tiles) == len(tile_list)
     valencia_complete = len(valencia_tiles_data) == len(valencia_tiles)
-    still_downloading = any(not f.done() for f in futures.values())
+    still_downloading = (
+        any(not f.done() for f in futures.values())
+        or bool(osm_info.get("in_progress"))
+        or bool(valencia_info.get("in_progress"))
+    )
 
     return {
         "osm_tiles": osm_tiles,
