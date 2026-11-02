@@ -8,7 +8,8 @@ servers) with Meili's own data:
      exported as GeoJSON lines.
   2. This script sorts those features into Meili's 0.01-degree tiles, bundles
      5 x 5 tiles into one "block" file (0.05 degree), and uploads the blocks
-     to Supabase Storage (bucket meili-tiles, path v1/blocks/<row>_<col>.json.gz).
+     to Cloudflare R2 (or Supabase Storage if R2 isn't set up), bucket
+     meili-tiles, path v1/blocks/<row>_<col>.json.gz.
   3. The backend reads a block when it needs a tile. A tile missing from an
      existing block simply has no mapped features (empty, not unknown).
 
@@ -17,7 +18,8 @@ countries can share a block.
 
 Usage:
   python build_country_tiles.py filtered.geojsonseq --country portugal
-Environment: SUPABASE_URL, SUPABASE_SERVICE_KEY (omit both for a dry run).
+Environment: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (preferred),
+or SUPABASE_URL, SUPABASE_SERVICE_KEY. Omit all for a dry run.
 """
 
 from __future__ import annotations
@@ -215,6 +217,54 @@ class Storage:
         raise RuntimeError(f"upload failed for {path}: HTTP {status} {text[:200]}")
 
 
+class R2Storage(Storage):
+    """Same interface as Storage, backed by Cloudflare R2 (see backend/r2_storage.py)."""
+
+    def __init__(self):  # noqa: D107  (no Supabase URL or key needed)
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        import r2_storage
+        self.r2 = r2_storage
+        if r2_storage.client() is None:
+            raise RuntimeError("R2 is not configured (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY)")
+
+    def ensure_bucket(self) -> None:
+        pass  # the bucket is created once in the Cloudflare dashboard
+
+    def get(self, path: str) -> dict | None:
+        raw = self.r2.get_bytes(path)
+        if raw is None:
+            return None
+        try:
+            return json.loads(gzip.decompress(raw))
+        except Exception:  # noqa: BLE001
+            return None
+
+    def list_coverage(self) -> list[str]:
+        prefix = "v1/coverage/"
+        return [k[len(prefix):] for k in self.r2.list_keys(prefix) if k.endswith(".json.gz")]
+
+    def put(self, path: str, data: dict) -> None:
+        body = gzip.compress(json.dumps(data, separators=(",", ":")).encode())
+        Storage.uploaded_bytes += len(body)
+        for attempt in range(6):
+            if self.r2.put_bytes(path, body):
+                return
+            self._pause(attempt)
+        raise RuntimeError(f"upload to R2 failed for {path}")
+
+
+def r2_configured() -> bool:
+    return all(os.getenv(v) for v in ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"))
+
+
+def open_storage():
+    """R2 if configured, else Supabase, else None (dry run)."""
+    if r2_configured():
+        return R2Storage()
+    url, key = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
+    return Storage(url, key) if (url and key) else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("geojsonseq", nargs="?", default="")
@@ -226,11 +276,10 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.check_only:
-        url, key = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
-        if not (url and key):
+        storage = open_storage()
+        if storage is None:
             print("BUILD")
             return 0
-        storage = Storage(url, key)
         days = float(os.getenv("MEILI_REFRESH_AFTER_DAYS", "20"))
         info = storage.get(f"v1/coverage/{args.country}.json.gz") or {}
         built_at = float(info.get("built_at") or 0)
@@ -247,18 +296,20 @@ def main() -> int:
     counts = {layer: sum(len(t[layer]) for t in tiles.values()) for layer in ("lit_ways", "street_lamps", "places")}
     print(f"{args.country}: {len(tiles)} tiles with data in {len(blocks)} blocks; {counts}")
 
-    url, key = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
-    if not (url and key):
-        print("Dry run (no SUPABASE_URL / SUPABASE_SERVICE_KEY): nothing uploaded.")
+    storage = open_storage()
+    if storage is None:
+        print("Dry run (no R2_* or SUPABASE_URL / SUPABASE_SERVICE_KEY): nothing uploaded.")
         return 0
-    storage = Storage(url, key)
     storage.ensure_bucket()
+    on_r2 = isinstance(storage, R2Storage)
+    print(f"storage: {'Cloudflare R2' if on_r2 else 'Supabase'}")
     now = time.time()
 
     # ---- storage guard ------------------------------------------------------
     # Meili's own estimate of how much map data is stored, from each country's
     # coverage file. A country already built is always allowed (monthly refresh).
-    budget_mb = float(os.getenv("MEILI_STORAGE_BUDGET_MB", "850"))
+    # R2 free plan: 10 GB; Supabase free plan: 1 GB.
+    budget_mb = float(os.getenv("MEILI_STORAGE_BUDGET_MB", "9000" if on_r2 else "850"))
     refresh_after_days = float(os.getenv("MEILI_REFRESH_AFTER_DAYS", "20"))
     used_mb, already_built, built_at = 0.0, False, 0.0
     shared_blocks: set[str] = set()      # blocks other countries already filled (borders)
@@ -309,8 +360,8 @@ def main() -> int:
             return item, str(error)[:200]
 
     done, failed = 0, []
-    # 3 at a time: the Supabase free plan limits simultaneous connections.
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    # Supabase's free plan limits simultaneous connections; R2 doesn't.
+    with ThreadPoolExecutor(max_workers=16 if on_r2 else 3) as pool:
         for result in pool.map(safe_upload, blocks.items()):
             done += 1
             if result is not None:
@@ -334,7 +385,7 @@ def main() -> int:
                 {"country": args.country, "built_at": now, "blocks": [f"{r}_{c}" for r, c in blocks],
                  "uploaded_mb": round(Storage.uploaded_bytes / 1e6, 2)})
     print(f"{args.country}: uploaded {len(blocks)} blocks, {Storage.uploaded_bytes / 1e6:.1f} MB "
-          "(Supabase free plan: 1000 MB total storage).")
+          f"({'R2 free plan: 10 GB' if on_r2 else 'Supabase free plan: 1000 MB'} total storage).")
     return 0
 
 
