@@ -4,10 +4,11 @@ name: Build country map tiles
 # (Geofabrik), so searches never depend on the public Overpass servers.
 # Runs on the 2nd of each month (OpenStreetMap changes), or by hand.
 #
-# Countries are built one at a time, most important first. A storage guard
-# skips a NEW country if Meili's map data would exceed MEILI_STORAGE_BUDGET_MB
-# (Supabase free plan: 1000 MB in total). Already-built countries are always
-# refreshed. Each run's log shows the storage used per country.
+# Countries are built one at a time, most important first, into Cloudflare R2
+# (bucket meili-tiles; free plan 10 GB). Without the R2_* secrets it falls back
+# to Supabase Storage (free plan 1 GB). A storage guard skips a NEW country if
+# Meili's map data would exceed MEILI_STORAGE_BUDGET_MB. Already-built
+# countries are always refreshed. Each run's log shows the storage used.
 on:
   schedule:
     - cron: "0 2 2 * *"
@@ -64,6 +65,15 @@ jobs:
           - europe/albania
           - europe/macedonia
           - europe/kosovo
+          # outside Europe (needed because the public Overpass servers refuse Meili)
+          - asia/japan
+          - north-america/us/new-york
+          - north-america/us/new-jersey
+          - north-america/us/massachusetts
+          - north-america/us/pennsylvania
+          - north-america/us/district-of-columbia
+          - north-america/us/illinois
+          - north-america/us/california
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,9 +83,12 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q osmium-tool
-          pip install requests
+          pip install requests boto3
       - name: Check whether ${{ matrix.region }} needs building
         env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
@@ -101,11 +114,13 @@ jobs:
           ls -lh filtered.geojsonseq
           echo "COUNTRY=$name" >> "$GITHUB_ENV"
           echo "SOURCE_MB=$size_mb" >> "$GITHUB_ENV"
-      - name: Build tiles and upload to Supabase
+      - name: Build tiles and upload to storage
         if: env.DECISION != 'SKIP'
         env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          MEILI_STORAGE_BUDGET_MB: "850"
           PYTHONUNBUFFERED: "1"   # show progress live in the log
         run: python -u backend/tools/build_country_tiles.py filtered.geojsonseq --country "$COUNTRY" --source-mb "$SOURCE_MB"
