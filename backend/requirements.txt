@@ -7,3 +7,4 @@ requests
 httpx
 opening-hours-py==2.1.4
 numpy
+boto3

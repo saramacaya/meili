@@ -11,7 +11,8 @@ roughly 1 km). For each tile Meili keeps:
 A request only loads the handful of tiles its routes touch, in this order:
 
   1. backend memory           (microseconds)
-  2. Supabase Storage          (tens of milliseconds, survives restarts)
+  2. Cloudflare R2, or Supabase Storage if R2 isn't configured
+                               (tens of milliseconds, survives restarts)
   3. the original source       (seconds, only the first time anyone ever
                                 routes through that tile; then saved)
 
@@ -35,6 +36,7 @@ from typing import Any, Callable, Optional
 import requests
 
 import outbound
+import r2_storage
 
 TILE_DEGREES = 0.01
 TILE_FORMAT_VERSION = 1
@@ -158,7 +160,7 @@ def group_bbox(group: list[TileId]) -> tuple[float, float, float, float]:
 # ---------------------------------------------------------------- storage
 
 class _TileStore:
-    """Memory LRU in front of Supabase Storage (if configured)."""
+    """Memory LRU in front of Cloudflare R2 or Supabase Storage (if configured)."""
 
     def __init__(self) -> None:
         self._memory: "OrderedDict[str, dict]" = OrderedDict()
@@ -190,6 +192,9 @@ class _TileStore:
             return self._fetch_locks.setdefault(path, threading.Lock())
 
     # -- persistent storage
+    # Cloudflare R2 (S3-compatible) when R2_* is set; otherwise Supabase
+    # Storage as before. While both are set, reads fall back to Supabase so
+    # tiles and calibration saved there before the move are still found.
     @staticmethod
     def _client():
         try:
@@ -197,6 +202,10 @@ class _TileStore:
         except Exception:
             return None
         return supabase_storage
+
+    @staticmethod
+    def _r2():
+        return r2_storage.client()
 
     def _ensure_bucket(self, client) -> None:
         if self._bucket_checked:
@@ -207,7 +216,7 @@ class _TileStore:
             pass  # already exists, or no permission: uploads will report it
         self._bucket_checked = True
 
-    def storage_get(self, path: str) -> Optional[dict]:
+    def _supabase_get(self, path: str) -> Optional[dict]:
         client = self._client()
         if client is None:
             return None
@@ -217,7 +226,21 @@ class _TileStore:
         except Exception:
             return None
 
+    def storage_get(self, path: str) -> Optional[dict]:
+        if self._r2() is not None:
+            raw = r2_storage.get_bytes(path)
+            if raw is not None:
+                try:
+                    return json.loads(gzip.decompress(raw))
+                except Exception:
+                    return None
+        return self._supabase_get(path)
+
     def storage_put(self, path: str, tile: dict) -> None:
+        body = gzip.compress(json.dumps(tile, separators=(",", ":")).encode())
+        if self._r2() is not None:
+            r2_storage.put_bytes(path, body)
+            return
         client = self._client()
         if client is None:
             return
@@ -225,14 +248,19 @@ class _TileStore:
         try:
             client.storage.from_(STORAGE_BUCKET).upload(
                 path,
-                gzip.compress(json.dumps(tile, separators=(",", ":")).encode()),
+                body,
                 {"content-type": "application/gzip", "upsert": "true"},
             )
         except Exception:
             pass
 
     def persistent(self) -> bool:
-        return self._client() is not None
+        return self._r2() is not None or self._client() is not None
+
+    def backend_name(self) -> str:
+        if self._r2() is not None:
+            return "cloudflare-r2"
+        return "supabase" if self._client() is not None else "none"
 
 
 STORE = _TileStore()
@@ -605,6 +633,7 @@ def load_layer(layer: str, tiles: list[TileId]) -> tuple[dict[TileId, dict], dic
         "tiles_failed": sum(1 for t in missing_all if t not in found),
         "seconds": round(time.perf_counter() - started, 3),
         "persistent_storage": STORE.persistent(),
+        "storage_backend": STORE.backend_name(),
     }
     debug["tiles_downloaded"] = sum(1 for t in missing_all if t in found)
     debug["tiles_downloading_elsewhere"] = in_progress
@@ -878,4 +907,5 @@ def diagnose() -> dict[str, Any]:
         "downloads_in_progress": sum(1 for lock in STORE._fetch_locks.values() if lock.locked()),
         "tiles_in_memory": len(STORE._memory),
         "persistent_storage": STORE.persistent(),
+        "storage_backend": STORE.backend_name(),
     }
