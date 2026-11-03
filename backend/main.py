@@ -52,6 +52,7 @@ from fast_geo import RouteIndex
 
 import area_search
 import avoid_areas
+import coverage_requests
 from social_context_analysis import (
     analyse_social_context,
     load_all_overlays,
@@ -4244,6 +4245,8 @@ def compare_routes(request: RouteComparisonRequest):
 
     display_route_ids = _pick_display_routes(label_inputs, label_assignment)
 
+    coverage = _coverage_status(area, route_geometries)
+
     scored_count = sum(1 for r in route_results if r.get("status") != "analysis_failed")
     if scored_count == len(route_results) and scored_count > 0:
         overall = "complete"
@@ -4267,6 +4270,10 @@ def compare_routes(request: RouteComparisonRequest):
         # best balance, then the next best) in this order.
         "display_route_ids": display_route_ids,
         "routes": route_results,
+        # "not_covered": Meili has no map data here (not pre-built, and the
+        # live download failed), so scores would be guesses. The app shows the
+        # routes without scores and says we don't cover this area yet.
+        "coverage": coverage,
         "interpretation": (
             "All route candidates were analysed together from cached map "
             "tiles (memory, then Supabase Storage, then the original source "
@@ -4276,6 +4283,27 @@ def compare_routes(request: RouteComparisonRequest):
     }
     _comparison_cache_put(cache_key, response)
     return _with_avoid_areas(response, request)
+
+
+def _coverage_status(area: dict, route_geometries: list[list[tuple[float, float]]]) -> dict:
+    """Whether Meili has map data for these routes, and notes the area if not.
+
+    Not covered = most of the map tiles could not be loaded and nothing is
+    still downloading. Areas that had to be downloaded live (not pre-built)
+    are noted too, so the monthly build can add them.
+    """
+    osm = (area.get("debug") or {}).get("osm") or {}
+    needed = osm.get("tiles_needed") or 0
+    failed = osm.get("tiles_failed") or 0
+    downloaded_live = osm.get("tiles_downloaded") or 0
+    not_covered = bool(needed) and not area.get("still_downloading") and failed >= max(1, needed // 2)
+
+    if not_covered or downloaded_live or failed:
+        points = [p for g in route_geometries for p in g]
+        if points:
+            lon, lat = points[len(points) // 2]
+            coverage_requests.record(lat, lon)
+    return {"status": "not_covered" if not_covered else "covered"}
 
 
 def _with_avoid_areas(response: dict, request: "RouteComparisonRequest") -> dict:
