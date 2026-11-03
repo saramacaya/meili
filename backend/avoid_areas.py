@@ -181,6 +181,33 @@ def penalty(hits: list[dict]) -> float:
     return MIN_PENALTY + (FULL_PENALTY - MIN_PENALTY) * min(1.0, share * 3)
 
 
+def _add_detour_cost(result: dict) -> None:
+    """How much longer each route that goes around is than the quickest route
+    through an avoided place, so the app can say "about 8 min longer to avoid
+    X". Only set when a quicker route through one exists."""
+    through = [r for r in result["routes"]
+               if r.get("avoided_areas") and isinstance(r.get("estimated_time_minutes"), (int, float))]
+    if not through:
+        return
+    quickest = min(through, key=lambda r: r["estimated_time_minutes"])
+    names: list[str] = []
+    for hit in quickest.get("avoided_areas") or []:
+        if hit["name"] not in names:
+            names.append(hit["name"])
+    for route in result["routes"]:
+        minutes = route.get("estimated_time_minutes")
+        if route.get("avoided_areas") or not isinstance(minutes, (int, float)):
+            continue
+        extra = minutes - quickest["estimated_time_minutes"]
+        if extra > 0:
+            route["avoid_detour"] = {
+                "extra_minutes": round(extra),
+                "extra_percent": round(100 * extra / max(1, quickest["estimated_time_minutes"])),
+                "through_minutes": quickest["estimated_time_minutes"],
+                "area_names": names,
+            }
+
+
 def apply(response: dict, routes: list[Any], areas: list[dict], departure: datetime,
           assign_labels: Callable[[list[dict]], dict], pick_display: Callable[[list[dict], dict], list[str]]) -> dict:
     """Copy of a comparison response with avoided places marked and labels re-picked."""
@@ -209,6 +236,7 @@ def apply(response: dict, routes: list[Any], areas: list[dict], departure: datet
     # labelled and shown; the others stay in the response, marked.
     if clean_ids:
         label_inputs = [r for r in label_inputs if r["route_id"] in clean_ids]
+        _add_detour_cost(result)
     result["avoid_areas_respected"] = bool(clean_ids) or not any(
         r.get("avoided_areas") for r in result["routes"])
     if label_inputs:
