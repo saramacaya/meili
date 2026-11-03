@@ -122,6 +122,15 @@ class PlaceAutocompleteRequest(BaseModel):
     # The user's device language (e.g. "es", "it-IT"). Optional: without it
     # Google infers the language from what was typed.
     language: Optional[str] = None
+    # Optional Google place types to limit suggestions to, e.g. areas only
+    # for the "places you avoid" neighbourhood search. At most 5 (Google limit).
+    included_primary_types: Optional[list[str]] = Field(default=None, max_length=5)
+
+
+AREA_PLACE_TYPES = {
+    "neighborhood", "sublocality", "sublocality_level_1", "sublocality_level_2",
+    "locality", "postal_town", "administrative_area_level_3", "administrative_area_level_4",
+}
 
 
 class PlaceDetailsRequest(BaseModel):
@@ -2893,6 +2902,9 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
     # No fixed language or country: Google matches names in whatever language
     # was typed, and results come back in the user's own language if known.
     base_payload = {"input": search_text, "sessionToken": session_token}
+    area_types = [t for t in (request.included_primary_types or []) if t in AREA_PLACE_TYPES][:5]
+    if area_types:
+        base_payload["includedPrimaryTypes"] = area_types
     if request.latitude is not None and request.longitude is not None:
         # Google then returns each suggestion's distance from this point.
         base_payload["origin"] = {"latitude": request.latitude, "longitude": request.longitude}
@@ -2940,7 +2952,9 @@ async def autocomplete_places(request: PlaceAutocompleteRequest):
 
         # Few or no prefix matches usually means a typo, another language or a
         # description: ask Google's more forgiving full-text search too.
-        if len(suggestions) < 3 and len(search_text) >= 3:
+        # (Not for type-limited searches: full-text search can't filter by
+        # several types, so it would bring back shops and streets.)
+        if len(suggestions) < 3 and len(search_text) >= 3 and not area_types:
             try:
                 suggestions = _merge_suggestions(suggestions, await forgiving_matches())
             except HTTPException:
