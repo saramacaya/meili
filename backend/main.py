@@ -3925,6 +3925,13 @@ def compare_routes(request: RouteComparisonRequest):
         request.osm_lamp_radius_meters * 2,
         request.activity_search_radius_meters,
     ) + 25
+    # Fast check first: if almost none of these streets are in Meili's stored
+    # map data (pre-built countries or earlier downloads), say "not covered"
+    # straight away instead of waiting for live downloads that the public map
+    # servers usually refuse. The area is noted for the monthly build.
+    stored = tile_cache.load_stored_area(route_geometries, data_padding_meters)
+    if stored["coverage"] < FAST_NOT_COVERED_BELOW:
+        return _not_covered_response(request, route_geometries)
     area = tile_cache.load_area(route_geometries, data_padding_meters)
 
     # Local context: stored records near these routes (reviewed + automatic),
@@ -4283,6 +4290,50 @@ def compare_routes(request: RouteComparisonRequest):
     }
     _comparison_cache_put(cache_key, response)
     return _with_avoid_areas(response, request)
+
+
+# Share of a walk's map tiles that must already be stored to try scoring it.
+FAST_NOT_COVERED_BELOW = 0.25
+
+
+def _not_covered_response(request: "RouteComparisonRequest",
+                          route_geometries: list[list[tuple[float, float]]]) -> dict:
+    """Routes without scores, answered in about a second, for areas Meili
+    has no map data for. Not cached, so the area scores once it is built."""
+    points = [p for g in route_geometries for p in g]
+    if points:
+        lon, lat = points[len(points) // 2]
+        coverage_requests.record(lat, lon)
+        # Still try the live map servers in the background (they usually refuse
+        # Meili, but if they answer, the tiles are saved and the next search
+        # here gets scored).
+        try:
+            first = route_geometries[0]
+            tile_cache.warm_tiles_for_trip(first[0], first[-1])
+        except Exception:  # noqa: BLE001
+            pass
+    routes = [{
+        "route_id": route.route_id,
+        "estimated_time_minutes": route.estimated_time_minutes,
+        "distance_meters": route.distance_meters,
+        "status": "analysis_failed",
+        "error": "No map data for this area yet.",
+        "labels": [],
+    } for route in request.routes]
+    return {
+        "status": "routes_compared_and_scored",
+        "result": "failed",
+        "scored_route_count": 0,
+        "route_count": len(routes),
+        "data_complete": False,
+        "refresh_recommended": False,
+        "labels": {"labels_by_route_id": {}, "safest_route_id": None, "fastest_route_id": None,
+                   "balanced_route_id": None, "default_route_id": None},
+        "display_route_ids": [r["route_id"] for r in routes[:3]],
+        "routes": routes,
+        "coverage": {"status": "not_covered"},
+        "interpretation": "Meili has no map data for this area yet, so these routes are not scored.",
+    }
 
 
 def _coverage_status(area: dict, route_geometries: list[list[tuple[float, float]]]) -> dict:
