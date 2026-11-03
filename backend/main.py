@@ -1,4 +1,5 @@
 import copy
+import statistics
 import asyncio
 from typing import Literal, Optional
 import os
@@ -45,6 +46,7 @@ from collections import OrderedDict
 import tile_cache
 import local_context_gatherer
 import score_calibration
+import area_baseline
 from street_scoring import _classification as _score_class, _colour as _score_colour
 from fast_geo import RouteIndex
 
@@ -3699,6 +3701,102 @@ def _pick_display_routes(label_inputs: list[dict], label_assignment: dict, count
     return chosen[:count]
 
 
+# ---- Neighbourhood baseline (see area_baseline.py) --------------------------
+
+AREA_BASELINE_CACHE: "OrderedDict[str, tuple[float, Optional[dict]]]" = OrderedDict()
+AREA_BASELINE_TTL_SECONDS = 1800
+AREA_BASELINE_TIME_BUDGET_SECONDS = 2.5
+
+
+def _area_baseline(request: "RouteComparisonRequest", data_padding_meters: float) -> Optional[dict]:
+    """Scores probe walks beside the first route to learn what is typical here.
+
+    Uses only stored map data (never downloads), so it is fast, and returns
+    None whenever the neighbourhood isn't well covered or anything fails; the
+    route is then scored exactly as before.
+    """
+    first = request.routes[0]
+    middle = first.geometry[len(first.geometry) // 2]
+    bucket = int(request.departure_datetime.timestamp() // 1800)
+    key = f"{tile_cache._block_key(tile_cache.tile_for_point(middle[0], middle[1]))}:{bucket}"
+    cached = AREA_BASELINE_CACHE.get(key)
+    if cached and time.time() - cached[0] < AREA_BASELINE_TTL_SECONDS:
+        return copy.deepcopy(cached[1])
+
+    started = time.time()
+    baseline: Optional[dict] = None
+    try:
+        probes = [area_baseline.offset_geometry(first.geometry, offset)
+                  for offset in area_baseline.PROBE_OFFSETS_METERS]
+        stored = tile_cache.load_stored_area(probes, data_padding_meters)
+        if (stored["coverage"] >= area_baseline.MIN_TILE_COVERAGE
+                and stored["valencia_coverage"] >= area_baseline.MIN_TILE_COVERAGE):
+            duration_seconds = max(60, int(first.estimated_time_minutes * 60))
+            analysed = []
+            for probe in probes:
+                if time.time() - started > AREA_BASELINE_TIME_BUDGET_SECONDS:
+                    break
+                samples = densify_route(probe, interval_meters=request.sample_interval_meters)
+                data = tile_cache.route_slice(stored, probe, data_padding_meters)
+                lamps_near = tile_cache.corridor_filter(
+                    data["official_lamps"], samples, request.official_lamp_radius_meters * 2 + 10)
+                lit_ways, _ = filter_shared_osm_lit_ways_for_route(
+                    route_coordinates=probe, shared_lit_way_elements=data["lit_ways"],
+                    match_radius_meters=request.osm_lit_match_radius_meters)
+                street_lamps, _ = filter_shared_osm_street_lamps_for_route(
+                    route_coordinates=probe, shared_street_lamp_elements=data["street_lamps"],
+                    coverage_radius_meters=request.osm_lamp_radius_meters)
+                try:
+                    nasa = analyse_nasa_route_samples(route_samples=samples, requested_month=request.month)
+                except Exception:  # noqa: BLE001
+                    nasa = None
+                lighting = combine_lighting_sources(
+                    route_samples=samples,
+                    official_streetlights=lamps_near or data["official_lamps"],
+                    osm_lit_ways=lit_ways,
+                    osm_street_lamps=street_lamps,
+                    nasa_analysis=nasa,
+                    official_coverage_radius_meters=request.official_lamp_radius_meters,
+                    osm_lit_match_radius_meters=request.osm_lit_match_radius_meters,
+                    osm_lamp_coverage_radius_meters=request.osm_lamp_radius_meters,
+                )
+                raw_places, _ = filter_shared_places_for_route(
+                    route_coordinates=probe, shared_elements=data["places"],
+                    search_radius_meters=request.activity_search_radius_meters)
+                scored = score_places_for_route(
+                    places=raw_places, route_geometry=probe,
+                    evaluation_datetime=request.departure_datetime,
+                    route_duration_seconds=duration_seconds,
+                    search_radius_meters=request.activity_search_radius_meters)
+                activity = build_active_places_response(
+                    places=scored, evaluation_datetime=request.departure_datetime)
+                analysed.append((lighting, activity))
+
+            if len(analysed) >= area_baseline.MIN_PROBES:
+                probe_activity = [float(a["route_activity_score"]) for _, a in analysed]
+                expected = statistics.median(probe_activity)
+                probe_raw = []
+                for lighting, activity in analysed:
+                    lifted = area_baseline.apply_activity_lift(activity, expected)
+                    valued = value_route_sections(
+                        lighting_analysis=lighting, active_places_analysis=lifted,
+                        social_context_analysis={}, departure_datetime=request.departure_datetime,
+                        route_duration_seconds=duration_seconds)
+                    probe_raw.append(float(valued["route_value_score"]))
+                baseline = area_baseline.summarise(probe_activity, probe_raw)
+                if baseline is not None:
+                    baseline["tile_coverage"] = round(stored["coverage"], 2)
+                    baseline["seconds"] = round(time.time() - started, 2)
+    except Exception as error:  # noqa: BLE001  (never break scoring)
+        print(f"area baseline skipped: {type(error).__name__}: {error}")
+        baseline = None
+
+    AREA_BASELINE_CACHE[key] = (time.time(), copy.deepcopy(baseline))
+    while len(AREA_BASELINE_CACHE) > 200:
+        AREA_BASELINE_CACHE.popitem(last=False)
+    return baseline
+
+
 @app.post("/safety/routes/compare")
 def compare_routes(request: RouteComparisonRequest):
     # A single route (Google often returns only one for long walks) is scored
@@ -3774,6 +3872,15 @@ def compare_routes(request: RouteComparisonRequest):
     middle_point = first_route[len(first_route) // 2]
     calibration_cell = score_calibration.cell_for(middle_point[0], middle_point[1])
     calibration_samples = score_calibration.load_samples(calibration_cell)
+    # What a typical walk on the streets around here scores (None if unknown).
+    # Only used while this city cell has too little walk history of its own
+    # (fewer than 10 walks); with more, scoring is exactly as before.
+    neighbourhood = (
+        _area_baseline(request, data_padding_meters)
+        if len(calibration_samples) < 10 else None
+    )
+    area_center = neighbourhood["area_center"] if neighbourhood else None
+    expected_activity = neighbourhood["expected_activity"] if neighbourhood else None
     raw_scores_to_record: list[tuple[str, float]] = []
     local_context_job = local_context_gatherer.ensure_context(route_geometries)
 
@@ -3960,6 +4067,21 @@ def compare_routes(request: RouteComparisonRequest):
                 departure_datetime=request.departure_datetime,
                 route_duration_seconds=route_duration_seconds
             )
+            # The city history always stores this unadjusted score, so it stays
+            # comparable with walks scored before the neighbourhood baseline.
+            history_raw_score = valuation["route_value_score"]
+            if expected_activity is not None:
+                # Quiet for its neighbourhood counts as typical, not "low" (only
+                # ever raises activity; see area_baseline.lift_activity).
+                active_places_analysis = area_baseline.apply_activity_lift(
+                    active_places_analysis, expected_activity)
+                valuation = value_route_sections(
+                    lighting_analysis=lighting_analysis,
+                    active_places_analysis=active_places_analysis,
+                    social_context_analysis=social_context_analysis,
+                    departure_datetime=request.departure_datetime,
+                    route_duration_seconds=route_duration_seconds
+                )
 
             data_confidence = _route_data_confidence(lighting_analysis, active_places_analysis)
 
@@ -3967,10 +4089,11 @@ def compare_routes(request: RouteComparisonRequest):
             # little-data routes kept near the middle (see score_calibration).
             factor = score_calibration.confidence_factor(data_confidence)
             raw_route_score = valuation["route_value_score"]
-            raw_scores_to_record.append((route_key, raw_route_score))
+            raw_scores_to_record.append((route_key, history_raw_score))
             for section in valuation["sections"]:
                 section["raw_street_value_score"] = section["street_value_score"]
-                shown = score_calibration.calibrate_section(section["street_value_score"], calibration_samples, factor)
+                shown = score_calibration.calibrate_section(section["street_value_score"], calibration_samples, factor,
+                                                            area_center=area_center)
                 section["street_value_score"] = shown
                 section["classification"] = _score_class(shown)
                 section["map_colour"] = _score_colour(shown)
@@ -3980,12 +4103,19 @@ def compare_routes(request: RouteComparisonRequest):
                 for item in (social_context_analysis.get("section_local") or [])
             )
             shown_route = score_calibration.calibrate(raw_route_score, calibration_samples, factor,
-                                                      has_local_reports=has_local_reports)
+                                                      has_local_reports=has_local_reports,
+                                                      area_center=area_center)
             valuation["raw_route_value_score"] = raw_route_score
             valuation["route_value_score"] = shown_route
             valuation["route_classification"] = _score_class(shown_route)
             valuation["weakest_section_score"] = min(x["street_value_score"] for x in valuation["sections"])
-            valuation["score_scale"] = score_calibration.describe(calibration_samples)
+            valuation["score_scale"] = score_calibration.describe(calibration_samples, area_center)
+            valuation["neighbourhood"] = (
+                {**neighbourhood,
+                 "comparison": area_baseline.compare_to_area(raw_route_score, area_center),
+                 "explanation": "Compared with walks on the streets around this route."}
+                if neighbourhood else None
+            )
 
             label_inputs.append({
                 "route_id": route.route_id,

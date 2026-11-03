@@ -715,6 +715,32 @@ def load_area(
     }
 
 
+def load_stored_area(
+    route_geometries: list[list[tuple[float, float]]],
+    padding_meters: float,
+) -> dict[str, Any]:
+    """Like load_area, but only from what is already stored (memory, R2 or
+    Supabase, country blocks). Never downloads from Overpass, so it is fast
+    and safe to use for extra lookups such as the neighbourhood baseline.
+
+    "coverage" is the share of the needed map tiles that were found.
+    """
+    tiles: set[TileId] = set()
+    for geometry in route_geometries:
+        tiles.update(tiles_for_route_corridor(geometry, padding_meters))
+    tile_list = sorted(tiles)
+    osm_tiles = _load_from_storage("osm", tile_list) if tile_list else {}
+    valencia_tiles = [t for t in tile_list if _tile_in_valencia(t)]
+    valencia_data = _load_from_storage("valencia_lamps", valencia_tiles) if valencia_tiles else {}
+    return {
+        "osm_tiles": osm_tiles,
+        "valencia_tiles": valencia_data,
+        "valencia_covered": bool(valencia_tiles),
+        "coverage": (len(osm_tiles) / len(tile_list)) if tile_list else 0.0,
+        "valencia_coverage": (len(valencia_data) / len(valencia_tiles)) if valencia_tiles else 1.0,
+    }
+
+
 def route_slice(area: dict[str, Any], geometry: list[tuple[float, float]], padding_meters: float) -> dict[str, list]:
     """Everything near ONE route, in the formats the scoring code expects."""
     bbox = padded_bbox(geometry, padding_meters)

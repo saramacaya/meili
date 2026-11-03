@@ -142,9 +142,26 @@ def _fit_range(score: float, bounds: tuple[float, float]) -> float:
     return low + (high - low) * (min(95.0, max(5.0, score)) - 5.0) / 90.0
 
 
+def _center(samples: list[float], area_center: Optional[float]) -> float:
+    """The raw score that counts as 'typical' (shown as 50).
+
+    With 10+ remembered walks in this city cell: their median. Before that:
+    the neighbourhood baseline (what walks on the streets around this route
+    score, see main._area_baseline), so a quiet suburb is compared with its
+    own surroundings instead of with busy European city centres. Without a
+    baseline: the fixed default.
+    """
+    if len(samples) >= 10:
+        return _median(samples)
+    if area_center is not None:
+        return float(area_center)
+    return DEFAULT_CENTER
+
+
 def calibrate(raw: float, samples: list[float], factor: float = 1.0,
-              has_local_reports: bool = False) -> float:
-    center = _median(samples) if len(samples) >= 10 else DEFAULT_CENTER
+              has_local_reports: bool = False,
+              area_center: Optional[float] = None) -> float:
+    center = _center(samples, area_center)
     score = _curve(raw, center)
     n = len(samples)
     if n >= MIN_SAMPLES:
@@ -165,21 +182,24 @@ def calibrate(raw: float, samples: list[float], factor: float = 1.0,
 SECTION_SCALE = 14.0   # sections vary much more than whole routes: stretch them less
 
 
-def calibrate_section(raw: float, samples: list[float], factor: float = 1.0) -> float:
+def calibrate_section(raw: float, samples: list[float], factor: float = 1.0,
+                      area_center: Optional[float] = None) -> float:
     """Same centre as routes, but a gentler curve and a 15-95 range: one quiet
     tenth of a walk is the weakest stretch, not 'dangerous'."""
-    center = _median(samples) if len(samples) >= 10 else DEFAULT_CENTER
+    center = _center(samples, area_center)
     score = 100.0 / (1.0 + math.exp(-(raw - center) / SECTION_SCALE))
     score = 50.0 + (score - 50.0) * factor
     return round(max(15.0, min(95.0, score)), 1)
 
 
-def describe(samples: list[float]) -> dict[str, Any]:
+def describe(samples: list[float], area_center: Optional[float] = None) -> dict[str, Any]:
     n = len(samples)
     if n >= FULL_SAMPLES:
         kind = "city_ranking"
     elif n >= MIN_SAMPLES:
         kind = "city_ranking_blended"
+    elif n < 10 and area_center is not None:
+        kind = "neighbourhood_baseline"
     else:
         kind = "default_curve"
     return {
