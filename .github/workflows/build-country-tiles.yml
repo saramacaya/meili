@@ -65,6 +65,16 @@ jobs:
           - europe/albania
           - europe/macedonia
           - europe/kosovo
+          - europe/ukraine
+          - europe/belarus
+          - europe/moldova
+          - europe/faroe-islands
+          - europe/isle-of-man
+          - europe/guernsey-jersey
+          - europe/azores
+          - africa/canary-islands
+          - europe/turkey
+          - europe/georgia
           # outside Europe (needed because the public Overpass servers refuse Meili)
           - asia/japan
           - north-america/us/new-york
