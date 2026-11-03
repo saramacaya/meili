@@ -144,9 +144,21 @@ class RouteCoordinate(BaseModel):
     place_id: Optional[str] = None
 
 
+class PreviewAvoidArea(BaseModel):
+    """Same shape as AvoidAreaInput (defined further down)."""
+    name: Optional[str] = Field(default=None, max_length=200)
+    time_of_day: Literal["night", "always", "sometimes"] = "always"
+    blocks: list[str] = Field(default_factory=list, max_length=5000)
+
+
 class RealRoutePreviewRequest(BaseModel):
     origin: RouteCoordinate
     destination: RouteCoordinate
+    # The signed-in person's avoided places. When every suggested route passes
+    # through one, routes around it are requested too (see avoid_areas.py).
+    avoid_areas: list[PreviewAvoidArea] = Field(default_factory=list, max_length=50)
+    # With its UTC offset, for "at night" places. Unknown = treat as active.
+    departure_datetime: Optional[datetime] = None
 
 class StreetlightAnalysisRequest(BaseModel):
     route_geometry: list[tuple[float, float]]
@@ -3105,6 +3117,8 @@ def _via_points(origin: tuple[float, float], destination: tuple[float, float]) -
 
 MAX_ROUTE_CANDIDATES = 5
 MAX_DETOUR_RATIO = 1.5
+# A route around a place you avoid may take up to twice as long as the fastest.
+MAX_AVOID_DETOUR_RATIO = 2.0
 
 
 def _metres_between(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -3182,15 +3196,51 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             detail="No walking route was found between these locations."
         )
 
-    # Remove near-duplicates and big detours; keep at most 5, fastest first.
+    for route in google_routes:
+        route["_geometry"] = _decode_polyline(route.get("polyline", {}).get("encodedPolyline") or "")
+
+    # Places you avoid: if no route goes around them, ask Google for routes
+    # through points just outside them (one extra round of requests).
+    avoid = avoid_areas.active_areas(
+        [a.model_dump() for a in request.avoid_areas], request.departure_datetime,
+        endpoints=(origin_xy, destination_xy),
+    )
+    if avoid and all(avoid_areas.passes_through(r["_geometry"], avoid) for r in google_routes):
+        vias = avoid_areas.detour_points(origin_xy, destination_xy, avoid,
+                                         [r["_geometry"] for r in google_routes])
+        if vias:
+            detour_payloads = [dict(base_payload, computeAlternativeRoutes=False,
+                                    intermediates=[{**point(lat, lon), "via": True} for lon, lat in way])
+                               for way in vias]
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    detours = await asyncio.gather(
+                        *(client.post(GOOGLE_ROUTES_URL, json=p, headers=headers) for p in detour_payloads),
+                        return_exceptions=True,
+                    )
+            except httpx.RequestError:
+                detours = []
+            for extra in detours:
+                if not isinstance(extra, Exception) and extra.status_code == 200:
+                    for r in extra.json().get("routes", []):
+                        r = dict(r, _meili_source="avoid")
+                        r["_geometry"] = _decode_polyline(r.get("polyline", {}).get("encodedPolyline") or "")
+                        google_routes.append(r)
+    for route in google_routes:
+        route["_passes_avoided"] = avoid_areas.passes_through(route["_geometry"], avoid)
+
+    # Remove near-duplicates and big detours; keep at most 5, fastest first,
+    # but routes that go around avoided places come before routes through them.
     google_routes.sort(key=lambda r: google_duration_to_seconds(r.get("duration", "")))
     fastest_seconds = max(1, google_duration_to_seconds(google_routes[0].get("duration", "")))
+    google_routes.sort(key=lambda r: (r["_passes_avoided"], google_duration_to_seconds(r.get("duration", ""))))
     kept: list[tuple[dict, list]] = []
     for route in google_routes:
         seconds = google_duration_to_seconds(route.get("duration", ""))
-        if kept and seconds > MAX_DETOUR_RATIO * fastest_seconds:
+        ratio = MAX_AVOID_DETOUR_RATIO if (avoid and not route["_passes_avoided"]) else MAX_DETOUR_RATIO
+        if kept and seconds > ratio * fastest_seconds:
             continue
-        geometry = _decode_polyline(route.get("polyline", {}).get("encodedPolyline") or "")
+        geometry = route["_geometry"]
         def same_walk(other_route: dict, other_geometry: list) -> bool:
             a, b = _route_overlap(geometry, other_geometry), _route_overlap(other_geometry, geometry)
             other_seconds = max(1, google_duration_to_seconds(other_route.get("duration", "")))
@@ -3226,7 +3276,9 @@ async def preview_real_routes(request: RealRoutePreviewRequest):
             "provider_labels": route.get("routeLabels", []),
             # "google" = Google's own alternatives (score these first);
             # "extra" = routes forced left/right of the direct line (score after).
+            # "avoid" = routes requested to go around a place you avoid.
             "source": route.get("_meili_source", "google"),
+            "passes_avoided_area": route.get("_passes_avoided", False),
             "safety_score": None,
             "safety_status": "not_scored"
         })
