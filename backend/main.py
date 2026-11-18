@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 from supabase import create_client
 from datetime import datetime
-from nasa_route_analysis import analyse_nasa_route_samples, load_nasa_month_data
+from nasa_route_analysis import analyse_nasa_route_samples, load_nasa_month_data, warm_nasa
 
 from combined_lighting_analysis import combine_lighting_sources
 from open_establishments import (
@@ -799,6 +799,14 @@ def fetch_shared_osm_lighting_data(
             "created_at": current_time,
             "result": result
         }
+        # Memory: drop expired areas and keep at most 30 (was unlimited).
+        for stale_key in [
+            key for key, entry in list(OSM_LIGHTING_CACHE.items())
+            if current_time - entry["created_at"] >= OSM_LIGHTING_CACHE_TTL_SECONDS
+        ]:
+            OSM_LIGHTING_CACHE.pop(stale_key, None)
+        while len(OSM_LIGHTING_CACHE) > 30:
+            OSM_LIGHTING_CACHE.pop(next(iter(OSM_LIGHTING_CACHE)))
 
     return result
 
@@ -3547,6 +3555,23 @@ class RouteComparisonRequest(BaseModel):
 ROUTE_RESULT_CACHE: "OrderedDict[str, tuple[float, dict, dict]]" = OrderedDict()
 ROUTE_RESULT_TTL_SECONDS = 1800
 HEAVY_ROUTE_CACHE: "OrderedDict[str, tuple[float, tuple]]" = OrderedDict()
+# Memory: each cached route holds full lamp/place/satellite details (often
+# several MB). 300 per cache filled Render's 512 MB, so keep few and drop
+# expired ones on every write.
+ROUTE_CACHE_LIMIT = 30
+
+
+def _trim_timed_cache(cache: "OrderedDict", ttl_seconds: float, limit: int) -> None:
+    """Drops expired entries (value[0] = time stored) and the oldest beyond limit."""
+    now = time.time()
+    # list() copies in one step, so another request writing meanwhile is safe.
+    for key in [k for k, v in list(cache.items()) if now - v[0] > ttl_seconds]:
+        cache.pop(key, None)
+    while len(cache) > limit:
+        try:
+            cache.popitem(last=False)
+        except KeyError:
+            break
 
 
 def _route_cache_key(route, request) -> str:
@@ -3564,7 +3589,7 @@ tile_cache.VALENCIA_LAMP_FETCHER = lambda corners: fetch_valencia_streetlights(c
 COMPARISON_CACHE: "OrderedDict[str, tuple[float, dict]]" = OrderedDict()
 COMPARISON_CACHE_LOCK = threading.Lock()
 COMPARISON_CACHE_TTL_SECONDS = 30 * 60
-COMPARISON_CACHE_LIMIT = 200
+COMPARISON_CACHE_LIMIT = 30  # full answers are large; was 200
 
 
 def _comparison_cache_key(request: "RouteComparisonRequest") -> str:
@@ -3616,8 +3641,7 @@ def _comparison_cache_put(key: str, response: dict) -> None:
         return
     with COMPARISON_CACHE_LOCK:
         COMPARISON_CACHE[key] = (time.time(), response)
-        while len(COMPARISON_CACHE) > COMPARISON_CACHE_LIMIT:
-            COMPARISON_CACHE.popitem(last=False)
+        _trim_timed_cache(COMPARISON_CACHE, COMPARISON_CACHE_TTL_SECONDS, COMPARISON_CACHE_LIMIT)
 
 
 class TilePrefillRequest(BaseModel):
@@ -3688,10 +3712,11 @@ def prefill_tiles_status():
 
 @app.on_event("startup")
 def warm_up_on_startup():
-    """Loads the latest NASA month in the background so the first route is fast."""
+    """Reads the NASA month list (or, before R2 tiles exist, loads the old
+    Valencian Community file) in the background so the first route is fast."""
     def warm():
         try:
-            load_nasa_month_data()
+            warm_nasa()
         except Exception:
             pass
     threading.Thread(target=warm, daemon=True, name="warm-up").start()
@@ -4122,8 +4147,7 @@ def compare_routes(request: RouteComparisonRequest):
                 if not ({"osm_lit", "osm_individual_lamps", "active_places", "official_valencia_lamps"}
                         & set(source_errors)):
                     HEAVY_ROUTE_CACHE[route_key] = (time.time(), copy.deepcopy((active_places_analysis, lighting_analysis, official_debug, osm_lamp_debug, osm_lit_debug, source_errors)))
-                    while len(HEAVY_ROUTE_CACHE) > 300:
-                        HEAVY_ROUTE_CACHE.popitem(last=False)
+                    _trim_timed_cache(HEAVY_ROUTE_CACHE, ROUTE_RESULT_TTL_SECONDS, ROUTE_CACHE_LIMIT)
             social_context_analysis = analyse_social_context(
                 route_geometry=route.geometry,
                 departure_datetime=request.departure_datetime,
@@ -4230,8 +4254,7 @@ def compare_routes(request: RouteComparisonRequest):
                     and social_context_analysis.get("local_context_status") != "gathering"):
                 ROUTE_RESULT_CACHE[route_key] = (time.time(), copy.deepcopy(route_results[-1]),
                                                  dict(label_inputs[-1]))
-                while len(ROUTE_RESULT_CACHE) > 300:
-                    ROUTE_RESULT_CACHE.popitem(last=False)
+                _trim_timed_cache(ROUTE_RESULT_CACHE, ROUTE_RESULT_TTL_SECONDS, ROUTE_CACHE_LIMIT)
 
         except Exception as error:
             route_results.append({

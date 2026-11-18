@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from io import BytesIO
 import json
+import math
 import os
 import re
 import threading
@@ -32,6 +34,22 @@ NASA_AVAILABLE_MONTHS_CACHE = {
 }
 NASA_AVAILABLE_MONTHS_TTL_SECONDS = 900
 NASA_CACHE_LOCK = threading.Lock()
+# Old single-file mode only: at most this many whole months in memory.
+NASA_LEGACY_MONTH_LIMIT = 2
+
+# ---- Tiled mode: whole of Europe on Cloudflare R2 ---------------------------
+# Built monthly by backend/tools/build_nasa_tiles.py:
+#   v1/nasa/index.json                 {"months": ["2026-08", ...], ...}
+#   v1/nasa/<YYYY-MM>/<lat>_<lon>.npz  one 1 x 1 degree square
+# A route only loads the squares it crosses; at most NASA_MEMORY_TILE_LIMIT
+# squares (about 0.5 MB each) stay in memory. When R2 has no index yet, the
+# old Valencian Community file in Supabase is used instead.
+NASA_TILE_PREFIX = "v1/nasa"
+NASA_MEMORY_TILE_LIMIT = 40
+NASA_INDEX_TTL_SECONDS = 900
+_nasa_tiles: "OrderedDict[str, Optional[dict]]" = OrderedDict()
+_nasa_index = {"months": [], "checked_at": -1e9}
+_nasa_tile_lock = threading.Lock()
 
 supabase_storage = None
 
@@ -55,11 +73,86 @@ def _require_storage_client():
     return supabase_storage
 
 
+
+def _tiled_months(force_refresh: bool = False) -> list[str]:
+    """Months available as R2 tiles (empty list when tiles aren't built yet)."""
+    now = time.monotonic()
+    with _nasa_tile_lock:
+        if not force_refresh and now - _nasa_index["checked_at"] < NASA_INDEX_TTL_SECONDS:
+            return list(_nasa_index["months"])
+    months: list[str] = []
+    try:
+        import r2_storage
+
+        raw = r2_storage.get_bytes(f"{NASA_TILE_PREFIX}/index.json")
+        if raw:
+            months = sorted(
+                m for m in json.loads(raw).get("months", [])
+                if NASA_MONTH_PATTERN.fullmatch(str(m))
+            )
+    except Exception:  # noqa: BLE001  (R2 not configured, network, bad JSON)
+        months = []
+    with _nasa_tile_lock:
+        _nasa_index["months"] = months
+        _nasa_index["checked_at"] = now
+    return list(months)
+
+
+def nasa_tile_key(longitude: float, latitude: float) -> str:
+    return f"{math.floor(latitude)}_{math.floor(longitude)}"
+
+
+def _load_nasa_tile(month: str, key: str) -> tuple[Optional[dict], bool]:
+    """One 1 x 1 degree square from R2 (None = no data there). Returns
+    (square, came_from_memory)."""
+    cache_key = f"{month}/{key}"
+    with _nasa_tile_lock:
+        if cache_key in _nasa_tiles:
+            _nasa_tiles.move_to_end(cache_key)
+            return _nasa_tiles[cache_key], True
+
+    import r2_storage
+
+    raw = r2_storage.get_bytes(f"{NASA_TILE_PREFIX}/{month}/{key}.npz")
+    tile = None
+    if raw:
+        try:
+            with np.load(BytesIO(raw), allow_pickle=False) as data:
+                tile = {
+                    name: data[name].copy()
+                    for name in ("latitudes", "longitudes", "radiance",
+                                 "quality", "observations", "quantiles")
+                }
+        except Exception:  # noqa: BLE001  (corrupt square: treat as no data)
+            tile = None
+    with _nasa_tile_lock:
+        _nasa_tiles[cache_key] = tile
+        while len(_nasa_tiles) > NASA_MEMORY_TILE_LIMIT:
+            _nasa_tiles.popitem(last=False)
+    return tile, False
+
+
+def warm_nasa() -> None:
+    """Startup warm-up: reads the R2 month list; only loads the old
+    Valencian Community file when no tiles are built yet."""
+    if _tiled_months(force_refresh=True):
+        return
+    load_nasa_month_data()
+
+
 def list_available_nasa_months(
     force_refresh: bool = False,
 ) -> list[str]:
+    """Processed NASA months: R2 tiles when built, else the old
+    Valencian Community files in Supabase."""
+    return _tiled_months(force_refresh) or _legacy_months(force_refresh)
+
+
+def _legacy_months(
+    force_refresh: bool = False,
+) -> list[str]:
     """
-    Lists processed NASA months stored in Supabase.
+    Lists the old Valencian Community NASA months stored in Supabase.
 
     The folder listing is cached for 15 minutes. That keeps
     normal route requests fast while still allowing newly
@@ -162,7 +255,7 @@ def load_nasa_month_data(
 
         resolved_month = requested_month
     else:
-        available_months = list_available_nasa_months()
+        available_months = _legacy_months()
         resolved_month = available_months[-1]
 
     with NASA_CACHE_LOCK:
@@ -251,6 +344,8 @@ def load_nasa_month_data(
         NASA_MONTH_DATA_CACHE[
             resolved_month
         ] = month_data
+        while len(NASA_MONTH_DATA_CACHE) > NASA_LEGACY_MONTH_LIMIT:
+            NASA_MONTH_DATA_CACHE.pop(next(iter(NASA_MONTH_DATA_CACHE)))
 
     return resolved_month, month_data, False
 
@@ -275,6 +370,12 @@ def analyse_nasa_route_samples(
         raise HTTPException(
             status_code=400,
             detail="At least one route sample is required.",
+        )
+
+    tiled_months = _tiled_months()
+    if tiled_months:
+        return _analyse_with_tiles(
+            route_samples, requested_month, tiled_months
         )
 
     resolved_month, nasa_data, cache_hit = (
@@ -509,5 +610,126 @@ def analyse_nasa_route_samples(
             "500-metre resolution. It does not "
             "measure individual street lamps or "
             "street-level illuminance."
+        ),
+    }
+
+
+_QUALITY_LABELS = {0: "good", 1: "poor", 2: "gap_filled", 255: "missing"}
+
+
+def _analyse_with_tiles(
+    route_samples: list[tuple[float, float]],
+    requested_month: Optional[str],
+    months: list[str],
+) -> dict:
+    """Tiled version of analyse_nasa_route_samples (same output shape).
+
+    Each available sample also gets "brightness_percentile": how bright it is
+    compared with the area around it (the square's 3 x 3 neighbourhood),
+    which combined_lighting_analysis uses instead of the old regional list.
+    """
+    if requested_month is not None:
+        requested_month = requested_month.strip()
+    resolved_month = requested_month if requested_month in months else months[-1]
+
+    sample_results = []
+    valid_values: list[float] = []
+    unique_cells = set()
+    good_count = missing_count = outside_count = 0
+    all_from_memory = True
+
+    for sample_number, (longitude, latitude) in enumerate(route_samples, start=1):
+        key = nasa_tile_key(longitude, latitude)
+        tile, from_memory = _load_nasa_tile(resolved_month, key)
+        all_from_memory = all_from_memory and from_memory
+        if tile is None:
+            outside_count += 1
+            sample_results.append({
+                "sample_number": sample_number,
+                "longitude": round(longitude, 7),
+                "latitude": round(latitude, 7),
+                "coverage_status": "outside_processed_region",
+                "nasa_cell_latitude": None,
+                "nasa_cell_longitude": None,
+                "brightness_radiance": None,
+                "brightness_percentile": None,
+                "quality_code": None,
+                "quality": None,
+                "supporting_observations": None,
+            })
+            continue
+
+        row = _nearest_grid_index(tile["latitudes"], latitude)
+        col = _nearest_grid_index(tile["longitudes"], longitude)
+        unique_cells.add((key, row, col))
+        value = float(tile["radiance"][row, col])
+        quality_code = int(tile["quality"][row, col])
+        observations = int(tile["observations"][row, col])
+        valid = bool(np.isfinite(value) and quality_code != 255)
+
+        percentile = None
+        if valid:
+            valid_values.append(value)
+            if quality_code == 0:
+                good_count += 1
+            quantiles = tile["quantiles"]
+            if quantiles.size:
+                position = np.searchsorted(quantiles, value, side="right")
+                percentile = round(100 * float(position) / float(quantiles.size), 1)
+        else:
+            missing_count += 1
+
+        sample_results.append({
+            "sample_number": sample_number,
+            "longitude": round(longitude, 7),
+            "latitude": round(latitude, 7),
+            "coverage_status": "available" if valid else "missing",
+            "nasa_cell_latitude": round(float(tile["latitudes"][row]), 7),
+            "nasa_cell_longitude": round(float(tile["longitudes"][col]), 7),
+            "brightness_radiance": round(value, 3) if valid else None,
+            "brightness_percentile": percentile,
+            "quality_code": quality_code,
+            "quality": _QUALITY_LABELS.get(quality_code, "unknown"),
+            "supporting_observations": observations,
+        })
+
+    if valid_values:
+        values = np.asarray(valid_values, dtype=np.float64)
+        statistics = {
+            "minimum_radiance": round(float(values.min()), 3),
+            "median_radiance": round(float(np.median(values)), 3),
+            "mean_radiance": round(float(values.mean()), 3),
+            "maximum_radiance": round(float(values.max()), 3),
+        }
+    else:
+        statistics = dict.fromkeys(
+            ("minimum_radiance", "median_radiance", "mean_radiance", "maximum_radiance")
+        )
+
+    total = len(sample_results)
+    return {
+        "source": "NASA Black Marble VNP46A3",
+        "storage_source": "Cloudflare R2 (1-degree squares)",
+        "percentiles_included": True,
+        "month": resolved_month,
+        "month_requested": requested_month,
+        "memory_cache_hit": all_from_memory,
+        "temporal_resolution": "monthly_composite",
+        "nominal_observation_time": "approximately 01:30 local solar time",
+        "radiance_units": "nW/(cm^2 sr)",
+        "route_sample_count": total,
+        "unique_nasa_cell_count": len(unique_cells),
+        "valid_brightness_sample_count": len(valid_values),
+        "valid_brightness_sample_percentage": round(100 * len(valid_values) / total) if total else 0,
+        "good_quality_sample_count": good_count,
+        "missing_sample_count": missing_count,
+        "outside_processed_region_sample_count": outside_count,
+        "brightness_statistics": statistics,
+        "sample_results": sample_results,
+        "data_confidence": "regional_background_context",
+        "interpretation": (
+            "NASA brightness is monthly background nighttime radiance at "
+            "approximately 500-metre resolution. It does not measure "
+            "individual street lamps or street-level illuminance."
         ),
     }

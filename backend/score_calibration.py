@@ -36,6 +36,7 @@ CACHE_SECONDS = 600
 RECORD_DEDUP_SECONDS = 6 * 3600
 
 _cache: dict[str, tuple[float, list[float]]] = {}
+CACHE_CELL_LIMIT = 500
 _recorded: dict[str, float] = {}  # route cache key -> when its score was recorded
 _lock = threading.Lock()
 # Serialises the read-modify-write of calibration files so parallel requests
@@ -63,6 +64,8 @@ def load_samples(cell: str) -> list[float]:
     samples = sorted(float(x) for x in (data.get("samples") or []))
     with _lock:
         _cache[cell] = (time.time(), samples)
+        while len(_cache) > CACHE_CELL_LIMIT:  # memory: was unlimited
+            _cache.pop(next(iter(_cache)))
     return samples
 
 

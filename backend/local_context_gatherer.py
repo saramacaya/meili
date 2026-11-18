@@ -242,6 +242,7 @@ def reverse_neighbourhood(lon: float, lat: float) -> Optional[dict]:
             "radius_meters": max(MIN_RADIUS_M, min(MAX_RADIUS_M, radius)),
         }
     _reverse_cache[key] = result
+    _cap_cache(_reverse_cache, 2000)
     return result
 
 
@@ -695,6 +696,15 @@ _records_cache: dict[tuple, tuple[float, list[dict]]] = {}
 _area_cache: dict[str, tuple[float, Optional[dict]]] = {}
 
 
+def _cap_cache(cache: dict, limit: int) -> None:
+    """Memory: drops the oldest entries beyond limit (these caches had none)."""
+    while len(cache) > limit:
+        try:
+            cache.pop(next(iter(cache)))
+        except (KeyError, StopIteration, RuntimeError):
+            break
+
+
 def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
     """Active stored records around a route, in the analysis record format."""
     south, west, north, east = bbox
@@ -734,6 +744,7 @@ def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
         }],
     } for row in rows]
     _records_cache[key] = (time.time(), records)
+    _cap_cache(_records_cache, 200)
     return records
 
 
@@ -767,6 +778,7 @@ def _area_known(key: str) -> bool:
             except Exception:  # noqa: BLE001
                 row = None
         _area_cache[key] = (time.time(), row)
+        _cap_cache(_area_cache, 2000)
     if not row or not row.get("last_gathered_at"):
         return False
     gathered = datetime.fromisoformat(str(row["last_gathered_at"]).replace("Z", "+00:00"))

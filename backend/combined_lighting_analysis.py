@@ -176,6 +176,8 @@ def _get_sorted_nasa_radiance(
 
     with NASA_PERCENTILE_CACHE_LOCK:
         NASA_PERCENTILE_CACHE[month] = sorted_values
+        while len(NASA_PERCENTILE_CACHE) > 2:
+            NASA_PERCENTILE_CACHE.pop(next(iter(NASA_PERCENTILE_CACHE)))
 
     return sorted_values
 
@@ -455,9 +457,16 @@ def combine_lighting_sources(
         else None
     )
 
+    # Tiled NASA data (R2) already gives each sample its percentile against
+    # the surrounding area; only the old single regional file needs the
+    # sorted list of every value in the region.
+    nasa_percentiles_included = bool(
+        nasa_analysis and nasa_analysis.get("percentiles_included")
+    )
+
     sorted_regional_radiance = (
         _get_sorted_nasa_radiance(nasa_month)
-        if nasa_month
+        if nasa_month and not nasa_percentiles_included
         else np.asarray([], dtype=np.float32)
     )
 
@@ -542,12 +551,19 @@ def combine_lighting_sources(
             else None
         )
 
-        nasa_percentile = nasa_brightness_percentile(
-            brightness_value=nasa_brightness,
-            sorted_regional_values=(
-                sorted_regional_radiance
-            ),
-        )
+        if nasa_percentiles_included:
+            nasa_percentile = (
+                nasa_result.get("brightness_percentile")
+                if nasa_result
+                else None
+            )
+        else:
+            nasa_percentile = nasa_brightness_percentile(
+                brightness_value=nasa_brightness,
+                sorted_regional_values=(
+                    sorted_regional_radiance
+                ),
+            )
 
         nasa_available = (
             nasa_result is not None

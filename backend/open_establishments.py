@@ -858,6 +858,14 @@ def fetch_shared_osm_places(
             "created_at": now,
             "elements": elements
         }
+        # Memory: drop expired areas and keep at most 30 (was unlimited).
+        for stale_key in [
+            key for key, entry in list(SHARED_PLACES_CACHE.items())
+            if now - entry["created_at"] >= SHARED_PLACES_CACHE_TTL_SECONDS
+        ]:
+            SHARED_PLACES_CACHE.pop(stale_key, None)
+        while len(SHARED_PLACES_CACHE) > 30:
+            SHARED_PLACES_CACHE.pop(next(iter(SHARED_PLACES_CACHE)))
 
     return elements, {"cache_hit": False, "raw_places_found": len(elements)}
 
