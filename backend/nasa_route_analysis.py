@@ -625,8 +625,9 @@ def _analyse_with_tiles(
     """Tiled version of analyse_nasa_route_samples (same output shape).
 
     Each available sample also gets "brightness_percentile": how bright it is
-    compared with the area around it (the square's 3 x 3 neighbourhood),
-    which combined_lighting_analysis uses instead of the old regional list.
+    compared with its city (about 20 km around it; older squares built before
+    18 Nov use the 3 x 3 squares around), which combined_lighting_analysis
+    uses instead of the old regional list.
     """
     if requested_month is not None:
         requested_month = requested_month.strip()
@@ -673,7 +674,15 @@ def _analyse_with_tiles(
             if quality_code == 0:
                 good_count += 1
             quantiles = tile["quantiles"]
-            if quantiles.size:
+            if quantiles.ndim == 3:
+                # City-sized comparison: the 1/8-degree block this cell is in
+                # (built as 8 x 8 blocks of 30 x 30 cells per square).
+                block_size = max(1, tile["radiance"].shape[0] // quantiles.shape[0])
+                quantiles = quantiles[
+                    min(row // block_size, quantiles.shape[0] - 1),
+                    min(col // block_size, quantiles.shape[1] - 1),
+                ]
+            if quantiles.size and np.isfinite(quantiles).all():
                 position = np.searchsorted(quantiles, value, side="right")
                 percentile = round(100 * float(position) / float(quantiles.size), 1)
         else:
