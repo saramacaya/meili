@@ -1,0 +1,42 @@
+name: Build NASA night-light tiles (Europe)
+
+# Downloads NASA Black Marble monthly night-light data (VNP46A3) for Europe,
+# cuts it into 1 x 1 degree squares and uploads them to Cloudflare R2.
+# See backend/tools/build_nasa_tiles.py. Runs on the 20th of each month, or by hand.
+on:
+  schedule:
+    - cron: "0 3 20 * *"
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Month to build, e.g. 2026-09 (empty = latest missing months)"
+        required: false
+        default: ""
+      force:
+        description: "Rebuild even if the month already exists"
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install tools
+        run: pip install earthaccess h5py numpy boto3
+      - name: Build and upload NASA squares
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          args=""
+          if [ -n "${{ github.event.inputs.month }}" ]; then args="$args --month ${{ github.event.inputs.month }}"; fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then args="$args --force"; fi
+          python -u backend/tools/build_nasa_tiles.py $args
