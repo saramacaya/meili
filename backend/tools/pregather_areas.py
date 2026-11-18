@@ -8,7 +8,7 @@ code the app uses (local_context_gatherer.gather_area), into the same
 Supabase tables.
 
 Free-tier friendly: stops after MAX_AREAS new neighbourhoods per run
-(each costs about 2 Tavily searches and a few AI calls) and pauses between
+(each costs about 3 Tavily searches and up to MEILI_CONTEXT_MAX_PAGES AI calls) and pauses between
 areas. Already-gathered areas are skipped, so later runs only fill gaps.
 
 Run (GitHub Actions or locally):
@@ -48,6 +48,7 @@ CITIES = [
 GRID_STEP_KM = 0.7
 MAX_AREAS = int(os.getenv("MEILI_PREGATHER_MAX_AREAS", "120"))
 PAUSE_BETWEEN_AREAS = 3.0
+AREA_BUDGET_SECONDS = float(os.getenv("MEILI_PREGATHER_AREA_SECONDS", "90"))  # no user waiting
 
 
 def grid_points(lat: float, lon: float, radius_km: float) -> list[tuple[float, float]]:
@@ -91,7 +92,7 @@ def main() -> int:
                 skipped += 1
                 continue
             try:
-                result = gatherer.gather_area(area, budget_seconds=60)
+                result = gatherer.gather_area(area, budget_seconds=AREA_BUDGET_SECONDS)
             except Exception as error:  # noqa: BLE001
                 print(f"  ! {area['name']}: {str(error)[:150]}")
                 continue
