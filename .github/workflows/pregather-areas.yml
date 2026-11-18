@@ -13,7 +13,7 @@ on:
 jobs:
   pregather:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,5 +29,8 @@ jobs:
           MEILI_AI_PROVIDER: gemini
           MEILI_CONTEXT_MODEL: gemini-3.5-flash-lite
           MEILI_PREGATHER_MAX_AREAS: "120"
+          MEILI_CONTEXT_MAX_PAGES: "8"
+          MEILI_CONTEXT_RECORDS_PER_PAGE: "3"
+          MEILI_PREGATHER_AREA_SECONDS: "90"
           PYTHONUNBUFFERED: "1"
         run: python -u backend/tools/pregather_areas.py
