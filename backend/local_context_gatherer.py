@@ -39,7 +39,10 @@ GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 AUTO_VERIFICATION_WEIGHT = 0.7
 REGATHER_AFTER_DAYS = 90
-MAX_ARTICLES_PER_AREA = 6
+# Pages the AI reads per neighbourhood and findings kept per page. The monthly
+# pre-gather can raise these (no user is waiting); the live app keeps them small.
+MAX_ARTICLES_PER_AREA = int(os.getenv("MEILI_CONTEXT_MAX_PAGES", "6"))
+MAX_RECORDS_PER_PAGE = int(os.getenv("MEILI_CONTEXT_RECORDS_PER_PAGE", "2"))
 MIN_RADIUS_M, MAX_RADIUS_M = 300.0, 1500.0
 RECORDS_TABLE = "area_context_records"
 AREAS_TABLE = "area_context_areas"
@@ -96,7 +99,7 @@ EXTRACTION_PROMPT = (
     "\"time_context\": \"daytime|evening|late_night|weekend|unspecified\", "
     "\"summary\": \"one neutral English sentence, max 35 words, saying who said it (e.g. 'Residents on a forum say…')\", "
     "\"about_this_neighbourhood\": true } ] }. "
-    "Return at most 2 records. Return {\"records\": []} if the page has nothing relevant."
+    f"Return at most {MAX_RECORDS_PER_PAGE} records. Return {{\"records\": []}} if the page has nothing relevant."
 )
 
 
@@ -375,15 +378,30 @@ def search_news_google(name: str, city: str, country_code: str = "", aliases: Op
 
 
 TAVILY_URL = "https://api.tavily.com/search"
+# Short keyword searches work better than long sentences.
 OPINION_PHRASES = {
-    "es": "{name} {city} es seguro de noche opiniones vivir en el barrio",
-    "pt": "{name} {city} é seguro à noite opiniões viver no bairro",
-    "it": "{name} {city} è sicuro di notte opinioni vivere nel quartiere",
-    "fr": "{name} {city} quartier sûr la nuit avis habitants",
-    "de": "{name} {city} sicher nachts Erfahrungen wohnen im Viertel",
-    "nl": "{name} {city} veilig 's nachts ervaringen wonen in de wijk",
-    "sl": "{name} {city} varno ponoči mnenja življenje v soseski",
+    "es": "{name} {city} seguro de noche opiniones",
+    "pt": "{name} {city} seguro à noite opiniões",
+    "it": "{name} {city} sicuro di notte opinioni",
+    "fr": "{name} {city} quartier sûr la nuit avis",
+    "de": "{name} {city} nachts sicher Erfahrungen",
+    "nl": "{name} {city} 's nachts veilig ervaringen",
+    "sl": "{name} {city} varno ponoči mnenja",
 }
+# Where residents and visitors actually talk. "prefer" still searches the
+# wider web, these sites just rank higher.
+FORUM_DOMAINS = [
+    "reddit.com", "tripadvisor.com", "tripadvisor.es", "tripadvisor.co.uk", "tripadvisor.fr",
+    "tripadvisor.it", "tripadvisor.de", "tripadvisor.pt", "tripadvisor.nl", "minube.com",
+    "forocoches.com", "idealista.com", "quora.com", "lonelyplanet.com",
+]
+# Tavily's `country` boosts (does not restrict to) results from that country.
+TAVILY_COUNTRY = {
+    "ES": "spain", "PT": "portugal", "FR": "france", "IT": "italy", "DE": "germany",
+    "NL": "netherlands", "GB": "united kingdom", "SI": "slovenia", "BE": "belgium",
+    "AT": "austria", "CH": "switzerland", "IE": "ireland", "US": "united states",
+}
+RAW_TEXT_KEEP = 60_000   # keep enough page text to find the neighbourhood further down
 
 
 def search_opinions(name: str, city: str, country_code: str = "", aliases: Optional[list] = None) -> list[dict]:
@@ -399,17 +417,26 @@ def search_opinions(name: str, city: str, country_code: str = "", aliases: Optio
     second = next((n for n in names if _plain(n) != _plain(best)), best)
     label = best if _plain(second) == _plain(best) else f"{best} ({second})"
     local_name = best if _plain(second) == _plain(best) else f"{second} {best}"
-    queries = [f'is {label} in {city} safe to walk at night? residents and visitors opinions']
+    # 1 credit each (basic depth). 3 searches per area, 2 where English is the local language.
+    queries: list[tuple[str, dict]] = [(f"{label} {city} safe at night", {})]
     if language in OPINION_PHRASES:
-        queries.append(OPINION_PHRASES[language].format(name=local_name, city=city))
+        queries.append((OPINION_PHRASES[language].format(name=local_name, city=city), {}))
+    queries.append((f"{best} {city} safe walking at night area",
+                    {"include_domains": FORUM_DOMAINS, "include_domains_mode": "prefer"}))
+    country = TAVILY_COUNTRY.get((country_code or "").upper())
     pages: dict[str, dict] = {}
-    for query in queries:
+    for query, extra in queries:
+        payload = {"query": query, "search_depth": "basic", "max_results": 10,
+                   "include_raw_content": "text", **extra}
+        # No date limit: older forum threads about a neighbourhood are still useful;
+        # each finding keeps its publish date.
+        if country:
+            payload["country"] = country
         try:
             response = requests.post(
                 TAVILY_URL,
                 headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                json={"query": query, "search_depth": "basic", "max_results": 8,
-                      "include_raw_content": "text", "time_range": "year"},
+                json=payload,
                 timeout=20,
             )
             response.raise_for_status()
@@ -429,7 +456,7 @@ def search_opinions(name: str, city: str, country_code: str = "", aliases: Optio
                 "seendate": (str(item.get("published_date") or "")[:10].replace("-", "") + "T000000Z")
                             if item.get("published_date") else "",
                 "snippet": " ".join(str(item.get("content") or "").split()),
-                "text": raw[:6000],   # already-read page text: no need to fetch it again
+                "text": raw[:RAW_TEXT_KEEP],   # already-read page text: no need to fetch it again
                 "kind": "opinion_search",
             }
     _log("opinions found", area=name, pages=len(pages), searches=len(queries))
@@ -572,7 +599,7 @@ def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     except ValueError:
         return []
     records = []
-    for item in (data.get("records") or [])[:2]:
+    for item in (data.get("records") or [])[:MAX_RECORDS_PER_PAGE]:
         summary = " ".join(str(item.get("summary") or "").split())
         if (item.get("about_this_neighbourhood") is not True
                 or item.get("sentiment") not in ALLOWED_SENTIMENTS
@@ -586,6 +613,48 @@ def extract_records(area: dict, article: dict, text: str) -> list[dict]:
             "summary": summary,
         })
     return records
+
+
+def _focus_text(text: str, variants: list[str], limit: int = 6000, window: int = 700) -> str:
+    """The parts of a long page that mention the neighbourhood (with some text
+    around each mention), instead of just the top of the page. Short pages and
+    pages with no mention come back as the first `limit` characters."""
+    if len(text) <= limit:
+        return text
+    plain_chars, index = [], []          # accent-free lowercase copy + map back to the original
+    for i, ch in enumerate(text):
+        for p in _plain(ch) if ch.strip() else " ":
+            plain_chars.append(p)
+            index.append(i)
+    plain = "".join(plain_chars)
+    spans: list[list[int]] = []
+    for variant in {_plain(v) for v in variants if _plain(v)}:
+        start = plain.find(variant)
+        while start != -1:
+            a = max(0, index[start] - window)
+            b = min(len(text), index[min(start + len(variant), len(index) - 1)] + window)
+            spans.append([a, b])
+            start = plain.find(variant, start + len(variant))
+    if not spans:
+        return text[:limit]
+    spans.sort()
+    merged = [spans[0]]
+    for a, b in spans[1:]:
+        if a <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    parts, used = [text[:600]], 600     # keep the top: title and intro give context
+    for a, b in merged:
+        if used >= limit:
+            break
+        a = max(a, 600)
+        if a >= b:
+            continue
+        piece = text[a:min(b, a + limit - used)]
+        parts.append(piece)
+        used += len(piece)
+    return " […] ".join(parts)
 
 
 def _seen_date(article: dict) -> Optional[str]:
@@ -617,13 +686,16 @@ def gather_area(area: dict, budget_seconds: float = 40.0) -> dict:
     articles = opinions + news
     # Keep only articles whose headline or snippet mentions the area at all.
     candidates = [a for a in articles
-                  if mentions(a.get("title")) or mentions(a.get("snippet")) or mentions(a.get("text"))][:10] \
-        or articles[:6]
+                  if mentions(a.get("title")) or mentions(a.get("snippet")) or mentions(a.get("text"))][:max(10, 2 * MAX_ARTICLES_PER_AREA)] \
+        or articles[:MAX_ARTICLES_PER_AREA]
+
+    variants = _name_variants(area["name"], area.get("aliases"))
 
     def readable(article: dict) -> tuple[dict, str]:
         if len(article.get("text") or "") >= 300:
-            return article, article["text"]          # page text already provided by the search
-        text = fetch_article_text(article.get("url") or "")
+            # page text already provided by the search: send the parts about this area
+            return article, _focus_text(article["text"], variants)
+        text = _focus_text(fetch_article_text(article.get("url") or "", limit=30_000), variants)
         if len(text) < 300 and article.get("snippet"):
             text = f"{article.get('title', '')}. {article['snippet']}"
         return article, text
