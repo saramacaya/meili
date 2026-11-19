@@ -25,6 +25,8 @@ import math
 from datetime import datetime
 from typing import Any, Callable, Iterable
 
+from local_time import to_local
+
 BLOCK_METERS = 100
 METERS_PER_DEGREE = 111320
 SAMPLE_METERS = 20
@@ -57,12 +59,24 @@ def cell_center(cell: str) -> tuple[float, float] | None:
     return lat, (col + 0.5) * BLOCK_METERS / scale - 180
 
 
-def is_active(time_of_day: str, departure: datetime | None) -> bool:
+def _local(departure: datetime, blocks) -> datetime:
+    """Departure in the time zone where the area is (the phone may be elsewhere)."""
+    for cell in blocks or []:
+        centre = cell_center(cell)
+        if centre:
+            try:
+                return to_local(departure, centre[1], centre[0])
+            except Exception:  # noqa: BLE001
+                break
+    return departure
+
+
+def is_active(time_of_day: str, departure: datetime | None, blocks=None) -> bool:
     if time_of_day != "night":
         return True  # "always" and legacy "sometimes"
     if departure is None:
         return True  # time unknown: avoid it to be safe
-    hour = departure.hour
+    hour = _local(departure, blocks).hour
     return hour >= NIGHT_STARTS_HOUR or hour < NIGHT_ENDS_HOUR
 
 
@@ -86,7 +100,7 @@ def route_hits(geometry: Iterable[tuple[float, float]], areas: list[dict], depar
     cells = [cell_id(lat, lng) for lat, lng in samples]
     hits = []
     for area in areas:
-        if not is_active(area.get("time_of_day", "always"), departure):
+        if not is_active(area.get("time_of_day", "always"), departure, area.get("blocks")):
             continue
         blocks = set(area.get("blocks") or [])
         inside = sum(1 for c in cells if c in blocks)
@@ -106,7 +120,7 @@ def active_areas(areas: list[dict], departure: datetime | None,
     out = []
     for area in areas:
         blocks = set(area.get("blocks") or [])
-        if not blocks or not is_active(area.get("time_of_day", "always"), departure):
+        if not blocks or not is_active(area.get("time_of_day", "always"), departure, blocks):
             continue
         if blocks & end_cells:
             continue

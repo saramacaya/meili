@@ -7,13 +7,18 @@ active-place and social-context analyses, then passes their results here.
 from __future__ import annotations
 
 import math
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, Optional
+
+from sun_position import daylight_factor
 
 
 LIGHTING_WEIGHT = 0.60
 ACTIVITY_WEIGHT = 0.40
 SECTION_COUNT = 10
+# In full daylight street lighting matters much less: lighting differences are
+# shrunk to this share (towards neutral 50), so open places weigh relatively more.
+DAYLIGHT_LIGHTING_SHARE = 0.25
 
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 100.0) -> float:
@@ -130,6 +135,28 @@ def _social_effects_by_section(
     return effects, record_ids
 
 
+def _daylight_by_section(
+    route_geometry: Optional[list],
+    departure_datetime: datetime,
+    route_duration_seconds: int,
+) -> list[float]:
+    """Daylight (0 night - 1 day) at the middle of each section, at the time
+    the walker gets there. Without a geometry: night everywhere (old behaviour)."""
+    if not route_geometry:
+        return [0.0] * SECTION_COUNT
+    points = list(route_geometry)
+    out = []
+    for k in range(SECTION_COUNT):
+        progress = (k + 0.5) / SECTION_COUNT
+        lon, lat = points[min(len(points) - 1, int(progress * len(points)))][:2]
+        moment = departure_datetime + timedelta(seconds=route_duration_seconds * progress)
+        try:
+            out.append(daylight_factor(float(lat), float(lon), moment))
+        except (TypeError, ValueError, OverflowError):
+            out.append(0.0)
+    return out
+
+
 def value_route_sections(
     *,
     lighting_analysis: dict[str, Any],
@@ -137,6 +164,7 @@ def value_route_sections(
     social_context_analysis: dict[str, Any],
     departure_datetime: datetime,
     route_duration_seconds: int,
+    route_geometry: Optional[list] = None,
 ) -> dict[str, Any]:
     """Return ten section scores and one distance-weighted route score."""
     if route_duration_seconds <= 0:
@@ -151,15 +179,19 @@ def value_route_sections(
     )
 
     local = social_context_analysis.get("section_local")
+    daylight = _daylight_by_section(route_geometry, departure_datetime, route_duration_seconds)
 
     sections = []
     for index in range(SECTION_COUNT):
+        # Daylight: lighting differences count only DAYLIGHT_LIGHTING_SHARE.
+        lighting_share = 1.0 - (1.0 - DAYLIGHT_LIGHTING_SHARE) * daylight[index]
+        effective_lighting = 50.0 + (lighting_scores[index] - 50.0) * lighting_share
         base_score = (
-            LIGHTING_WEIGHT * lighting_scores[index]
+            LIGHTING_WEIGHT * effective_lighting
             + ACTIVITY_WEIGHT * activity_scores[index]
         )
         if local and index < len(local):
-            # Local reports as a real component of the section score: up to 55%
+            # Local reports as a real component of the section score: up to 35%
             # where reports exist, pointing to where the reports point.
             weight = float(local[index].get("weight", 0.0))
             target = float(local[index].get("target", 50.0))
@@ -173,6 +205,7 @@ def value_route_sections(
             "end_progress_percentage": (index + 1) * 10,
             "lighting_score": round(lighting_scores[index], 1),
             "active_places_score": round(activity_scores[index], 1),
+            "daylight": round(daylight[index], 2),
             "social_context_adjustment_points": round(social_effects[index], 3),
             "matched_social_record_ids": social_record_ids[index],
             "street_value_score": round(final_score, 1),
@@ -192,7 +225,8 @@ def value_route_sections(
         "component_weights": {
             "lighting": LIGHTING_WEIGHT,
             "active_places": ACTIVITY_WEIGHT,
-            "social_context": "local reports: up to 55% of a section where present; concerns count double",
+            "social_context": "local reports: up to 35% of a section where present",
+            "daylight": f"in daylight lighting differences count {int(DAYLIGHT_LIGHTING_SHARE * 100)}%",
         },
         "sections": sections,
         "method_note": (

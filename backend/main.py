@@ -3412,6 +3412,7 @@ def analyse_street_score(request: StreetScoringRequest):
         social_context_analysis=social_context,
         departure_datetime=request.departure_datetime,
         route_duration_seconds=request.route_duration_seconds,
+        route_geometry=request.route_geometry,
     )
 
     return {
@@ -3873,7 +3874,7 @@ def _area_baseline(request: "RouteComparisonRequest", data_padding_meters: float
                     valued = value_route_sections(
                         lighting_analysis=lighting, active_places_analysis=lifted,
                         social_context_analysis={}, departure_datetime=request.departure_datetime,
-                        route_duration_seconds=duration_seconds)
+                        route_duration_seconds=duration_seconds, route_geometry=first.geometry)
                     probe_raw.append(float(valued["route_value_score"]))
                 baseline = area_baseline.summarise(probe_activity, probe_raw)
                 if baseline is not None:
@@ -4163,7 +4164,8 @@ def compare_routes(request: RouteComparisonRequest):
                 active_places_analysis=active_places_analysis,
                 social_context_analysis=social_context_analysis,
                 departure_datetime=request.departure_datetime,
-                route_duration_seconds=route_duration_seconds
+                route_duration_seconds=route_duration_seconds,
+                route_geometry=route.geometry,
             )
             # The city history always stores this unadjusted score, so it stays
             # comparable with walks scored before the neighbourhood baseline.
@@ -4178,7 +4180,8 @@ def compare_routes(request: RouteComparisonRequest):
                     active_places_analysis=active_places_analysis,
                     social_context_analysis=social_context_analysis,
                     departure_datetime=request.departure_datetime,
-                    route_duration_seconds=route_duration_seconds
+                    route_duration_seconds=route_duration_seconds,
+                    route_geometry=route.geometry,
                 )
 
             data_confidence = _route_data_confidence(lighting_analysis, active_places_analysis)

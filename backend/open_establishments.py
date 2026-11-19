@@ -8,6 +8,8 @@ import unicodedata
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+from local_time import to_local
+
 import requests
 from fastapi import APIRouter, HTTPException
 from opening_hours import OpeningHours
@@ -16,6 +18,12 @@ from pydantic import BaseModel, Field
 
 router = APIRouter()
 VALENCIA_TIMEZONE = ZoneInfo("Europe/Madrid")
+
+
+def _route_zone(moment: datetime):
+    """The time zone the evaluation time was already converted to (see
+    score_places_for_route); Europe/Madrid when it wasn't."""
+    return moment.tzinfo if isinstance(moment.tzinfo, ZoneInfo) else VALENCIA_TIMEZONE
 OVERPASS_API_URLS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
@@ -401,13 +409,12 @@ def determine_place_opening_status(
         )
 
     try:
-        local_datetime = evaluation_datetime.astimezone(
-            VALENCIA_TIMEZONE
-        )
+        zone = _route_zone(evaluation_datetime)
+        local_datetime = evaluation_datetime.astimezone(zone)
 
         opening_hours = OpeningHours(
             opening_hours_value,
-            timezone=VALENCIA_TIMEZONE
+            timezone=zone
         )
 
         if opening_hours.is_open(local_datetime):
@@ -468,13 +475,12 @@ def determine_place_activity_status(
         return "closed_activity"
 
     try:
-        local_datetime = evaluation_datetime.astimezone(
-            VALENCIA_TIMEZONE
-        )
+        zone = _route_zone(evaluation_datetime)
+        local_datetime = evaluation_datetime.astimezone(zone)
 
         opening_hours = OpeningHours(
             opening_hours_value,
-            timezone=VALENCIA_TIMEZONE
+            timezone=zone
         )
 
         # Check whether the establishment was open recently.
@@ -960,6 +966,12 @@ def score_places_for_route(
     so the underlying scoring logic never diverges between them.
     """
     scored_places = []
+
+    # Opening hours are about the clock AT THE ROUTE, not on the phone
+    # (the app sends the phone's own time zone).
+    if route_geometry:
+        middle_lon, middle_lat = route_geometry[len(route_geometry) // 2][:2]
+        evaluation_datetime = to_local(evaluation_datetime, middle_lon, middle_lat)
 
     for place in places:
         place = dict(place)

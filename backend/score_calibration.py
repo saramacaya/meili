@@ -137,7 +137,7 @@ def confidence_factor(data_confidence: Optional[dict[str, Any]]) -> float:
 # Extreme scores need strong evidence: lighting and activity alone can say a walk
 # is quieter or busier than usual, not that it is dangerous or perfectly safe.
 RANGE_WITHOUT_LOCAL_REPORTS = (25.0, 90.0)
-RANGE_WITH_LOCAL_REPORTS = (5.0, 95.0)
+RANGE_WITH_LOCAL_REPORTS = (15.0, 95.0)
 
 
 def _fit_range(score: float, bounds: tuple[float, float]) -> float:

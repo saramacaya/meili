@@ -26,6 +26,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from local_time import to_local
+from sun_position import daylight_factor
+
 
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parent / "data" / "social_context"
 DATA_ROOT = Path(os.getenv("MEILI_SOCIAL_CONTEXT_DATA", DEFAULT_DATA_ROOT))
@@ -417,12 +420,19 @@ def _period(moment: datetime) -> str:
     return "late_night"
 
 
-def _time_weight(time_context: str | None, moment: datetime) -> float:
+# A report that doesn't say when (most of them) is usually about the evening
+# or night; in daylight it counts this much.
+UNSPECIFIED_DAYLIGHT_WEIGHT = 0.5
+
+
+def _time_weight(time_context: str | None, moment: datetime, daylight: float = 0.0) -> float:
     context = (time_context or "unspecified").lower()
     current = _period(moment)
 
-    if context in {"unspecified", "daytime_and_unspecified"}:
+    if context == "daytime_and_unspecified":
         return 1.0
+    if context == "unspecified":
+        return 1.0 - (1.0 - UNSPECIFIED_DAYLIGHT_WEIGHT) * daylight
     if context == "weekend":
         return 1.0 if moment.weekday() >= 5 else 0.35
     if context == current:
@@ -548,11 +558,11 @@ SECTION_COUNT = 10
 # How local reports enter the score (applied in street_scoring):
 # a section is pulled towards POOR_TARGET by concerns and towards GOOD_TARGET by
 # praise. With strong evidence, local reports carry LOCAL_MAX_WEIGHT of the
-# section -- more than lighting (60% of the remaining base). Praise counts half.
-LOCAL_MAX_WEIGHT = 0.55
+# section. Praise counts half.
+LOCAL_MAX_WEIGHT = 0.35
 POSITIVE_FACTOR = 0.5
 EVIDENCE_FOR_FULL_WEIGHT = 0.5   # combined evidence at which the full weight applies
-POOR_TARGET = 10.0               # where local concerns point
+POOR_TARGET = 25.0               # where local concerns point
 GOOD_TARGET = 95.0               # where local praise points
 CORE_FRACTION = 0.5            # inner half of the radius = full influence
 MIN_ROUTE_INFLUENCE = 0.25     # below this the area is not shown at all
@@ -648,6 +658,19 @@ def _section_influence(record, samples) -> tuple[list[float], dict[str, Any] | N
     return best
 
 
+ENDPOINT_FACTOR = 0.5
+
+
+def _covers_endpoint(location: dict[str, Any], samples: list[tuple[float, float]]) -> bool:
+    """True when the circle contains the route's start or destination."""
+    try:
+        centre = (float(location["longitude"]), float(location["latitude"]))
+        radius = float(location["radius_meters"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return any(_distance_meters(p, centre) <= radius for p in (samples[0], samples[-1]))
+
+
 def _area_key(record: dict[str, Any]) -> str:
     name = str(record.get("neighbourhood") or record.get("area") or "this area")
     import re
@@ -721,7 +744,17 @@ def analyse_social_context(
                 continue
 
             arrival = _arrival_time(closest, len(samples), departure_datetime, route_duration_seconds)
-            time_weight = _time_weight(record.get("time_context"), arrival)
+            point = samples[closest]
+            try:
+                daylight = daylight_factor(float(point[1]), float(point[0]), arrival)
+            except (TypeError, ValueError, OverflowError):
+                daylight = 0.0
+            try:
+                local_arrival = to_local(arrival, float(point[0]), float(point[1]))
+            except (TypeError, ValueError, OverflowError):
+                local_arrival = arrival
+            # "at night" / "in the evening" means the clock where the report is.
+            time_weight = _time_weight(record.get("time_context"), local_arrival, daylight)
             if time_weight < 0.3:
                 # About a different time of day (e.g. "at night" on a morning
                 # walk): neither shown nor counted.
@@ -764,6 +797,10 @@ def analyse_social_context(
             specific = precision_class in MAPPABLE_PRECISION_CLASSES
             max_points = MAX_POINTS_SPECIFIC if specific else MAX_POINTS_AREA
             strength = _record_strength(record, now) * time_weight
+            # Every route has to pass the start and destination, so reports
+            # covering them don't help choose a route: they count half.
+            if _covers_endpoint(location, samples):
+                strength *= ENDPOINT_FACTOR
             sign = SENTIMENT_SIGN.get(sentiment, 0.0)
             per_section = [sign * max_points * strength * w for w in sections]
             # Evidence amounts for the score: incidents and street-specific
@@ -914,8 +951,9 @@ def analyse_social_context(
         "method_note": (
             "Areas count fully in their core and fade to nothing at their edge, "
             "measured per route section. Where local reports exist they carry up to "
-            "55% of a section's score (more than lighting); concerns pull the section "
-            "towards poor, praise towards good at half the strength. Evidence type, "
-            "confidence, recency and time of day set how strong each report is."
+            "35% of a section's score; concerns pull the section towards poor, praise "
+            "towards good at half the strength. Evidence type, confidence, recency and "
+            "time of day set how strong each report is (reports that don't say when count "
+            "half in daylight; reports covering the start or destination count half)."
         ),
     }
