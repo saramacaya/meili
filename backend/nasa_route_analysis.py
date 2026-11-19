@@ -616,6 +616,29 @@ def analyse_nasa_route_samples(
 
 _QUALITY_LABELS = {0: "good", 1: "poor", 2: "gap_filled", 255: "missing"}
 
+# Below this NASA brightness a place is essentially unlit at night (rural
+# background is usually 0-1 nW/(cm^2 sr); lit residential streets are well
+# above). Such a spot can never count as "brighter than most of its area",
+# even when everything around it is just as dark.
+NASA_DARK_RADIANCE = float(os.getenv("MEILI_NASA_DARK_RADIANCE", "1.0"))
+NASA_DARK_PERCENTILE_CAP = 15.0
+
+
+def _relative_percentile(quantiles: np.ndarray, value: float) -> Optional[float]:
+    """How bright `value` is compared with its area (0-100).
+
+    Ties count as half: a spot exactly as bright as most of its area lands in
+    the middle, not at the top. (Before, an evenly dark countryside block gave
+    every dark street 100.) Spots below NASA_DARK_RADIANCE are capped low."""
+    if not quantiles.size or not np.isfinite(quantiles).all():
+        return None
+    below = np.searchsorted(quantiles, value, side="left")
+    up_to = np.searchsorted(quantiles, value, side="right")
+    percentile = 100.0 * (below + up_to) / 2.0 / float(quantiles.size)
+    if value < NASA_DARK_RADIANCE:
+        percentile = min(percentile, NASA_DARK_PERCENTILE_CAP)
+    return round(percentile, 1)
+
 
 def _analyse_with_tiles(
     route_samples: list[tuple[float, float]],
@@ -682,9 +705,7 @@ def _analyse_with_tiles(
                     min(row // block_size, quantiles.shape[0] - 1),
                     min(col // block_size, quantiles.shape[1] - 1),
                 ]
-            if quantiles.size and np.isfinite(quantiles).all():
-                position = np.searchsorted(quantiles, value, side="right")
-                percentile = round(100 * float(position) / float(quantiles.size), 1)
+            percentile = _relative_percentile(quantiles, value)
         else:
             missing_count += 1
 
