@@ -91,6 +91,11 @@ EXTRACTION_PROMPT = (
     "(e.g. 'fine during the day, I avoid the side streets at night'). "
     "Ignore anything not about street safety IN the named neighbourhood, generic city-wide claims, "
     "advertising, and property prices. Do not name private individuals. "
+    "NOT street safety, always ignore: traffic and road accidents (people run over, hit by a car, bus, "
+    "train, tram or bike, crashes, collisions), fires, floods, storms and other weather, illness, "
+    "natural deaths, drownings, suicides, building collapses, gas leaks, and incidents inside private homes. "
+    "Never describe victims (no ages, genders, health or death details): say only what kind of incident "
+    "was reported, e.g. 'A local news report describes a street robbery'. "
     "Evidence tiers: confirmed_incident = a specific reported event; municipal_data = official statistics; "
     "resident_complaint = residents or local groups describing problems they experience; "
     "perception_only = general impressions or visitor opinions. "
@@ -98,7 +103,7 @@ EXTRACTION_PROMPT = (
     "\"evidence_tier\": \"confirmed_incident|resident_complaint|perception_only|municipal_data\", "
     "\"time_context\": \"daytime|evening|late_night|weekend|unspecified\", "
     "\"summary\": \"one neutral English sentence, max 35 words, saying who said it (e.g. 'Residents on a forum say…')\", "
-    "\"about_this_neighbourhood\": true } ] }. "
+    "\"about_this_neighbourhood\": true, \"about_personal_safety\": true } ] }. "
     f"Return at most {MAX_RECORDS_PER_PAGE} records. Return {{\"records\": []}} if the page has nothing relevant."
 )
 
@@ -586,6 +591,36 @@ def _post_following_redirects(url: str, headers: dict, payload: dict):
     return response
 
 
+# Findings about these are not about walking safety (and quoting them, e.g. a
+# road death, is upsetting and unfair to the area). Checked on new findings
+# AND when stored findings are loaded, so old ones disappear without
+# re-gathering. A crime or street-safety word elsewhere keeps the finding.
+_NOT_STREET_SAFETY = re.compile(
+    r"\b(run over|ran over|knocked down|(hit|struck|killed|injured) by an? (car|vehicle|van|lorry|truck|bus|train|tram|motorbike|motorcycle|scooter|cyclist|bike)"
+    r"|(traffic|road|car|motorbike|motorcycle|scooter|bus|train|tram) (accident|crash|collision)s?"
+    r"|crash(ed)? into|collisions?|pedestrians? (was |were )?(killed|died|injured)|atropell\w*"
+    r"|accidente de (tr[aá]fico|coche|moto)|fires?|blaze|flood\w*|storms?|heatwave|heart attack"
+    r"|natural causes|drown\w*|suicide|collapse\w*|gas leak|explosion)\b",
+    re.IGNORECASE,
+)
+_STREET_SAFETY = re.compile(
+    r"\b(rob\w*|mugg\w*|theft|thie\w*|steal\w*|stole\w*|pickpocket\w*|assault\w*|attack\w*|stab\w*"
+    r"|shoot\w*|shot|fight\w*|brawl\w*|harass\w*|threat\w*|intimidat\w*|violen\w*|crime\w*|criminal\w*"
+    r"|drug\w*|dealing|vandal\w*|gang\w*|police|insecur\w*|unsafe|safe|safety|dark|poorly lit|lighting"
+    r"|deserted|empty streets|arson)\b",
+    re.IGNORECASE,
+)
+
+
+def is_street_safety_text(summary: str) -> bool:
+    """False for findings about road accidents, fires, weather, illness and
+    the like, unless they also mention crime or how safe the street feels."""
+    text = summary or ""
+    if not _NOT_STREET_SAFETY.search(text):
+        return True
+    return bool(_STREET_SAFETY.search(_NOT_STREET_SAFETY.sub(" ", text)))
+
+
 def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     """Structured, validated records from one article (may be empty)."""
     user = (f"Neighbourhood: {area['name']}, {area['city']} "
@@ -602,6 +637,8 @@ def extract_records(area: dict, article: dict, text: str) -> list[dict]:
     for item in (data.get("records") or [])[:MAX_RECORDS_PER_PAGE]:
         summary = " ".join(str(item.get("summary") or "").split())
         if (item.get("about_this_neighbourhood") is not True
+                or item.get("about_personal_safety") is False
+                or not is_street_safety_text(summary)
                 or item.get("sentiment") not in ALLOWED_SENTIMENTS
                 or item.get("evidence_tier") not in ALLOWED_TIERS
                 or not summary or len(summary.split()) > 45):
@@ -795,6 +832,7 @@ def load_records_near(bbox: tuple[float, float, float, float]) -> list[dict]:
                     .limit(300).execute().data) or []
         except Exception:  # noqa: BLE001  (table missing, network...)
             rows = []
+    rows = [row for row in rows if is_street_safety_text(row.get("summary") or "")]
     records = [{
         "record_id": f"auto-{row['id']}",
         "rating_eligible": True,
